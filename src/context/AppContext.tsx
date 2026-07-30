@@ -12,6 +12,9 @@ import {
   ProcessState,
   UserRole,
   DayOfWeek,
+  UserPermissions,
+  AppUser,
+  BrandingConfig,
 } from '../types';
 import {
   INITIAL_PROVIDERS,
@@ -23,9 +26,54 @@ import {
   INITIAL_AUDIT_LOGS,
 } from '../data/initialData';
 
+const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, UserPermissions> = {
+  admin: {
+    canCreate: true,
+    canEdit: true,
+    canDelete: true,
+    canInlineCreate: true,
+    canApprovePayment: true,
+    canManageUsers: true,
+  },
+  compras: {
+    canCreate: true,
+    canEdit: true,
+    canDelete: false,
+    canInlineCreate: true,
+    canApprovePayment: false,
+    canManageUsers: false,
+  },
+  recepcion: {
+    canCreate: true,
+    canEdit: false,
+    canDelete: false,
+    canInlineCreate: false,
+    canApprovePayment: false,
+    canManageUsers: false,
+  },
+  caja: {
+    canCreate: false,
+    canEdit: true,
+    canDelete: false,
+    canInlineCreate: false,
+    canApprovePayment: true,
+    canManageUsers: false,
+  },
+};
+
 interface AppContextType {
   userRole: UserRole;
   setUserRole: (role: UserRole) => void;
+  users: AppUser[];
+  addUser: (user: AppUser) => void;
+  updateUser: (user: AppUser) => void;
+  deleteUser: (userId: string) => void;
+  updateUserCustomPermissions: (userId: string, perms: Partial<UserPermissions>) => void;
+  activeUserId: string;
+  setActiveUserId: (id: string) => void;
+  rolePermissions: Record<UserRole, UserPermissions>;
+  hasPermission: (permission: keyof UserPermissions) => boolean;
+  updateRolePermissions: (role: UserRole, newPerms: Partial<UserPermissions>) => void;
   providers: Provider[];
   items: Item[];
   providerItems: ProviderItemRelation[];
@@ -35,6 +83,8 @@ interface AppContextType {
   priceHistory: PriceHistoryEntry[];
   expenses: ExpenseRecord[];
   auditLogs: AuditLog[];
+  branding: BrandingConfig;
+  updateBranding: (newConfig: Partial<BrandingConfig>) => void;
 
   // Actions
   getProviderState: (providerId: string) => ProcessState;
@@ -86,10 +136,56 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const LOCAL_STORAGE_KEY = 'gastronomic_erp_state_v1';
+const LOCAL_STORAGE_KEY = 'gastronomic_erp_state_clean_v1';
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [userRole, setUserRole] = useState<UserRole>('admin');
+  const [activeUserId, setActiveUserId] = useState<string>('usr-1');
+  const [users, setUsers] = useState<AppUser[]>([
+    {
+      id: 'usr-1',
+      dni: '35.123.456',
+      name: 'Admin General',
+      email: 'admin@plegma.com',
+      phone: '+54 11 5555-1111',
+      address: 'Av. Santa Fe 1200, CABA',
+      role: 'admin',
+      status: 'Activo',
+      lastAccess: 'Hoy 10:30 hs',
+      customPermissions: {
+        canInlineCreate: true,
+        canCreate: true,
+        canEdit: true,
+        canDelete: true,
+        canApprovePayment: true,
+        canManageUsers: true,
+      },
+    },
+    {
+      id: 'usr-2',
+      dni: '38.987.654',
+      name: 'Jefe de Compras',
+      email: 'compras@plegma.com',
+      phone: '+54 11 4444-2222',
+      address: 'Calle Corrientes 3400, CABA',
+      role: 'compras',
+      status: 'Activo',
+      lastAccess: 'Ayer 18:15 hs',
+    },
+    {
+      id: 'usr-3',
+      dni: '40.555.777',
+      name: 'Recepcionista Depósito',
+      email: 'recepcion@plegma.com',
+      phone: '+54 11 3333-8888',
+      address: 'Honduras 5100, CABA',
+      role: 'recepcion',
+      status: 'Activo',
+      lastAccess: 'Hace 2 horas',
+    },
+  ]);
+
+  const [rolePermissions, setRolePermissions] = useState<Record<UserRole, UserPermissions>>(DEFAULT_ROLE_PERMISSIONS);
   const [providers, setProviders] = useState<Provider[]>(INITIAL_PROVIDERS);
   const [items, setItems] = useState<Item[]>(INITIAL_ITEMS);
   const [providerItems, setProviderItems] = useState<ProviderItemRelation[]>(INITIAL_PROVIDER_ITEMS);
@@ -99,10 +195,136 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [priceHistory, setPriceHistory] = useState<PriceHistoryEntry[]>(INITIAL_PRICE_HISTORY);
   const [expenses, setExpenses] = useState<ExpenseRecord[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(INITIAL_AUDIT_LOGS);
+  const [branding, setBranding] = useState<BrandingConfig>({
+    navigationStyle: 'top',
+    menuBgHex: '#0f172a',
+    menuTextHex: '#94a3b8',
+    menuActiveBgHex: '#f59e0b',
+    menuActiveTextHex: '#0f172a',
+    menuFontFamily: 'Inter',
+    menuFontSize: 'md',
+
+    appBgHex: '#f8fafc',
+    cardBgHex: '#ffffff',
+    cardBorderHex: '#e2e8f0',
+    primaryHex: '#f59e0b',
+    buttonBgHex: '#f59e0b',
+    buttonTextHex: '#0f172a',
+
+    buttonRadius: 'rounded-xl',
+    buttonStyleVariant: 'solid',
+    buttonShadowStyle: 'md',
+    buttonFontWeight: 'font-bold',
+    buttonHoverEffect: 'scale',
+
+    toggleStyle: 'pill',
+    toggleActiveHex: '#f59e0b',
+    toggleInactiveHex: '#cbd5e1',
+    toggleKnobSize: 'md',
+
+    fontFamily: 'Inter',
+    fontSizeScale: 'normal',
+    headingFontWeight: 'font-extrabold',
+  });
+
+  const updateBranding = (newConfig: Partial<BrandingConfig>) => {
+    setBranding((prev) => {
+      const updated = { ...prev, ...newConfig };
+      try {
+        localStorage.setItem('plegma_branding_config', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  };
+
+  useEffect(() => {
+    try {
+      const savedBranding = localStorage.getItem('plegma_branding_config');
+      if (savedBranding) {
+        setBranding((prev) => ({ ...prev, ...JSON.parse(savedBranding) }));
+      }
+    } catch (e) {}
+  }, []);
+
+  useEffect(() => {
+    if (branding) {
+      // 1. Dynamic Google Fonts Loader for App Font & Menu Font
+      const fontsToLoad = Array.from(new Set([branding.fontFamily || 'Inter', branding.menuFontFamily || 'Inter']));
+      fontsToLoad.forEach((fontName) => {
+        const formattedFontName = fontName.replace(/ /g, '+');
+        const fontLinkId = `google-font-${fontName.toLowerCase().replace(/ /g, '-')}`;
+        if (!document.getElementById(fontLinkId)) {
+          const linkElem = document.createElement('link');
+          linkElem.id = fontLinkId;
+          linkElem.rel = 'stylesheet';
+          linkElem.href = `https://fonts.googleapis.com/css2?family=${formattedFontName}:wght@300;400;500;600;700;800;900&display=swap`;
+          document.head.appendChild(linkElem);
+        }
+      });
+
+      document.body.style.fontFamily = `'${branding.fontFamily || 'Inter'}', system-ui, -apple-system, sans-serif`;
+
+      // 2. Set root CSS custom variables for live color application across the app
+      const root = document.documentElement;
+      if (branding.appBgHex) root.style.setProperty('--app-bg-hex', branding.appBgHex);
+      if (branding.menuBgHex) root.style.setProperty('--menu-bg-hex', branding.menuBgHex);
+      if (branding.menuTextHex) root.style.setProperty('--menu-text-hex', branding.menuTextHex);
+      if (branding.menuActiveBgHex) root.style.setProperty('--menu-active-bg-hex', branding.menuActiveBgHex);
+      if (branding.menuActiveTextHex) root.style.setProperty('--menu-active-text-hex', branding.menuActiveTextHex);
+      if (branding.primaryHex) root.style.setProperty('--primary-hex', branding.primaryHex);
+      if (branding.buttonBgHex) root.style.setProperty('--button-bg-hex', branding.buttonBgHex);
+      if (branding.buttonTextHex) root.style.setProperty('--button-text-hex', branding.buttonTextHex);
+    }
+  }, [branding]);
+
+  const addUser = (newUser: AppUser) => {
+    setUsers((prev) => [newUser, ...(prev || [])]);
+  };
+
+  const updateUser = (updatedUser: AppUser) => {
+    setUsers((prev) => (prev || []).map((u) => (u.id === updatedUser.id ? updatedUser : u)));
+  };
+
+  const deleteUser = (userId: string) => {
+    setUsers((prev) => (prev || []).filter((u) => u.id !== userId));
+  };
+
+  const updateUserCustomPermissions = (userId: string, perms: Partial<UserPermissions>) => {
+    setUsers((prev) =>
+      (prev || []).map((u) => (u.id === userId ? { ...u, customPermissions: { ...u.customPermissions, ...perms } } : u))
+    );
+  };
+
+  const hasPermission = (permission: keyof UserPermissions): boolean => {
+    if (!permission) return true;
+    const safeUsers = Array.isArray(users) ? users : [];
+    const activeUser =
+      safeUsers.find((u) => u && u.id === activeUserId) ||
+      safeUsers.find((u) => u && u.role === userRole);
+    if (activeUser?.customPermissions && activeUser.customPermissions[permission] !== undefined) {
+      return Boolean(activeUser.customPermissions[permission]);
+    }
+    const rolePerms =
+      (rolePermissions && rolePermissions[userRole]) ||
+      DEFAULT_ROLE_PERMISSIONS[userRole] ||
+      DEFAULT_ROLE_PERMISSIONS.admin;
+    return Boolean(rolePerms?.[permission]);
+  };
+
+  const updateRolePermissions = (role: UserRole, newPerms: Partial<UserPermissions>) => {
+    setRolePermissions((prev) => ({
+      ...prev,
+      [role]: {
+        ...prev[role],
+        ...newPerms,
+      },
+    }));
+  };
 
   // Load from LocalStorage
   useEffect(() => {
     try {
+      localStorage.removeItem('gastronomic_erp_state_v1');
       const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
@@ -540,6 +762,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       value={{
         userRole,
         setUserRole,
+        users,
+        addUser,
+        updateUser,
+        deleteUser,
+        updateUserCustomPermissions,
+        activeUserId,
+        setActiveUserId,
+        rolePermissions,
+        hasPermission,
+        updateRolePermissions,
         providers,
         items,
         providerItems,
@@ -549,6 +781,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         priceHistory,
         expenses,
         auditLogs,
+        branding,
+        updateBranding,
         getProviderState,
         getProviderActiveOrder,
         getProviderActiveCount,

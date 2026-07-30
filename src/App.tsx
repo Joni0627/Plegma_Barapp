@@ -13,13 +13,15 @@ import { PurchasingDashboard } from './components/PurchasingDashboard';
 import { SettingsModal } from './components/SettingsModal';
 import { AuditLogModal } from './components/AuditLogModal';
 import { ProviderEditModal } from './components/ProviderEditModal';
+import { MaestrosView } from './components/MaestrosView';
 import { Provider, Order, StockCount } from './types';
 
 function MainLayout() {
-  const { providers, orders } = useApp();
+  const { providers, orders, branding } = useApp();
+  const isSidebar = branding?.navigationStyle === 'sidebar';
 
   const [currentTab, setCurrentTab] = useState<
-    'kanban' | 'inbox' | 'items' | 'dashboard' | 'audit'
+    'kanban' | 'inbox' | 'items' | 'dashboard' | 'audit' | 'maestros'
   >('kanban');
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -82,8 +84,11 @@ function MainLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 font-sans text-slate-900 flex flex-col antialiased">
-      {/* Top Navbar */}
+    <div
+      style={{ backgroundColor: branding?.appBgHex || '#f8fafc' }}
+      className={`min-h-screen font-sans text-slate-900 flex ${isSidebar ? 'flex-col md:flex-row' : 'flex-col'} antialiased transition-colors`}
+    >
+      {/* Top Navbar or Sidebar */}
       <Navbar
         currentTab={currentTab}
         setCurrentTab={setCurrentTab}
@@ -123,6 +128,13 @@ function MainLayout() {
         {currentTab === 'dashboard' && <PurchasingDashboard />}
 
         {currentTab === 'audit' && <AuditLogModal />}
+
+        {currentTab === 'maestros' && (
+          <MaestrosView
+            onNavigateToItems={() => setCurrentTab('items')}
+            onOpenNewProvider={() => setEditingProvider('new')}
+          />
+        )}
       </main>
 
       {/* MODAL 1: Provider Sheet (Ficha Operativa del Proveedor) */}

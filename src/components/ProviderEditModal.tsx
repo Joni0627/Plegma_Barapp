@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Provider, DayOfWeek } from '../types';
+import { SelectWithInlineAdd } from './ui/Form';
 import { X, Building2, Save, Calendar, CreditCard } from 'lucide-react';
 
 interface ProviderEditModalProps {
@@ -80,7 +81,7 @@ export const ProviderEditModal: React.FC<ProviderEditModalProps> = ({
     <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4">
       <form
         onSubmit={handleSubmit}
-        className="bg-white rounded-3xl p-6 shadow-2xl w-full max-w-xl space-y-4 border border-slate-200"
+        className="bg-white rounded-3xl p-6 shadow-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto no-scrollbar space-y-4 border border-slate-200"
       >
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <h3 className="font-extrabold text-base text-slate-900 flex items-center gap-2">
@@ -107,18 +108,22 @@ export const ProviderEditModal: React.FC<ProviderEditModalProps> = ({
 
           <div>
             <label className="font-bold text-slate-700 block mb-1">Rubro / Categoría:</label>
-            <select
+            <SelectWithInlineAdd
+              options={[
+                { value: 'Lácteos y Quesos', label: 'Lácteos y Quesos' },
+                { value: 'Almacén y Secos', label: 'Almacén y Secos' },
+                { value: 'Carnicería y Fritos', label: 'Carnicería y Fritos' },
+                { value: 'Frutas y Verduras', label: 'Frutas y Verduras' },
+                { value: 'Bebidas y Cervezas', label: 'Bebidas y Cervezas' },
+                { value: 'Avícola y Huevos', label: 'Avícola y Huevos' },
+              ]}
               value={rubro}
               onChange={(e) => setRubro(e.target.value)}
-              className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-bold cursor-pointer"
-            >
-              <option value="Lácteos y Quesos">Lácteos y Quesos</option>
-              <option value="Almacén y Secos">Almacén y Secos</option>
-              <option value="Carnicería y Fritos">Carnicería y Fritos</option>
-              <option value="Frutas y Verduras">Frutas y Verduras</option>
-              <option value="Bebidas y Cervezas">Bebidas y Cervezas</option>
-              <option value="Avícola y Huevos">Avícola y Huevos</option>
-            </select>
+              onInlineAdd={(newRubro) => setRubro(newRubro)}
+              inlineAddTitle="Agregar Rubro"
+              inlineAddPlaceholder="Ej. Limpieza y Desinfectantes"
+              requiredPermission="canInlineCreate"
+            />
           </div>
 
           <div>

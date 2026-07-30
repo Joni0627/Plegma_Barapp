@@ -42,7 +42,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
     <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4">
       <form
         onSubmit={handleSave}
-        className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200"
+        className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto no-scrollbar border border-slate-200"
       >
         <div className="bg-slate-900 text-white p-5 flex items-center justify-between border-b border-slate-800">
           <div className="flex items-center gap-2.5">

@@ -204,3 +204,117 @@ export interface AuditLog {
   newValue?: string;
   details?: string;
 }
+
+export interface Client {
+  id: string;
+  code: string;
+  name: string;
+  clientType: 'Salon' | 'Barra' | 'Eventos' | 'Delivery' | 'Corporativo';
+  contactName: string;
+  phone: string;
+  email: string;
+  cuit?: string;
+  address?: string;
+  categoryId?: string;
+  active: boolean;
+}
+
+export interface AppUser {
+  id: string;
+  dni: string;
+  name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+  role: UserRole;
+  status: 'Activo' | 'Inactivo';
+  lastAccess?: string;
+  customPermissions?: Partial<UserPermissions>;
+}
+
+export interface UserPermissions {
+  canCreate: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
+  canInlineCreate: boolean;
+  canApprovePayment: boolean;
+  canManageUsers: boolean;
+}
+
+export interface RoleProfile {
+  id: string;
+  name: string;
+  roleKey: UserRole;
+  description: string;
+  permissions: UserPermissions;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  description: string;
+  itemCount: number;
+}
+
+export interface Warehouse {
+  id: string;
+  name: string;
+  code: string;
+  type: 'Frío' | 'Seco' | 'Cocina' | 'Barra' | 'General';
+  responsibleName?: string;
+  active: boolean;
+}
+
+export type NavigationStyle = 'top' | 'sidebar';
+export type ButtonStyleVariant = 'solid' | 'outline' | 'glass' | 'gradient';
+export type ButtonShadowStyle = 'none' | 'sm' | 'md' | 'xl';
+export type ButtonRadius = 'rounded-full' | 'rounded-2xl' | 'rounded-xl' | 'rounded-lg' | 'rounded-none';
+export type ToggleStyle = 'pill' | 'square' | 'ios';
+export type FontFamilyOption =
+  | 'Inter'
+  | 'Outfit'
+  | 'Roboto'
+  | 'Plus Jakarta Sans'
+  | 'Poppins'
+  | 'Space Grotesk'
+  | 'Montserrat'
+  | 'Playfair Display';
+
+export interface BrandingConfig {
+  // Navigation Layout
+  navigationStyle: NavigationStyle;
+
+  // Dedicated Menu Customization
+  menuBgHex: string;
+  menuTextHex: string;
+  menuActiveBgHex: string;
+  menuActiveTextHex: string;
+  menuFontFamily: FontFamilyOption;
+  menuFontSize: 'sm' | 'md' | 'lg';
+
+  // HEX Colors per Component
+  appBgHex: string;
+  cardBgHex: string;
+  cardBorderHex: string;
+  primaryHex: string;
+  buttonBgHex: string;
+  buttonTextHex: string;
+
+  // Advanced Button Properties
+  buttonRadius: ButtonRadius;
+  buttonStyleVariant: ButtonStyleVariant;
+  buttonShadowStyle: ButtonShadowStyle;
+  buttonFontWeight: 'font-normal' | 'font-medium' | 'font-semibold' | 'font-bold' | 'font-extrabold';
+  buttonHoverEffect: 'none' | 'scale' | 'lift' | 'glow';
+
+  // Toggle Switch Properties
+  toggleStyle: ToggleStyle;
+  toggleActiveHex: string;
+  toggleInactiveHex: string;
+  toggleKnobSize: 'sm' | 'md' | 'lg';
+
+  // Expanded Typography Options
+  fontFamily: FontFamilyOption;
+  fontSizeScale: 'compact' | 'normal' | 'large';
+  headingFontWeight: 'font-bold' | 'font-extrabold' | 'font-black';
+}

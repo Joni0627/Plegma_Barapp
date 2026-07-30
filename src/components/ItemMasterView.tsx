@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Item, Provider } from '../types';
+import { SelectWithInlineAdd } from './ui/Form';
 import {
   Package,
   Plus,
@@ -293,7 +294,7 @@ export const ItemMasterView: React.FC = () => {
         <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4">
           <form
             onSubmit={handleSaveItem}
-            className="bg-white rounded-3xl p-6 shadow-2xl w-full max-w-lg space-y-4 border border-slate-200"
+            className="bg-white rounded-3xl p-6 shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto no-scrollbar space-y-4 border border-slate-200"
           >
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="font-extrabold text-base text-slate-900">Registrar Nuevo Insumo</h3>
@@ -316,19 +317,23 @@ export const ItemMasterView: React.FC = () => {
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Categoría:</label>
-                <select
+                <label className="font-bold text-slate-700 block mb-1">Categoría / Rubro:</label>
+                <SelectWithInlineAdd
+                  options={[
+                    { value: 'Lácteos', label: 'Lácteos' },
+                    { value: 'Almacén', label: 'Almacén' },
+                    { value: 'Carnicería', label: 'Carnicería' },
+                    { value: 'Verdulería', label: 'Verdulería' },
+                    { value: 'Bebidas', label: 'Bebidas' },
+                    { value: 'Avícola', label: 'Avícola' },
+                  ]}
                   value={formCategory}
                   onChange={(e) => setFormCategory(e.target.value)}
-                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl"
-                >
-                  <option value="Lácteos">Lácteos</option>
-                  <option value="Almacén">Almacén</option>
-                  <option value="Carnicería">Carnicería</option>
-                  <option value="Verdulería">Verdulería</option>
-                  <option value="Bebidas">Bebidas</option>
-                  <option value="Avícola">Avícola</option>
-                </select>
+                  onInlineAdd={(newCat) => setFormCategory(newCat)}
+                  inlineAddTitle="Agregar Rubro"
+                  inlineAddPlaceholder="Ej. Pescadería"
+                  requiredPermission="canInlineCreate"
+                />
               </div>
 
               <div>
@@ -374,17 +379,13 @@ export const ItemMasterView: React.FC = () => {
 
               <div>
                 <label className="font-bold text-slate-700 block mb-1">Proveedor Principal:</label>
-                <select
+                <SelectWithInlineAdd
+                  options={providers.map((p) => ({ value: p.id, label: p.name }))}
                   value={formProviderId}
                   onChange={(e) => setFormProviderId(e.target.value)}
-                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl"
-                >
-                  {providers.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
+                  placeholder="Seleccionar Proveedor..."
+                  requiredPermission="canInlineCreate"
+                />
               </div>
             </div>
 
