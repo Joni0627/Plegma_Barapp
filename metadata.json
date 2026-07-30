@@ -1,0 +1,6 @@
+{
+  "name": "Gastronomic Procurement & Stock ERP",
+  "description": "Módulo integral de abastecimiento, compras, conteo de stock, recepción de mercadería y gestión de pagos para locales gastronómicos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
