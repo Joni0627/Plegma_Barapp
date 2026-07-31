@@ -343,9 +343,17 @@ export type FontFamilyOption =
   | 'Poppins'
   | 'Space Grotesk'
   | 'Montserrat'
-  | 'Playfair Display';
+  | 'Playfair Display'
+  | 'Raleway'
+  | 'Oswald'
+  | 'Lora'
+  | 'Fira Code'
+  | 'Cinzel';
 
 export interface BrandingConfig {
+  // Brand Logo
+  logoUrl?: string;
+
   // Navigation Layout
   navigationStyle: NavigationStyle;
 
@@ -371,12 +379,30 @@ export interface BrandingConfig {
   buttonShadowStyle: ButtonShadowStyle;
   buttonFontWeight: 'font-normal' | 'font-medium' | 'font-semibold' | 'font-bold' | 'font-extrabold';
   buttonHoverEffect: 'none' | 'scale' | 'lift' | 'glow';
+  buttonFontFamily?: FontFamilyOption;
 
   // Toggle Switch Properties
   toggleStyle: ToggleStyle;
   toggleActiveHex: string;
   toggleInactiveHex: string;
   toggleKnobSize: 'sm' | 'md' | 'lg';
+
+  // Menu Icon Customization
+  menuIconStrokeWidth?: number;
+  menuIconHex?: string;
+  menuActiveIconHex?: string;
+  submenuIconHex?: string;
+  submenuActiveIconHex?: string;
+
+  // Kanban Board Customization
+  kanbanColumnBgHex?: string;
+  kanbanHeaderBgHex?: string;
+  kanbanCardBgHex?: string;
+  kanbanCardBorderHex?: string;
+  kanbanDraftHex?: string;
+  kanbanPendingHex?: string;
+  kanbanOrderedHex?: string;
+  kanbanReceivedHex?: string;
 
   // Expanded Typography Options
   fontFamily: FontFamilyOption;

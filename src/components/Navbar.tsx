@@ -30,6 +30,7 @@ interface NavbarProps {
   onOpenSettings: () => void;
   searchQuery: string;
   setSearchQuery: (q: string) => void;
+  maestrosSubTab?: string | null;
 }
 
 export interface NavSubItem {
@@ -92,6 +93,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   currentTab,
   setCurrentTab,
   onOpenSettings,
+  maestrosSubTab,
 }) => {
   const { userRole, setUserRole, receptionHours, resetToDefaults, branding } = useApp();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -117,6 +119,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   const isSidebar = branding?.navigationStyle === 'sidebar';
+  const strokeWidth = branding?.menuIconStrokeWidth ?? 2;
 
   const menuContainerStyle: React.CSSProperties = {
     backgroundColor: branding?.menuBgHex || '#0f172a',
@@ -137,6 +140,22 @@ export const Navbar: React.FC<NavbarProps> = ({
     };
   };
 
+  const getNavIconColor = (isActive: boolean): string | undefined => {
+    if (isActive) {
+      return branding?.menuActiveIconHex || branding?.menuActiveTextHex || undefined;
+    }
+    return branding?.menuIconHex || branding?.menuTextHex || undefined;
+  };
+
+  const getSubmenuIconColor = (isActive: boolean): string | undefined => {
+    if (isActive) {
+      return branding?.submenuActiveIconHex || branding?.menuActiveIconHex || branding?.menuActiveTextHex || undefined;
+    }
+    return branding?.submenuIconHex || branding?.menuIconHex || branding?.menuTextHex || undefined;
+  };
+
+  const effectiveTab = (currentTab === 'maestros' && maestrosSubTab) ? `maestros-${maestrosSubTab}` : currentTab;
+
   // Active section helper
   const currentSection = NAV_SECTIONS.find((sec) =>
     sec.items.some((item) => item.id === currentTab)
@@ -156,9 +175,17 @@ export const Navbar: React.FC<NavbarProps> = ({
           {!isSidebarCollapsed ? (
             <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-800/80 transition-all duration-300">
               <div className="flex items-center gap-3 overflow-hidden">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center font-bold text-white shadow-lg shadow-orange-500/20 shrink-0">
-                  <Store className="w-5 h-5" />
-                </div>
+                {branding?.logoUrl ? (
+                  <img
+                    src={branding.logoUrl}
+                    alt="Logo"
+                    className="w-10 h-10 rounded-xl object-cover shrink-0 border border-white/20 shadow-md"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center font-bold text-white shadow-lg shadow-orange-500/20 shrink-0">
+                    <Store className="w-5 h-5" strokeWidth={strokeWidth} />
+                  </div>
+                )}
                 <div className="transition-opacity duration-300 whitespace-nowrap">
                   <h1 className="font-bold text-base tracking-tight leading-none" style={{ color: branding?.menuTextHex || '#ffffff' }}>
                     PLEGMA Gastro
@@ -179,9 +206,17 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           ) : (
             <div className="flex flex-col items-center gap-3 pb-3 border-b border-slate-800/80 transition-all duration-300">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center font-bold text-white shadow-lg shadow-orange-500/20 shrink-0">
-                <Store className="w-5 h-5" />
-              </div>
+              {branding?.logoUrl ? (
+                <img
+                  src={branding.logoUrl}
+                  alt="Logo"
+                  className="w-10 h-10 rounded-xl object-cover shrink-0 border border-white/20 shadow-md"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center font-bold text-white shadow-lg shadow-orange-500/20 shrink-0">
+                  <Store className="w-5 h-5" strokeWidth={strokeWidth} />
+                </div>
+              )}
               <button
                 onClick={() => setIsSidebarCollapsed(false)}
                 className="w-8 h-8 rounded-xl bg-slate-800/80 text-slate-300 hover:text-white hover:bg-slate-700 transition-all duration-200 border border-slate-700/60 flex items-center justify-center shrink-0"
@@ -196,7 +231,9 @@ export const Navbar: React.FC<NavbarProps> = ({
           <nav className="space-y-3 pt-1">
             {NAV_SECTIONS.map((section) => {
               const SectionIcon = section.icon;
-              const isSectionActive = section.items.some((item) => item.id === currentTab);
+              const isSectionActive =
+                section.id === currentTab ||
+                section.items.some((item) => item.id === effectiveTab || item.id === currentTab);
               const isExpanded = expandedSidebarSections[section.id];
 
               return (
@@ -212,20 +249,22 @@ export const Navbar: React.FC<NavbarProps> = ({
                             toggleSidebarSection(section.id);
                           }
                         }}
+                        style={getNavItemStyle(isSectionActive)}
                         className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all duration-200 ${
                           isSectionActive
-                            ? 'text-amber-400 bg-slate-800/80 border border-slate-700/80 shadow-xs'
-                            : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
+                            ? 'shadow-xs border border-white/20'
+                            : 'hover:opacity-100 hover:bg-white/10'
                         }`}
                       >
                         <div className="flex items-center gap-2 truncate">
-                          <SectionIcon className="w-4 h-4 text-amber-400 shrink-0" />
+                          <SectionIcon className="w-4 h-4 shrink-0" style={{ color: getNavIconColor(isSectionActive) }} strokeWidth={strokeWidth} />
                           <span className="truncate">{section.label}</span>
                         </div>
                         {section.items.length > 1 && (
                           <ChevronDown
-                            className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 shrink-0 ${
-                              isExpanded ? 'rotate-180 text-amber-400' : ''
+                            style={{ color: getNavIconColor(isSectionActive) }}
+                            className={`w-3.5 h-3.5 transition-transform duration-200 shrink-0 ${
+                              isExpanded ? 'rotate-180' : ''
                             }`}
                           />
                         )}
@@ -233,10 +272,13 @@ export const Navbar: React.FC<NavbarProps> = ({
 
                       {/* Cascading Submenu Options (Indented Branch) */}
                       {(isExpanded || section.items.length === 1) && (
-                        <div className="ml-3.5 pl-2.5 border-l-2 border-amber-500/30 space-y-1 mt-1.5 transition-all">
+                        <div
+                          style={{ borderLeftColor: branding?.menuActiveBgHex || '#f59e0b' }}
+                          className="ml-3.5 pl-2.5 border-l-2 space-y-1 mt-1.5 transition-all"
+                        >
                           {section.items.map((item) => {
                             const ItemIcon = item.icon;
-                            const isActive = currentTab === item.id;
+                            const isActive = currentTab === item.id || effectiveTab === item.id;
 
                             return (
                               <button
@@ -250,7 +292,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                                     : 'hover:opacity-100 hover:bg-white/10'
                                 }`}
                               >
-                                <ItemIcon className="w-4 h-4 shrink-0" />
+                                <ItemIcon className="w-4 h-4 shrink-0" style={{ color: getSubmenuIconColor(isActive) }} strokeWidth={strokeWidth} />
                                 <span className="whitespace-nowrap truncate">{item.label}</span>
                               </button>
                             );
@@ -352,9 +394,17 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center justify-between h-16 gap-4">
           {/* Logo & Brand Left */}
           <div className="flex items-center gap-3 shrink-0">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center font-bold text-white shadow-lg shadow-orange-500/20 shrink-0">
-              <Store className="w-5 h-5" />
-            </div>
+            {branding?.logoUrl ? (
+              <img
+                src={branding.logoUrl}
+                alt="Logo"
+                className="w-10 h-10 rounded-xl object-cover shrink-0 border border-white/20 shadow-md"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center font-bold text-white shadow-lg shadow-orange-500/20 shrink-0">
+                <Store className="w-5 h-5" strokeWidth={strokeWidth} />
+              </div>
+            )}
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="font-bold text-lg tracking-tight leading-none" style={{ color: branding?.menuTextHex || '#ffffff' }}>
@@ -371,7 +421,9 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="hidden md:flex items-center gap-1.5 relative">
             {NAV_SECTIONS.map((section) => {
               const SectionIcon = section.icon;
-              const isSectionActive = section.items.some((item) => item.id === currentTab);
+              const isSectionActive =
+                section.id === currentTab ||
+                section.items.some((item) => item.id === effectiveTab || item.id === currentTab);
               const isDropdownOpen = activeDropdown === section.id;
 
               return (
@@ -388,16 +440,18 @@ export const Navbar: React.FC<NavbarProps> = ({
                     onMouseEnter={() => {
                       if (section.items.length > 1) setActiveDropdown(section.id);
                     }}
+                    style={getNavItemStyle(isSectionActive)}
                     className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
                       isSectionActive
-                        ? 'bg-amber-500 text-slate-900 shadow-md shadow-amber-500/20'
-                        : 'hover:bg-slate-800 text-slate-300 hover:text-white'
+                        ? 'shadow-md shadow-black/10'
+                        : 'hover:opacity-80'
                     }`}
                   >
-                    <SectionIcon className="w-4 h-4" />
+                    <SectionIcon className="w-4 h-4 shrink-0" style={{ color: getNavIconColor(isSectionActive) }} strokeWidth={strokeWidth} />
                     <span>{section.label}</span>
                     {section.items.length > 1 && (
                       <ChevronDown
+                        style={{ color: getNavIconColor(isSectionActive) }}
                         className={`w-3.5 h-3.5 transition-transform ${
                           isDropdownOpen ? 'rotate-180' : ''
                         }`}
@@ -413,7 +467,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     >
                       {section.items.map((item) => {
                         const ItemIcon = item.icon;
-                        const isSubActive = currentTab === item.id;
+                        const isSubActive = currentTab === item.id || effectiveTab === item.id;
                         return (
                           <button
                             key={item.id}
@@ -421,16 +475,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                               setCurrentTab(item.id);
                               setActiveDropdown(null);
                             }}
+                            style={getNavItemStyle(isSubActive)}
                             className={`w-full flex items-start gap-3 p-2.5 rounded-xl text-left transition ${
                               isSubActive
-                                ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
-                                : 'hover:bg-slate-800 text-slate-300 hover:text-white'
+                                ? 'shadow-xs border border-white/10'
+                                : 'hover:opacity-80'
                             }`}
                           >
-                            <ItemIcon className="w-4 h-4 mt-0.5 text-amber-400 shrink-0" />
+                            <ItemIcon className="w-4 h-4 mt-0.5 shrink-0" style={{ color: getSubmenuIconColor(isSubActive) }} strokeWidth={strokeWidth} />
                             <div>
                               <div className="font-bold text-xs">{item.label}</div>
-                              <div className="text-[10px] text-slate-400 leading-tight">
+                              <div className="text-[10px] opacity-80 leading-tight">
                                 {item.description}
                               </div>
                             </div>
@@ -533,7 +588,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   <div className="space-y-1.5">
                     {section.items.map((item) => {
                       const ItemIcon = item.icon;
-                      const isSubActive = currentTab === item.id;
+                      const isSubActive = currentTab === item.id || effectiveTab === item.id;
                       return (
                         <button
                           key={item.id}
@@ -541,13 +596,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                             setCurrentTab(item.id);
                             setIsTopNavCollapsed(true);
                           }}
+                          style={getNavItemStyle(isSubActive)}
                           className={`w-full flex items-center gap-2.5 p-2 rounded-xl text-left text-xs font-bold transition ${
                             isSubActive
-                              ? 'bg-amber-500 text-slate-900'
-                              : 'bg-slate-800/60 text-slate-300 hover:bg-slate-800 hover:text-white'
+                              ? 'shadow-xs'
+                              : 'opacity-80 hover:opacity-100'
                           }`}
                         >
-                          <ItemIcon className="w-4 h-4 shrink-0" />
+                          <ItemIcon className="w-4 h-4 shrink-0" style={{ color: getSubmenuIconColor(isSubActive) }} strokeWidth={strokeWidth} />
                           <span className="truncate">{item.label}</span>
                         </button>
                       );

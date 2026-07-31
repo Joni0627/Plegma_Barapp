@@ -240,6 +240,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     toggleInactiveHex: '#cbd5e1',
     toggleKnobSize: 'md',
 
+    menuIconStrokeWidth: 2,
+    menuIconHex: '#94a3b8',
+    menuActiveIconHex: '#0f172a',
+    submenuIconHex: '#94a3b8',
+    submenuActiveIconHex: '#0f172a',
+
+    kanbanColumnBgHex: '#f1f5f9',
+    kanbanHeaderBgHex: '#e2e8f0',
+    kanbanCardBgHex: '#ffffff',
+    kanbanCardBorderHex: '#e2e8f0',
+    kanbanDraftHex: '#f59e0b',
+    kanbanPendingHex: '#3b82f6',
+    kanbanOrderedHex: '#8b5cf6',
+    kanbanReceivedHex: '#10b981',
+
     fontFamily: 'Inter',
     fontSizeScale: 'normal',
     headingFontWeight: 'font-extrabold',

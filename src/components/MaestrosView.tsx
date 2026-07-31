@@ -38,6 +38,7 @@ import {
   DollarSign,
   Paperclip,
   MessageSquare,
+  Kanban,
 } from 'lucide-react';
 
 interface MaestrosViewProps {
@@ -1763,15 +1764,6 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
           {/* Header Sub-view con Botón Volver */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
             <div className="flex items-center gap-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setActiveSubView(null)}
-                leftIcon={<ArrowLeft className="w-4 h-4" />}
-              >
-                Volver a Maestros
-              </Button>
-              <div className="h-6 w-px bg-slate-200 hidden sm:block" />
               <div>
                 <h2 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
                   <Users className="w-5 h-5 text-emerald-600" />
@@ -1810,15 +1802,6 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
           {/* Header Sub-view con Botón Volver */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
             <div className="flex items-center gap-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setActiveSubView(null)}
-                leftIcon={<ArrowLeft className="w-4 h-4" />}
-              >
-                Volver a Maestros
-              </Button>
-              <div className="h-6 w-px bg-slate-200 hidden sm:block" />
               <div>
                 <h2 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
                   <Store className="w-5 h-5 text-indigo-600" />
@@ -1857,15 +1840,6 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
           {/* Header Sub-view con Botón Volver */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
             <div className="flex items-center gap-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setActiveSubView(null)}
-                leftIcon={<ArrowLeft className="w-4 h-4" />}
-              >
-                Volver a Maestros
-              </Button>
-              <div className="h-6 w-px bg-slate-200 hidden sm:block" />
               <div>
                 <h2 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
                   <UserCheck className="w-5 h-5 text-indigo-600" />
@@ -1904,15 +1878,6 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
           {/* Header Sub-view con Botón Volver */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
             <div className="flex items-center gap-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setActiveSubView(null)}
-                leftIcon={<ArrowLeft className="w-4 h-4" />}
-              >
-                Volver a Maestros
-              </Button>
-              <div className="h-6 w-px bg-slate-200 hidden sm:block" />
               <div>
                 <h2 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
                   <ShieldCheck className="w-5 h-5 text-cyan-600" />
@@ -1995,15 +1960,6 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
           {/* Header Sub-view con Botón Volver */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
             <div className="flex items-center gap-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setActiveSubView(null)}
-                leftIcon={<ArrowLeft className="w-4 h-4" />}
-              >
-                Volver a Maestros
-              </Button>
-              <div className="h-6 w-px bg-slate-200 hidden sm:block" />
               <div>
                 <h2 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
                   <Tag className="w-5 h-5 text-purple-600" />
@@ -2042,15 +1998,6 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
           {/* Header Sub-view con Botón Volver */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
             <div className="flex items-center gap-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setActiveSubView(null)}
-                leftIcon={<ArrowLeft className="w-4 h-4" />}
-              >
-                Volver a Maestros
-              </Button>
-              <div className="h-6 w-px bg-slate-200 hidden sm:block" />
               <div>
                 <h2 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
                   <Building2 className="w-5 h-5 text-rose-600" />
@@ -2086,24 +2033,17 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
       {/* VISTA 6: BRANDING & IDENTIDAD VISUAL */}
       {activeSubView === 'branding' && (
         <div className="space-y-6 animate-fadeIn">
-          {/* Header Sub-view con Botón Volver */}
+          {/* Header Sub-view con Único Botón de Guardado Principal */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
             <div className="flex items-center gap-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setActiveSubView(null)}
-                leftIcon={<ArrowLeft className="w-4 h-4" />}
-              >
-                Volver a Maestros
-              </Button>
-              <div className="h-6 w-px bg-slate-200 hidden sm:block" />
               <div>
                 <h2 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
                   <Palette className="w-5 h-5 text-pink-600" />
-                  <span>Branding, Colores & Estudio de Diseño UI</span>
+                  <span>Branding, Colores & Personalización de Interfaz</span>
                 </h2>
-                <p className="text-xs text-slate-500">Configura la paleta hexadecimal por componente, estilos de botones, toggles y tipografías en tiempo real.</p>
+                <p className="text-xs text-slate-500">
+                  Personaliza la apariencia gráfica del sistema. La previsualización de la derecha refleja los cambios en tiempo real.
+                </p>
               </div>
             </div>
 
@@ -2112,29 +2052,115 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
               size="md"
               leftIcon={<CheckCircle2 className="w-4 h-4" />}
               onClick={() => {
-                showToast('Configuración de branding guardada exitosamente.', 'success');
+                showToast('Configuración de marca e identidad visual guardada exitosamente.', 'success');
               }}
             >
-              Guardar Configuración
+              Guardar Configuración de Marca
             </Button>
           </div>
 
           {/* Grid Principal de Configuración */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Panel de Opciones (2 Columnas) */}
+            {/* Panel de Opciones Organizadas (2 Columnas) */}
             <div className="lg:col-span-2 space-y-6">
+              {/* BLOQUE 0: LOGOTIPO PRINCIPAL DE LA APP */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <Store className="w-4 h-4 text-amber-600" />
+                    <h3 className="font-bold text-slate-900 text-sm">0. Logotipo Principal de la App</h3>
+                  </div>
+                  {branding.logoUrl && (
+                    <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+                      Logo Personalizado Activo
+                    </span>
+                  )}
+                </div>
 
-              {/* SECCIÓN 1: CONFIGURACIÓN EXCLUSIVA DEL MENÚ DE NAVEGACIÓN */}
+                <div className="space-y-4 text-xs">
+                  {/* Vista Previa Actual del Logo */}
+                  <div className="flex items-center gap-4 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <div className="w-14 h-14 rounded-2xl bg-slate-900 border border-slate-700 flex items-center justify-center overflow-hidden shrink-0 shadow-md">
+                      {branding.logoUrl ? (
+                        <img src={branding.logoUrl} alt="Logo preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <Store className="w-7 h-7 text-amber-400" />
+                      )}
+                    </div>
+                    <div className="space-y-1 flex-1">
+                      <span className="font-bold text-slate-900 block">
+                        {branding.logoUrl ? 'Logo de Marca Personalizado' : 'Logo Predeterminado (Ícono Store)'}
+                      </span>
+                      <p className="text-[11px] text-slate-500">
+                        Este logotipo se visualizará en la barra superior/lateral de menú de toda la aplicación.
+                      </p>
+                      {branding.logoUrl && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            updateBranding({ logoUrl: '' });
+                            showToast('Logo removido. Se restauró el ícono por defecto.', 'info');
+                          }}
+                          className="text-[11px] text-rose-600 font-bold hover:underline block pt-1"
+                        >
+                          Restaurar Logo Predeterminado
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Input Carga por URL & Carga por Archivo Local */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Opción 1: Carga por URL */}
+                    <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                      <label className="font-semibold text-slate-800 block">Opción A: Enlace / URL de Imagen</label>
+                      <input
+                        type="url"
+                        placeholder="https://ejemplo.com/logo.png"
+                        value={branding.logoUrl || ''}
+                        onChange={(e) => updateBranding({ logoUrl: e.target.value })}
+                        className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-mono"
+                      />
+                    </div>
+
+                    {/* Opción 2: Carga de Archivo Local */}
+                    <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                      <label className="font-semibold text-slate-800 block">Opción B: Subir Archivo Local (PNG, JPG, SVG)</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (evt) => {
+                              const base64 = evt.target?.result as string;
+                              if (base64) {
+                                updateBranding({ logoUrl: base64 });
+                                showToast('Logotipo cargado exitosamente desde archivo local.', 'success');
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                        className="w-full text-xs text-slate-600 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-100 file:text-amber-900 hover:file:bg-amber-200 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* BLOQUE 1: DISPOSICIÓN Y MENÚ DE NAVEGACIÓN */}
               <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                 <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
                   <Layout className="w-4 h-4 text-indigo-600" />
-                  <h3 className="font-bold text-slate-900 text-sm">Configuración Individual del Menú de Navegación</h3>
+                  <h3 className="font-bold text-slate-900 text-sm">1. Disposición y Colores del Menú de Navegación</h3>
                 </div>
 
                 <div className="space-y-4 text-xs">
                   {/* Estilo de Disposición (Superior vs Lateral) */}
                   <div className="space-y-2">
-                    <label className="font-semibold text-slate-800 block">Disposición de Navegación</label>
+                    <label className="font-semibold text-slate-800 block">Disposición del Menú</label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <button
                         type="button"
@@ -2151,6 +2177,7 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
                         <Layout className="w-4 h-4 text-indigo-600 shrink-0" />
                         <div>
                           <span className="block text-xs text-slate-900">Menú Superior (Barra Horizontal)</span>
+                          <span className="text-[10px] text-slate-500 font-normal">Navegación con submenús desplegables superiores</span>
                         </div>
                       </button>
 
@@ -2168,13 +2195,41 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
                       >
                         <Layout className="w-4 h-4 text-indigo-600 rotate-90 shrink-0" />
                         <div>
-                          <span className="block text-xs text-slate-900">Menú Lateral (Sidebar Vertical)</span>
+                          <span className="block text-xs text-slate-900">Menú Lateral (Sidebar en Cascada)</span>
+                          <span className="text-[10px] text-slate-500 font-normal">Panel vertical con acordeón en cascada</span>
                         </div>
                       </button>
                     </div>
                   </div>
 
-                  {/* Colores Hex Exclusivos del Menú */}
+                  {/* Grosor del Contorno de Íconos del Menú */}
+                  <div className="space-y-2 pt-2 border-t border-slate-100">
+                    <label className="font-semibold text-slate-800 block">Grosor de Contorno de Íconos del Menú (Stroke Width)</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                      {[
+                        { width: 1.25, label: 'Super Fino (1.25px)' },
+                        { width: 1.5, label: 'Fino (1.5px)' },
+                        { width: 2, label: 'Estándar (2px)' },
+                        { width: 2.5, label: 'Grueso (2.5px)' },
+                        { width: 3, label: 'Extra Grueso (3px)' },
+                      ].map((sw) => (
+                        <button
+                          key={sw.width}
+                          type="button"
+                          onClick={() => updateBranding({ menuIconStrokeWidth: sw.width })}
+                          className={`p-2.5 rounded-xl border text-center transition ${
+                            (branding.menuIconStrokeWidth ?? 2) === sw.width
+                              ? 'border-indigo-500 bg-indigo-50 text-indigo-900 font-bold ring-2 ring-indigo-500/20'
+                              : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                          }`}
+                        >
+                          {sw.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Colores Hex del Menú */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
                       <label className="font-semibold text-slate-800 block">Fondo del Menú (#HEX)</label>
@@ -2189,13 +2244,13 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
                           type="text"
                           value={branding.menuBgHex || '#0f172a'}
                           onChange={(e) => updateBranding({ menuBgHex: e.target.value })}
-                          className="flex-1 uppercase font-mono px-2.5 py-1 rounded-lg border border-slate-300 text-xs font-bold text-slate-900"
+                          className="flex-1 px-3 py-1 border border-slate-300 rounded-lg text-xs font-mono font-bold"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
-                      <label className="font-semibold text-slate-800 block">Texto Inactivo de Menú (#HEX)</label>
+                      <label className="font-semibold text-slate-800 block">Texto Inactivo (#HEX)</label>
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
@@ -2207,13 +2262,13 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
                           type="text"
                           value={branding.menuTextHex || '#94a3b8'}
                           onChange={(e) => updateBranding({ menuTextHex: e.target.value })}
-                          className="flex-1 uppercase font-mono px-2.5 py-1 rounded-lg border border-slate-300 text-xs font-bold text-slate-900"
+                          className="flex-1 px-3 py-1 border border-slate-300 rounded-lg text-xs font-mono font-bold"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
-                      <label className="font-semibold text-slate-800 block">Fondo Ítem Activo (#HEX)</label>
+                      <label className="font-semibold text-slate-800 block">Fondo Pestaña Activa (#HEX)</label>
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
@@ -2225,13 +2280,13 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
                           type="text"
                           value={branding.menuActiveBgHex || '#f59e0b'}
                           onChange={(e) => updateBranding({ menuActiveBgHex: e.target.value })}
-                          className="flex-1 uppercase font-mono px-2.5 py-1 rounded-lg border border-slate-300 text-xs font-bold text-slate-900"
+                          className="flex-1 px-3 py-1 border border-slate-300 rounded-lg text-xs font-mono font-bold"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
-                      <label className="font-semibold text-slate-800 block">Texto Ítem Activo (#HEX)</label>
+                      <label className="font-semibold text-slate-800 block">Texto Pestaña Activa (#HEX)</label>
                       <div className="flex items-center gap-2">
                         <input
                           type="color"
@@ -2243,174 +2298,142 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
                           type="text"
                           value={branding.menuActiveTextHex || '#0f172a'}
                           onChange={(e) => updateBranding({ menuActiveTextHex: e.target.value })}
-                          className="flex-1 uppercase font-mono px-2.5 py-1 rounded-lg border border-slate-300 text-xs font-bold text-slate-900"
+                          className="flex-1 px-3 py-1 border border-slate-300 rounded-lg text-xs font-mono font-bold"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                      <label className="font-semibold text-slate-800 block">Íconos Inactivos (#HEX)</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={branding.menuIconHex || '#94a3b8'}
+                          onChange={(e) => updateBranding({ menuIconHex: e.target.value })}
+                          className="w-8 h-8 rounded-lg cursor-pointer border-0 p-0"
+                        />
+                        <input
+                          type="text"
+                          value={branding.menuIconHex || '#94a3b8'}
+                          onChange={(e) => updateBranding({ menuIconHex: e.target.value })}
+                          className="flex-1 px-3 py-1 border border-slate-300 rounded-lg text-xs font-mono font-bold"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                      <label className="font-semibold text-slate-800 block">Íconos Menú Activos (#HEX)</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={branding.menuActiveIconHex || '#0f172a'}
+                          onChange={(e) => updateBranding({ menuActiveIconHex: e.target.value })}
+                          className="w-8 h-8 rounded-lg cursor-pointer border-0 p-0"
+                        />
+                        <input
+                          type="text"
+                          value={branding.menuActiveIconHex || '#0f172a'}
+                          onChange={(e) => updateBranding({ menuActiveIconHex: e.target.value })}
+                          className="flex-1 px-3 py-1 border border-slate-300 rounded-lg text-xs font-mono font-bold"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                      <label className="font-semibold text-slate-800 block">Íconos Submenú Inactivos (#HEX)</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={branding.submenuIconHex || '#94a3b8'}
+                          onChange={(e) => updateBranding({ submenuIconHex: e.target.value })}
+                          className="w-8 h-8 rounded-lg cursor-pointer border-0 p-0"
+                        />
+                        <input
+                          type="text"
+                          value={branding.submenuIconHex || '#94a3b8'}
+                          onChange={(e) => updateBranding({ submenuIconHex: e.target.value })}
+                          className="flex-1 px-3 py-1 border border-slate-300 rounded-lg text-xs font-mono font-bold"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                      <label className="font-semibold text-slate-800 block">Íconos Submenú Activos (#HEX)</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={branding.submenuActiveIconHex || '#0f172a'}
+                          onChange={(e) => updateBranding({ submenuActiveIconHex: e.target.value })}
+                          className="w-8 h-8 rounded-lg cursor-pointer border-0 p-0"
+                        />
+                        <input
+                          type="text"
+                          value={branding.submenuActiveIconHex || '#0f172a'}
+                          onChange={(e) => updateBranding({ submenuActiveIconHex: e.target.value })}
+                          className="flex-1 px-3 py-1 border border-slate-300 rounded-lg text-xs font-mono font-bold"
                         />
                       </div>
                     </div>
                   </div>
-
-                  {/* Fuente Exclusiva del Menú */}
-                  <div className="space-y-2 pt-2 border-t border-slate-100">
-                    <label className="font-semibold text-slate-800 block">Fuente Exclusiva para el Menú</label>
-                    <select
-                      value={branding.menuFontFamily || 'Inter'}
-                      onChange={(e) => updateBranding({ menuFontFamily: e.target.value as any })}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 text-xs"
-                    >
-                      <option value="Inter">Inter (Modern UI)</option>
-                      <option value="Outfit">Outfit (Gastronómico)</option>
-                      <option value="Roboto">Roboto (Google Tech)</option>
-                      <option value="Plus Jakarta Sans">Plus Jakarta Sans</option>
-                      <option value="Poppins">Poppins (Redondeada)</option>
-                      <option value="Space Grotesk">Space Grotesk (Futurista)</option>
-                      <option value="Montserrat">Montserrat (Elegante)</option>
-                      <option value="Playfair Display">Playfair Display (Gourmet)</option>
-                    </select>
-                  </div>
                 </div>
               </div>
 
-              {/* SECCIÓN 2: PALETA DE COLORES GENERALES (#HEX) */}
+              {/* BLOQUE 2: ESTILOS DE BOTONES Y BOTÓN PRINCIPAL */}
               <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                 <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-                  <Palette className="w-4 h-4 text-amber-500" />
-                  <h3 className="font-bold text-slate-900 text-sm">Paleta de Colores Generales (#HEX)</h3>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                  {/* Color Primario Marca */}
-                  <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
-                    <label className="font-semibold text-slate-800 block">Color Acento Primario</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={branding.primaryHex || '#f59e0b'}
-                        onChange={(e) => updateBranding({ primaryHex: e.target.value })}
-                        className="w-9 h-9 rounded-lg cursor-pointer border-0 p-0"
-                      />
-                      <input
-                        type="text"
-                        value={branding.primaryHex || '#f59e0b'}
-                        onChange={(e) => updateBranding({ primaryHex: e.target.value })}
-                        className="flex-1 uppercase font-mono px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Color Fondo App */}
-                  <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
-                    <label className="font-semibold text-slate-800 block">Color Fondo App (Body)</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={branding.appBgHex || '#f8fafc'}
-                        onChange={(e) => updateBranding({ appBgHex: e.target.value })}
-                        className="w-9 h-9 rounded-lg cursor-pointer border-0 p-0"
-                      />
-                      <input
-                        type="text"
-                        value={branding.appBgHex || '#f8fafc'}
-                        onChange={(e) => updateBranding({ appBgHex: e.target.value })}
-                        className="flex-1 uppercase font-mono px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Color Fondo Menú */}
-                  <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
-                    <label className="font-semibold text-slate-800 block">Fondo de Menú / Navbar</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={branding.menuBgHex || '#0f172a'}
-                        onChange={(e) => updateBranding({ menuBgHex: e.target.value })}
-                        className="w-9 h-9 rounded-lg cursor-pointer border-0 p-0"
-                      />
-                      <input
-                        type="text"
-                        value={branding.menuBgHex || '#0f172a'}
-                        onChange={(e) => updateBranding({ menuBgHex: e.target.value })}
-                        className="flex-1 uppercase font-mono px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Color Texto Menú */}
-                  <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
-                    <label className="font-semibold text-slate-800 block">Texto de Menú</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={branding.menuTextHex || '#f8fafc'}
-                        onChange={(e) => updateBranding({ menuTextHex: e.target.value })}
-                        className="w-9 h-9 rounded-lg cursor-pointer border-0 p-0"
-                      />
-                      <input
-                        type="text"
-                        value={branding.menuTextHex || '#f8fafc'}
-                        onChange={(e) => updateBranding({ menuTextHex: e.target.value })}
-                        className="flex-1 uppercase font-mono px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Color Botones */}
-                  <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
-                    <label className="font-semibold text-slate-800 block">Color Principal de Botones</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={branding.buttonBgHex || '#f59e0b'}
-                        onChange={(e) => updateBranding({ buttonBgHex: e.target.value })}
-                        className="w-9 h-9 rounded-lg cursor-pointer border-0 p-0"
-                      />
-                      <input
-                        type="text"
-                        value={branding.buttonBgHex || '#f59e0b'}
-                        onChange={(e) => updateBranding({ buttonBgHex: e.target.value })}
-                        className="flex-1 uppercase font-mono px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Color Texto Botones */}
-                  <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
-                    <label className="font-semibold text-slate-800 block">Texto de Botones</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="color"
-                        value={branding.buttonTextHex || '#0f172a'}
-                        onChange={(e) => updateBranding({ buttonTextHex: e.target.value })}
-                        className="w-9 h-9 rounded-lg cursor-pointer border-0 p-0"
-                      />
-                      <input
-                        type="text"
-                        value={branding.buttonTextHex || '#0f172a'}
-                        onChange={(e) => updateBranding({ buttonTextHex: e.target.value })}
-                        className="flex-1 uppercase font-mono px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-amber-500 focus:outline-none"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* SECCIÓN 2: PROPIEDADES AVANZADAS DE BOTONES */}
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-                  <Paintbrush className="w-4 h-4 text-emerald-500" />
-                  <h3 className="font-bold text-slate-900 text-sm">Configuración Extendida de Botones</h3>
+                  <Paintbrush className="w-4 h-4 text-amber-600" />
+                  <h3 className="font-bold text-slate-900 text-sm">2. Estilos de Botones y Acciones Principales</h3>
                 </div>
 
                 <div className="space-y-4 text-xs">
-                  {/* Redondeo de Botones */}
+                  {/* Colores Hex del Botón Principal */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                      <label className="font-semibold text-slate-800 block">Color Fondo Botón (#HEX)</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={branding.buttonBgHex || '#f59e0b'}
+                          onChange={(e) => updateBranding({ buttonBgHex: e.target.value })}
+                          className="w-8 h-8 rounded-lg cursor-pointer border-0 p-0"
+                        />
+                        <input
+                          type="text"
+                          value={branding.buttonBgHex || '#f59e0b'}
+                          onChange={(e) => updateBranding({ buttonBgHex: e.target.value })}
+                          className="flex-1 px-3 py-1 border border-slate-300 rounded-lg text-xs font-mono font-bold"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                      <label className="font-semibold text-slate-800 block">Color Texto Botón (#HEX)</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={branding.buttonTextHex || '#0f172a'}
+                          onChange={(e) => updateBranding({ buttonTextHex: e.target.value })}
+                          className="w-8 h-8 rounded-lg cursor-pointer border-0 p-0"
+                        />
+                        <input
+                          type="text"
+                          value={branding.buttonTextHex || '#0f172a'}
+                          onChange={(e) => updateBranding({ buttonTextHex: e.target.value })}
+                          className="flex-1 px-3 py-1 border border-slate-300 rounded-lg text-xs font-mono font-bold"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Redondeo de Esquinas */}
                   <div className="space-y-2">
-                    <label className="font-semibold text-slate-800 block">Redondeo (Border Radius)</label>
+                    <label className="font-semibold text-slate-800 block">Redondeo de Esquinas de Botón</label>
                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                       {[
-                        { id: 'rounded-full', label: 'Cápsula Full' },
-                        { id: 'rounded-2xl', label: 'Extra XL' },
-                        { id: 'rounded-xl', label: 'Suave XL' },
-                        { id: 'rounded-lg', label: 'Estándar LG' },
+                        { id: 'rounded-full', label: 'Cápsula' },
+                        { id: 'rounded-2xl', label: 'Curvo XL' },
+                        { id: 'rounded-xl', label: 'Suave LG' },
+                        { id: 'rounded-lg', label: 'Estándar' },
                         { id: 'rounded-none', label: 'Recto 90°' },
                       ].map((r) => (
                         <button
@@ -2419,7 +2442,7 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
                           onClick={() => updateBranding({ buttonRadius: r.id as any })}
                           className={`p-2.5 rounded-xl border text-center transition ${
                             branding.buttonRadius === r.id
-                              ? 'border-emerald-500 bg-emerald-50 text-emerald-900 font-bold ring-2 ring-emerald-500/20'
+                              ? 'border-amber-500 bg-amber-50 text-amber-900 font-bold ring-2 ring-amber-500/20'
                               : 'border-slate-200 hover:bg-slate-50 text-slate-700'
                           }`}
                         >
@@ -2431,13 +2454,13 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
 
                   {/* Sombreado de Botones */}
                   <div className="space-y-2">
-                    <label className="font-semibold text-slate-800 block">Sombreado (Box Shadow)</label>
+                    <label className="font-semibold text-slate-800 block">Sombreado de Botón (Box Shadow)</label>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {[
                         { id: 'none', label: 'Sin Sombra' },
                         { id: 'sm', label: 'Sombra Suave' },
-                        { id: 'md', label: 'Elevada MD' },
-                        { id: 'xl', label: 'Profunda 3D' },
+                        { id: 'md', label: 'Elevado MD' },
+                        { id: 'xl', label: 'Profundo 3D' },
                       ].map((s) => (
                         <button
                           key={s.id}
@@ -2445,7 +2468,7 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
                           onClick={() => updateBranding({ buttonShadowStyle: s.id as any })}
                           className={`p-2.5 rounded-xl border text-center transition ${
                             branding.buttonShadowStyle === s.id
-                              ? 'border-emerald-500 bg-emerald-50 text-emerald-900 font-bold ring-2 ring-emerald-500/20'
+                              ? 'border-amber-500 bg-amber-50 text-amber-900 font-bold ring-2 ring-amber-500/20'
                               : 'border-slate-200 hover:bg-slate-50 text-slate-700'
                           }`}
                         >
@@ -2455,248 +2478,465 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
                     </div>
                   </div>
 
-                  {/* Peso de Fuente y Efecto Hover */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="font-semibold text-slate-800 block">Peso Tipográfico del Botón</label>
-                      <select
-                        value={branding.buttonFontWeight || 'font-bold'}
-                        onChange={(e) => updateBranding({ buttonFontWeight: e.target.value as any })}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500 text-xs"
-                      >
-                        <option value="font-normal">Normal (400)</option>
-                        <option value="font-medium">Medium (500)</option>
-                        <option value="font-semibold">SemiBold (600)</option>
-                        <option value="font-bold">Bold (700)</option>
-                        <option value="font-extrabold">ExtraBold (800)</option>
-                      </select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <label className="font-semibold text-slate-800 block">Efecto Hover (Al Pasar Mouse)</label>
-                      <select
-                        value={branding.buttonHoverEffect || 'scale'}
-                        onChange={(e) => updateBranding({ buttonHoverEffect: e.target.value as any })}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500 text-xs"
-                      >
-                        <option value="none">Sin efecto especial</option>
-                        <option value="scale">Micro-escalado (Scale 1.02)</option>
-                        <option value="lift">Elevación (Translate Y)</option>
-                        <option value="glow">Brillo Neón (Glow)</option>
-                      </select>
-                    </div>
+                  {/* Tipografía Exclusiva para Botones */}
+                  <div className="space-y-2 pt-2 border-t border-slate-100">
+                    <label className="font-semibold text-slate-800 block">Tipografía Exclusiva de los Botones</label>
+                    <select
+                      value={branding.buttonFontFamily || branding.fontFamily || 'Inter'}
+                      onChange={(e) => updateBranding({ buttonFontFamily: e.target.value as any })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 text-xs"
+                    >
+                      {[
+                        { id: 'Inter', name: 'Inter (Limpia & Funcional)' },
+                        { id: 'Roboto', name: 'Roboto (Google Standard)' },
+                        { id: 'Outfit', name: 'Outfit (Moderna & Premium)' },
+                        { id: 'Plus Jakarta Sans', name: 'Plus Jakarta Sans' },
+                        { id: 'Poppins', name: 'Poppins (Redondeada)' },
+                        { id: 'Space Grotesk', name: 'Space Grotesk (Futurista)' },
+                        { id: 'Montserrat', name: 'Montserrat (Elegante)' },
+                        { id: 'Playfair Display', name: 'Playfair Display (Gourmet)' },
+                        { id: 'Raleway', name: 'Raleway (Moderna LG)' },
+                        { id: 'Oswald', name: 'Oswald (Condensada / Fuerte)' },
+                        { id: 'Lora', name: 'Lora (Editorial / Clásica)' },
+                        { id: 'Fira Code', name: 'Fira Code (Monospaced Tech)' },
+                        { id: 'Cinzel', name: 'Cinzel (Premium Elegance)' },
+                      ].map((font) => (
+                        <option key={font.id} value={font.id}>
+                          {font.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </div>
 
-              {/* SECCIÓN 3: PROPIEDADES DE TOGGLES / SWITCHES */}
+              {/* BLOQUE 3: TOGGLES Y SELECTORES */}
               <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                 <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-                  <Lock className="w-4 h-4 text-indigo-500" />
-                  <h3 className="font-bold text-slate-900 text-sm">Configuración de Toggles & Switches</h3>
+                  <CreditCard className="w-4 h-4 text-emerald-600" />
+                  <h3 className="font-bold text-slate-900 text-sm">3. Estilo de Interruptores & Toggles</h3>
                 </div>
 
                 <div className="space-y-4 text-xs">
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {/* Estilo del Switch */}
-                    <div className="space-y-2 sm:col-span-1">
-                      <label className="font-semibold text-slate-800 block">Diseño del Toggle</label>
-                      <div className="flex flex-col gap-1.5">
-                        {[
-                          { id: 'pill', label: 'Cápsula (Pill)' },
-                          { id: 'square', label: 'Cuadrado Minimal' },
-                          { id: 'ios', label: 'Estilo iOS' },
-                        ].map((t) => (
-                          <button
-                            key={t.id}
-                            type="button"
-                            onClick={() => updateBranding({ toggleStyle: t.id as any })}
-                            className={`p-2 rounded-lg border text-left font-medium transition ${
-                              branding.toggleStyle === t.id
-                                ? 'border-indigo-500 bg-indigo-50 text-indigo-900 font-bold'
-                                : 'border-slate-200 hover:bg-slate-50'
-                            }`}
-                          >
-                            {t.label}
-                          </button>
-                        ))}
+                  {/* Forma del Toggle */}
+                  <div className="space-y-2">
+                    <label className="font-semibold text-slate-800 block">Forma Geométrica del Toggle</label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => updateBranding({ toggleStyle: 'rounded' })}
+                        className={`p-3 rounded-xl border text-left flex items-center gap-3 transition ${
+                          branding.toggleStyle === 'rounded'
+                            ? 'border-emerald-500 bg-emerald-50 text-emerald-900 font-bold ring-2 ring-emerald-500/20'
+                            : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                        }`}
+                      >
+                        <div className="w-8 h-4 bg-emerald-500 rounded-full p-0.5 flex justify-end">
+                          <div className="w-3 h-3 bg-white rounded-full" />
+                        </div>
+                        <span>Redondeado Circular</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => updateBranding({ toggleStyle: 'square' })}
+                        className={`p-3 rounded-xl border text-left flex items-center gap-3 transition ${
+                          branding.toggleStyle === 'square'
+                            ? 'border-emerald-500 bg-emerald-50 text-emerald-900 font-bold ring-2 ring-emerald-500/20'
+                            : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                        }`}
+                      >
+                        <div className="w-8 h-4 bg-emerald-500 rounded-md p-0.5 flex justify-end">
+                          <div className="w-3 h-3 bg-white rounded-xs" />
+                        </div>
+                        <span>Cuadrado Moderno</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Colores Hex del Toggle */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                      <label className="font-semibold text-slate-800 block">Color Toggle Activo (#HEX)</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={branding.toggleActiveHex || '#f59e0b'}
+                          onChange={(e) => updateBranding({ toggleActiveHex: e.target.value })}
+                          className="w-8 h-8 rounded-lg cursor-pointer border-0 p-0"
+                        />
+                        <input
+                          type="text"
+                          value={branding.toggleActiveHex || '#f59e0b'}
+                          onChange={(e) => updateBranding({ toggleActiveHex: e.target.value })}
+                          className="flex-1 px-3 py-1 border border-slate-300 rounded-lg text-xs font-mono font-bold"
+                        />
                       </div>
                     </div>
 
-                    {/* Colores Hex del Toggle */}
-                    <div className="space-y-3 sm:col-span-2">
-                      <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
-                        <label className="font-semibold text-slate-800 block">Color Activo (#HEX)</label>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="color"
-                            value={branding.toggleActiveHex || '#f59e0b'}
-                            onChange={(e) => updateBranding({ toggleActiveHex: e.target.value })}
-                            className="w-8 h-8 rounded-lg cursor-pointer border-0 p-0"
-                          />
-                          <input
-                            type="text"
-                            value={branding.toggleActiveHex || '#f59e0b'}
-                            onChange={(e) => updateBranding({ toggleActiveHex: e.target.value })}
-                            className="flex-1 uppercase font-mono px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-bold text-slate-900"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
-                        <label className="font-semibold text-slate-800 block">Color Inactivo (#HEX)</label>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="color"
-                            value={branding.toggleInactiveHex || '#cbd5e1'}
-                            onChange={(e) => updateBranding({ toggleInactiveHex: e.target.value })}
-                            className="w-8 h-8 rounded-lg cursor-pointer border-0 p-0"
-                          />
-                          <input
-                            type="text"
-                            value={branding.toggleInactiveHex || '#cbd5e1'}
-                            onChange={(e) => updateBranding({ toggleInactiveHex: e.target.value })}
-                            className="flex-1 uppercase font-mono px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-bold text-slate-900"
-                          />
-                        </div>
+                    <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                      <label className="font-semibold text-slate-800 block">Color Toggle Inactivo (#HEX)</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={branding.toggleInactiveHex || '#cbd5e1'}
+                          onChange={(e) => updateBranding({ toggleInactiveHex: e.target.value })}
+                          className="w-8 h-8 rounded-lg cursor-pointer border-0 p-0"
+                        />
+                        <input
+                          type="text"
+                          value={branding.toggleInactiveHex || '#cbd5e1'}
+                          onChange={(e) => updateBranding({ toggleInactiveHex: e.target.value })}
+                          className="flex-1 px-3 py-1 border border-slate-300 rounded-lg text-xs font-mono font-bold"
+                        />
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* SECCIÓN 4: OPCIONES AMPLIADAS DE TIPOGRAFÍAS */}
+              {/* BLOQUE 4: TIPOGRAFÍA Y FONDO GLOBAL */}
               <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                 <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
-                  <Type className="w-4 h-4 text-purple-500" />
-                  <h3 className="font-bold text-slate-900 text-sm">Catálogo Ampliado de Google Fonts</h3>
+                  <Type className="w-4 h-4 text-purple-600" />
+                  <h3 className="font-bold text-slate-900 text-sm">4. Tipografía Global & Fondo General de Pantalla</h3>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                  {[
-                    { id: 'Inter', name: 'Inter (Modern UI)' },
-                    { id: 'Outfit', name: 'Outfit (Gastronómico)' },
-                    { id: 'Roboto', name: 'Roboto (Google Tech)' },
-                    { id: 'Plus Jakarta Sans', name: 'Jakarta (Minimalist)' },
-                    { id: 'Poppins', name: 'Poppins (Redondeada)' },
-                    { id: 'Space Grotesk', name: 'Space Grotesk (Futurist)' },
-                    { id: 'Montserrat', name: 'Montserrat (Elegante)' },
-                    { id: 'Playfair Display', name: 'Playfair (Alta Cocina)' },
-                  ].map((font) => (
-                    <button
-                      key={font.id}
-                      type="button"
-                      onClick={() => {
-                        updateBranding({ fontFamily: font.id as any });
-                        showToast(`Fuente ${font.id} cargada exitosamente.`, 'info');
-                      }}
-                      className={`p-3 rounded-xl border text-center transition ${
-                        branding.fontFamily === font.id
-                          ? 'border-purple-500 bg-purple-50 text-purple-900 font-bold ring-2 ring-purple-500/20'
-                          : 'border-slate-200 hover:bg-slate-50 text-slate-700'
-                      }`}
-                    >
-                      <span className="block text-xs font-bold" style={{ fontFamily: font.id }}>{font.id}</span>
-                      <span className="text-[10px] text-slate-500 mt-1 block">{font.name}</span>
-                    </button>
-                  ))}
+                <div className="space-y-4 text-xs">
+                  {/* Fondo General App */}
+                  <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                    <label className="font-semibold text-slate-800 block">Fondo de Pantalla App (#HEX)</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="color"
+                        value={branding.appBgHex || '#f8fafc'}
+                        onChange={(e) => updateBranding({ appBgHex: e.target.value })}
+                        className="w-8 h-8 rounded-lg cursor-pointer border-0 p-0"
+                      />
+                      <input
+                        type="text"
+                        value={branding.appBgHex || '#f8fafc'}
+                        onChange={(e) => updateBranding({ appBgHex: e.target.value })}
+                        className="flex-1 px-3 py-1 border border-slate-300 rounded-lg text-xs font-mono font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Familia Tipográfica Expandida (13 Fuentes) */}
+                  <div className="space-y-2">
+                    <label className="font-semibold text-slate-800 block">Familia Tipográfica Global de la App</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+                      {[
+                        { id: 'Inter', name: 'Inter (UI Limpia)' },
+                        { id: 'Roboto', name: 'Roboto (Standard)' },
+                        { id: 'Outfit', name: 'Outfit (Moderna)' },
+                        { id: 'Plus Jakarta Sans', name: 'Jakarta Sans' },
+                        { id: 'Poppins', name: 'Poppins (Curva)' },
+                        { id: 'Space Grotesk', name: 'Space Grotesk' },
+                        { id: 'Montserrat', name: 'Montserrat' },
+                        { id: 'Playfair Display', name: 'Playfair (Gourmet)' },
+                        { id: 'Raleway', name: 'Raleway (Limpia)' },
+                        { id: 'Oswald', name: 'Oswald (Fuerte)' },
+                        { id: 'Lora', name: 'Lora (Editorial)' },
+                        { id: 'Fira Code', name: 'Fira Code (Tech)' },
+                        { id: 'Cinzel', name: 'Cinzel (Lujo)' },
+                      ].map((font) => (
+                        <button
+                          key={font.id}
+                          type="button"
+                          onClick={() => updateBranding({ fontFamily: font.id as any })}
+                          className={`p-2.5 rounded-xl border text-center transition ${
+                            branding.fontFamily === font.id
+                              ? 'border-purple-500 bg-purple-50 text-purple-900 font-bold ring-2 ring-purple-500/20'
+                              : 'border-slate-200 hover:bg-slate-50 text-slate-700'
+                          }`}
+                        >
+                          <span className="block text-xs font-bold" style={{ fontFamily: font.id }}>{font.id}</span>
+                          <span className="text-[9px] text-slate-500 mt-0.5 block truncate">{font.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* BLOQUE 5: ESTILOS Y COLORES DEL TABLERO KANBAN */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                  <Kanban className="w-4 h-4 text-orange-600" />
+                  <h3 className="font-bold text-slate-900 text-sm">5. Estilos y Colores del Tablero Kanban</h3>
+                </div>
+
+                <div className="space-y-4 text-xs">
+                  {/* Colores de Fondo de Columnas y Tarjetas */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                      <label className="font-semibold text-slate-800 block">Fondo de Columna Kanban (#HEX)</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={branding.kanbanColumnBgHex || '#f1f5f9'}
+                          onChange={(e) => updateBranding({ kanbanColumnBgHex: e.target.value })}
+                          className="w-8 h-8 rounded-lg cursor-pointer border-0 p-0"
+                        />
+                        <input
+                          type="text"
+                          value={branding.kanbanColumnBgHex || '#f1f5f9'}
+                          onChange={(e) => updateBranding({ kanbanColumnBgHex: e.target.value })}
+                          className="flex-1 px-3 py-1 border border-slate-300 rounded-lg text-xs font-mono font-bold"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                      <label className="font-semibold text-slate-800 block">Cabecera de Columna (#HEX)</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={branding.kanbanHeaderBgHex || '#e2e8f0'}
+                          onChange={(e) => updateBranding({ kanbanHeaderBgHex: e.target.value })}
+                          className="w-8 h-8 rounded-lg cursor-pointer border-0 p-0"
+                        />
+                        <input
+                          type="text"
+                          value={branding.kanbanHeaderBgHex || '#e2e8f0'}
+                          onChange={(e) => updateBranding({ kanbanHeaderBgHex: e.target.value })}
+                          className="flex-1 px-3 py-1 border border-slate-300 rounded-lg text-xs font-mono font-bold"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                      <label className="font-semibold text-slate-800 block">Fondo de Tarjeta Kanban (#HEX)</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={branding.kanbanCardBgHex || '#ffffff'}
+                          onChange={(e) => updateBranding({ kanbanCardBgHex: e.target.value })}
+                          className="w-8 h-8 rounded-lg cursor-pointer border-0 p-0"
+                        />
+                        <input
+                          type="text"
+                          value={branding.kanbanCardBgHex || '#ffffff'}
+                          onChange={(e) => updateBranding({ kanbanCardBgHex: e.target.value })}
+                          className="flex-1 px-3 py-1 border border-slate-300 rounded-lg text-xs font-mono font-bold"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                      <label className="font-semibold text-slate-800 block">Borde de Tarjeta Kanban (#HEX)</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="color"
+                          value={branding.kanbanCardBorderHex || '#e2e8f0'}
+                          onChange={(e) => updateBranding({ kanbanCardBorderHex: e.target.value })}
+                          className="w-8 h-8 rounded-lg cursor-pointer border-0 p-0"
+                        />
+                        <input
+                          type="text"
+                          value={branding.kanbanCardBorderHex || '#e2e8f0'}
+                          onChange={(e) => updateBranding({ kanbanCardBorderHex: e.target.value })}
+                          className="flex-1 px-3 py-1 border border-slate-300 rounded-lg text-xs font-mono font-bold"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
             </div>
 
-            {/* Panel Lateral: PREVISUALIZACIÓN EN VIVO (LIVE SANDBOX) */}
+            {/* Panel Lateral: PREVISUALIZACIÓN EN VIVO (REALISTIC MINI APP MOCKUP) */}
             <div className="space-y-6">
-              <div className="bg-slate-900 text-white p-6 rounded-2xl space-y-6 shadow-xl border border-slate-800 sticky top-20">
-                <div className="flex items-center gap-2 pb-3 border-b border-slate-800">
-                  <Palette className="w-5 h-5 text-amber-400" />
-                  <div>
-                    <h3 className="font-bold text-base">Live UI Sandbox</h3>
-                    <p className="text-[11px] text-slate-400">Previsualización inmediata de componentes.</p>
+              <div className="bg-slate-950 text-white p-5 rounded-3xl space-y-4 shadow-2xl border border-slate-800 sticky top-20">
+                {/* Sandbox Header */}
+                <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <Palette className="w-5 h-5 text-amber-400" />
+                    <div>
+                      <h3 className="font-bold text-sm text-white">Previsualización Realista App</h3>
+                      <p className="text-[10px] text-slate-400">Maqueta interactiva en tiempo real.</p>
+                    </div>
                   </div>
+                  <span className="text-[9px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full uppercase">
+                    LIVE MOCKUP
+                  </span>
                 </div>
 
-                <div className="space-y-4 text-xs">
-                  {/* Muestra 0: Menú de Navegación Configurado */}
-                  <div className="p-4 rounded-xl space-y-2 border border-slate-700/60 transition-all" style={{ backgroundColor: branding.menuBgHex || '#0f172a', fontFamily: branding.menuFontFamily || 'Inter' }}>
-                    <span className="text-[10px] uppercase font-bold tracking-wider block" style={{ color: branding.menuTextHex || '#94a3b8' }}>Menú Personalizado (#HEX)</span>
+                {/* REALISTIC MINI APP MOCKUP FRAME */}
+                <div
+                  style={{
+                    backgroundColor: branding.appBgHex || '#f8fafc',
+                    fontFamily: branding.fontFamily ? `'${branding.fontFamily}', sans-serif` : 'inherit',
+                  }}
+                  className="rounded-2xl border border-slate-800 p-3.5 space-y-3 text-slate-900 shadow-inner overflow-hidden relative transition-all"
+                >
+                  {/* 1. MOCKUP TOP HEADER / MENU NAVBAR */}
+                  <div
+                    style={{
+                      backgroundColor: branding.menuBgHex || '#0f172a',
+                      color: branding.menuTextHex || '#94a3b8',
+                      fontFamily: branding.menuFontFamily ? `'${branding.menuFontFamily}', sans-serif` : 'inherit',
+                    }}
+                    className="rounded-xl p-2.5 shadow-md flex items-center justify-between transition-all"
+                  >
                     <div className="flex items-center gap-2">
+                      {branding.logoUrl ? (
+                        <img src={branding.logoUrl} alt="Logo" className="w-6 h-6 rounded-lg object-cover" />
+                      ) : (
+                        <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white text-[10px] font-bold">
+                          P
+                        </div>
+                      )}
+                      <span className="font-bold text-xs" style={{ color: branding.menuTextHex || '#ffffff' }}>
+                        PLEGMA Gastro
+                      </span>
+                    </div>
+
+                    {/* Mockup Active / Inactive Menu Tabs */}
+                    <div className="flex items-center gap-1.5">
                       <div
-                        className="px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm"
-                        style={{ backgroundColor: branding.menuActiveBgHex || '#f59e0b', color: branding.menuActiveTextHex || '#0f172a' }}
+                        style={{
+                          backgroundColor: branding.menuActiveBgHex || '#f59e0b',
+                          color: branding.menuActiveTextHex || '#0f172a',
+                        }}
+                        className="px-2.5 py-1 rounded-lg text-[10px] font-extrabold shadow-xs"
                       >
                         Tab Activa
                       </div>
                       <div
-                        className="px-3 py-1.5 rounded-lg text-xs font-medium"
                         style={{ color: branding.menuTextHex || '#94a3b8' }}
+                        className="px-2 py-1 text-[10px] font-medium opacity-80"
                       >
-                        Tab Inactiva
+                        Inactiva
                       </div>
                     </div>
                   </div>
+                  <div className="text-[9px] text-slate-500 text-center font-mono">
+                    ⬆️ <strong>Barra de Menú</strong> ({branding.navigationStyle === 'sidebar' ? 'Modo Sidebar' : 'Modo Superior'})
+                  </div>
 
-                  {/* Muestra 1: Botón Principal Configurado */}
-                  <div className="p-4 bg-slate-800/90 rounded-xl space-y-2 border border-slate-700/60">
-                    <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Botón Principal Custom #HEX</span>
+                  {/* 2. MOCKUP APP CARD & BUTTON PREVIEW */}
+                  <div className="bg-white p-3.5 rounded-xl border border-slate-200/90 space-y-3 shadow-xs">
+                    <div className="flex items-center justify-between">
+                      <h5 className="font-extrabold text-xs text-slate-900" style={{ fontFamily: branding.fontFamily }}>
+                        Muestra de Contenido & Botón
+                      </h5>
+                      <span className="text-[9px] text-slate-400 font-mono">VistaPrevia</span>
+                    </div>
+
+                    <p className="text-[11px] text-slate-600 leading-snug" style={{ fontFamily: branding.fontFamily }}>
+                      Así lucirá el texto general y los botones de acción en las tablas y formularios.
+                    </p>
+
+                    {/* Mockup Button with Dedicated Font */}
                     <button
+                      type="button"
                       style={{
                         backgroundColor: branding.buttonBgHex || '#f59e0b',
                         color: branding.buttonTextHex || '#0f172a',
-                        fontFamily: branding.fontFamily || 'Inter',
+                        fontFamily: branding.buttonFontFamily
+                          ? `'${branding.buttonFontFamily}', sans-serif`
+                          : branding.fontFamily || 'Inter',
                       }}
-                      className={`w-full py-2.5 px-4 ${branding.buttonFontWeight || 'font-bold'} ${branding.buttonRadius || 'rounded-xl'} transition shadow-md`}
+                      className={`w-full py-2 px-3 text-xs ${branding.buttonFontWeight || 'font-bold'} ${
+                        branding.buttonRadius || 'rounded-xl'
+                      } ${
+                        branding.buttonShadowStyle === 'sm'
+                          ? 'shadow-xs'
+                          : branding.buttonShadowStyle === 'md'
+                          ? 'shadow-md'
+                          : branding.buttonShadowStyle === 'xl'
+                          ? 'shadow-xl'
+                          : ''
+                      } transition-all border border-black/5`}
                     >
-                      Ejemplo Botón Activo
+                      Botón Principal Activo
                     </button>
                   </div>
 
-                  {/* Muestra 2: Toggle Switch Configurado */}
-                  <div className="p-4 bg-slate-800/90 rounded-xl space-y-3 border border-slate-700/60">
-                    <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Toggles Configurados</span>
-                    <div className="flex items-center justify-between">
-                      <span className="text-slate-300">Switch Activo</span>
+                  {/* 3. MOCKUP TOGGLE SWITCHES PREVIEW */}
+                  <div className="bg-white p-3 rounded-xl border border-slate-200/90 space-y-2 shadow-xs">
+                    <span className="text-[10px] font-bold text-slate-500 block uppercase tracking-wider">
+                      Muestra de Switches & Toggles
+                    </span>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-700 font-medium">Filtro / Estado Activo</span>
                       <div
                         style={{ backgroundColor: branding.toggleActiveHex || '#f59e0b' }}
-                        className={`w-12 h-6.5 p-1 ${branding.toggleStyle === 'square' ? 'rounded-md' : 'rounded-full'} flex items-center justify-end transition`}
+                        className={`w-10 h-5 p-0.5 ${
+                          branding.toggleStyle === 'square' ? 'rounded-md' : 'rounded-full'
+                        } flex items-center justify-end transition-all shadow-inner`}
                       >
-                        <div className={`w-4.5 h-4.5 bg-white ${branding.toggleStyle === 'square' ? 'rounded-sm' : 'rounded-full'} shadow-md`} />
+                        <div
+                          className={`w-4 h-4 bg-white ${
+                            branding.toggleStyle === 'square' ? 'rounded-xs' : 'rounded-full'
+                          } shadow-md`}
+                        />
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-1 border-t border-slate-700/50">
-                      <span className="text-slate-400">Switch Inactivo</span>
+                    <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+                      <span className="text-slate-500 font-medium">Estado Inactivo</span>
                       <div
                         style={{ backgroundColor: branding.toggleInactiveHex || '#cbd5e1' }}
-                        className={`w-12 h-6.5 p-1 ${branding.toggleStyle === 'square' ? 'rounded-md' : 'rounded-full'} flex items-center justify-start transition`}
+                        className={`w-10 h-5 p-0.5 ${
+                          branding.toggleStyle === 'square' ? 'rounded-md' : 'rounded-full'
+                        } flex items-center justify-start transition-all shadow-inner`}
                       >
-                        <div className={`w-4.5 h-4.5 bg-white ${branding.toggleStyle === 'square' ? 'rounded-sm' : 'rounded-full'} shadow-md`} />
+                        <div
+                          className={`w-4 h-4 bg-white ${
+                            branding.toggleStyle === 'square' ? 'rounded-xs' : 'rounded-full'
+                          } shadow-md`}
+                        />
                       </div>
                     </div>
                   </div>
 
-                  {/* Muestra 3: Tipografía Muestra */}
-                  <div className="p-4 bg-slate-800/90 rounded-xl space-y-1.5 border border-slate-700/60">
-                    <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Tipografía Activa</span>
-                    <h4 className="text-base font-extrabold text-white" style={{ fontFamily: branding.fontFamily }}>
-                      PLEGMA Gastronomía
-                    </h4>
-                    <p className="text-[11px] text-slate-300" style={{ fontFamily: branding.fontFamily }}>
-                      Gestión avanzada de insumos, proveedores y centros de costo.
-                    </p>
+                  {/* 4. MOCKUP KANBAN BOARD PREVIEW */}
+                  <div
+                    style={{ backgroundColor: branding.kanbanColumnBgHex || '#f1f5f9' }}
+                    className="p-2.5 rounded-xl border border-slate-200 space-y-2 shadow-xs"
+                  >
+                    <div
+                      style={{ backgroundColor: branding.kanbanHeaderBgHex || '#e2e8f0' }}
+                      className="p-1.5 rounded-lg flex items-center justify-between text-[10px] font-bold text-slate-800"
+                    >
+                      <span className="flex items-center gap-1">
+                        <Kanban className="w-3 h-3 text-orange-600" />
+                        <span>Columna Kanban</span>
+                      </span>
+                      <span className="bg-slate-300/80 px-1.5 py-0.5 rounded-full text-[9px]">2</span>
+                    </div>
+
+                    <div
+                      style={{
+                        backgroundColor: branding.kanbanCardBgHex || '#ffffff',
+                        borderColor: branding.kanbanCardBorderHex || '#e2e8f0',
+                      }}
+                      className="p-2 rounded-lg border text-[10px] space-y-1 shadow-xs"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-extrabold text-slate-900">Proveedor Distribuidora</span>
+                        <span className="text-[8px] bg-amber-100 text-amber-900 font-bold px-1 rounded">
+                          Conteo
+                        </span>
+                      </div>
+                      <p className="text-[9px] text-slate-500">Muestra de tarjeta Kanban en vivo.</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-900/90 text-white p-2.5 rounded-xl border border-slate-800 text-[10px] space-y-1">
+                    <div className="font-bold text-amber-400 flex items-center gap-1">
+                      <span>✓ Tipografía Global:</span>
+                      <span className="font-mono text-white">{branding.fontFamily || 'Inter'}</span>
+                    </div>
+                    <div className="text-slate-400">
+                      Fondo App: <span className="font-mono text-slate-200">{branding.appBgHex || '#f8fafc'}</span> | Menú: <span className="font-mono text-slate-200">{branding.menuBgHex || '#0f172a'}</span>
+                    </div>
                   </div>
                 </div>
-
-                <Button
-                  variant="primary"
-                  size="md"
-                  className="w-full justify-center mt-4"
-                  onClick={() => {
-                    showToast('Branding y Estudio de Diseño guardados.', 'success');
-                  }}
-                >
-                  Guardar Todo
-                </Button>
               </div>
             </div>
           </div>
