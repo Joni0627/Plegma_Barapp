@@ -83,8 +83,8 @@ export const ProviderSheet: React.FC<ProviderSheetProps> = ({
 
   // Editing state for provider details
   const [isEditingDays, setIsEditingDays] = useState(false);
-  const [editOrderDays, setEditOrderDays] = useState<DayOfWeek[]>(provider.orderDays);
-  const [editDeliveryDays, setEditDeliveryDays] = useState<DayOfWeek[]>(provider.deliveryDays);
+  const [editOrderDays, setEditOrderDays] = useState<DayOfWeek[]>(provider.orderDays || []);
+  const [editDeliveryDays, setEditDeliveryDays] = useState<DayOfWeek[]>(provider.deliveryDays || []);
 
   const handleSaveDays = () => {
     updateProviderDays(provider.id, editOrderDays, editDeliveryDays);
@@ -386,14 +386,14 @@ export const ProviderSheet: React.FC<ProviderSheetProps> = ({
                     <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
                       <span className="text-slate-500 font-medium block">Días de Pedido (Control):</span>
                       <p className="font-extrabold text-slate-900 text-sm mt-1">
-                        {provider.orderDays.join(', ')}
+                        {(provider.orderDays || []).join(', ') || 'No especificados'}
                       </p>
                     </div>
 
                     <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
                       <span className="text-slate-500 font-medium block">Días de Entrega Estimados:</span>
                       <p className="font-extrabold text-slate-900 text-sm mt-1">
-                        {provider.deliveryDays.join(', ')}
+                        {(provider.deliveryDays || []).join(', ') || 'No especificados'}
                       </p>
                     </div>
                   </div>

@@ -57,7 +57,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const currentDay = getCurrentDayName();
 
   // Extract unique rubros for filter
-  const rubros = Array.from(new Set(providers.map((p) => p.rubro)));
+  const rubros = Array.from(new Set(providers.map((p) => p.rubro).filter(Boolean))) as string[];
 
   // Helper for status badge colors & text
   const getStatusBadge = (state: ProcessState) => {
@@ -141,18 +141,18 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   // Filter providers function
   const filterProvidersForDay = (day: DayOfWeek) => {
     return providers
-      .filter((p) => p.active && p.orderDays.includes(day))
+      .filter((p) => p.active && (p.orderDays ? p.orderDays.includes(day) : true))
       .filter((p) => {
         if (searchQuery) {
           const q = searchQuery.toLowerCase();
-          const matchName = p.name.toLowerCase().includes(q) || p.commercialName.toLowerCase().includes(q);
-          const matchRubro = p.rubro.toLowerCase().includes(q);
+          const matchName = (p.name || '').toLowerCase().includes(q) || (p.commercialName || '').toLowerCase().includes(q);
+          const matchRubro = (p.rubro || '').toLowerCase().includes(q);
           if (!matchName && !matchRubro) return false;
         }
         if (selectedRubro !== 'todos' && p.rubro !== selectedRubro) return false;
         return true;
       })
-      .sort((a, b) => a.priority - b.priority);
+      .sort((a, b) => (a.priority || 0) - (b.priority || 0));
   };
 
   return (
