@@ -72,7 +72,9 @@ export const Button: React.FC<ButtonProps> = ({
   };
 
   const customStyle: React.CSSProperties = {
-    fontFamily: branding?.fontFamily ? `'${branding.fontFamily}', sans-serif` : 'inherit',
+    fontFamily: (branding?.buttonFontFamily || branding?.fontFamily)
+      ? `'${branding.buttonFontFamily || branding.fontFamily}', sans-serif`
+      : 'inherit',
     ...(variant === 'primary' && branding?.buttonBgHex
       ? {
           backgroundColor: branding.buttonBgHex,

@@ -112,6 +112,7 @@ function MainLayout() {
         onOpenSettings={() => setIsSettingsOpen(true)}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
+        maestrosSubTab={maestrosSubTab}
       />
 
       {/* Main Container View Area */}

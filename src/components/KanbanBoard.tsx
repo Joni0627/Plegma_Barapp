@@ -51,6 +51,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     moveProviderToPosition,
     userRole,
     receptionHours,
+    branding,
   } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -73,13 +74,13 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     switch (state) {
       case 'Pendiente de conteo':
         return {
-          bg: 'bg-amber-100 text-amber-900 border-amber-200',
-          dot: 'bg-amber-500',
+          bg: 'bg-indigo-50 text-indigo-900 border-indigo-200/80',
+          dot: 'bg-indigo-600',
           label: 'Pendiente de Conteo',
           action: 'Realizar Conteo',
-          btnBg: 'bg-amber-600 hover:bg-amber-700 text-white',
+          btnBg: 'bg-slate-900 hover:bg-slate-800 text-white',
           icon: ClipboardList,
-          color: 'text-amber-600',
+          color: 'text-indigo-600',
         };
       case 'Conteo finalizado':
         return {
@@ -185,12 +186,12 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <Calendar className="w-6 h-6 text-orange-500" />
+            <Calendar className="w-6 h-6 text-indigo-600" style={{ color: branding?.primaryHex || undefined }} />
             <span>Tablero Semanal de Proveedores</span>
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
             Planificación diaria de controles, conteos de stock y pedidos. Día de hoy: {' '}
-            <span className="font-bold text-orange-600 bg-orange-50 px-2 py-0.5 rounded border border-orange-200">
+            <span className="font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200" style={{ color: branding?.primaryHex || undefined }}>
               {currentDay}
             </span>
           </p>
@@ -262,9 +263,9 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
               <span
                 className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${
                   selectedDayMobile === day
-                    ? 'bg-orange-500 text-white'
+                    ? 'bg-indigo-600 text-white'
                     : isToday
-                    ? 'bg-orange-100 text-orange-700'
+                    ? 'bg-indigo-100 text-indigo-800'
                     : 'bg-slate-100 text-slate-600'
                 }`}
               >
@@ -287,6 +288,9 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
           return (
             <div
               key={day}
+              style={{
+                backgroundColor: branding?.kanbanColumnBgHex || undefined,
+              }}
               onDragOver={(e) => {
                 e.preventDefault();
                 e.dataTransfer.dropEffect = 'move';
@@ -308,7 +312,12 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
               } ${isMobileHidden ? 'hidden lg:flex' : 'flex'}`}
             >
               {/* Column Header */}
-              <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-200/80">
+              <div
+                style={{
+                  backgroundColor: branding?.kanbanHeaderBgHex || undefined,
+                }}
+                className="flex items-center justify-between mb-3 pb-2 border-b border-slate-200/80 p-1.5 rounded-xl transition-colors"
+              >
                 <div className="flex items-center gap-2">
                   <h3
                     className={`font-extrabold text-sm ${
@@ -318,12 +327,12 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                     {day}
                   </h3>
                   {isToday && (
-                    <span className="bg-orange-500 text-white text-[9px] font-black uppercase px-1.5 py-0.5 rounded tracking-wider shadow-xs">
+                    <span className="bg-indigo-600 text-white text-[9px] font-black uppercase px-1.5 py-0.5 rounded tracking-wider shadow-xs" style={{ backgroundColor: branding?.primaryHex || undefined }}>
                       HOY
                     </span>
                   )}
                 </div>
-                <span className="text-xs font-bold text-slate-500 bg-slate-200 px-2 py-0.5 rounded-full">
+                <span className="text-xs font-bold text-slate-500 bg-slate-200/80 px-2 py-0.5 rounded-full">
                   {dayProviders.length}
                 </span>
               </div>
@@ -352,6 +361,10 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                       <div
                         key={`${provider.id}-${day}`}
                         draggable={userRole === 'admin' || userRole === 'compras'}
+                        style={{
+                          backgroundColor: branding?.kanbanCardBgHex || undefined,
+                          borderColor: branding?.kanbanCardBorderHex || undefined,
+                        }}
                         onDragStart={(e) => {
                           e.dataTransfer.setData('providerId', provider.id);
                           e.dataTransfer.setData('sourceDay', day);
@@ -434,8 +447,13 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                                 className="w-9 h-9 rounded-xl object-cover border border-slate-200 shadow-xs shrink-0"
                               />
                             ) : (
-                              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 text-white font-black text-xs flex items-center justify-center shadow-xs shrink-0">
-                                {(provider.name || 'P').substring(0, 2).toUpperCase()}
+                              <div
+                                style={{
+                                  backgroundColor: branding?.buttonBgHex || undefined,
+                                }}
+                                className="w-9 h-9 rounded-xl bg-slate-900 text-white font-extrabold text-xs flex items-center justify-center shadow-xs shrink-0 border border-slate-700/60"
+                              >
+                                {(provider.name || 'P').charAt(0).toUpperCase()}
                               </div>
                             )}
                             <div className="overflow-hidden min-w-0 flex-1">
