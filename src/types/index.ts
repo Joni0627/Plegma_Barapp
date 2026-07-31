@@ -16,33 +16,34 @@ export interface Provider {
   id: string;
   code: string;
   name: string;
-  commercialName: string;
-  rubro: string; // e.g., Lácteos, Carnes, Bebidas, Verduras, Almacén
+  commercialName?: string;
+  rubro?: string; // e.g., Lácteos, Carnes, Bebidas, Verduras, Almacén
   logoUrl?: string;
-  contactName: string;
-  phone: string;
-  whatsapp: string;
-  email: string;
-  cuit: string;
-  address: string;
+  contactName?: string;
+  phone?: string;
+  whatsapp?: string;
+  email?: string;
+  cuit?: string;
+  address?: string;
+  subrubro?: string;
   notes?: string;
 
   // Planning
-  orderDays: DayOfWeek[];
-  deliveryDays: DayOfWeek[];
-  priority: number; // 1 = highest
-  purchaseFrequency: 'Semanal' | 'Bisemanal' | 'Diario' | 'Quincenal';
-  cutoffTime: string; // e.g., "14:00"
-  habitualLeadTimeDays: number;
+  orderDays?: DayOfWeek[];
+  deliveryDays?: DayOfWeek[];
+  priority?: number; // 1 = highest
+  purchaseFrequency?: 'Semanal' | 'Bisemanal' | 'Diario' | 'Quincenal';
+  cutoffTime?: string; // e.g., "14:00"
+  habitualLeadTimeDays?: number;
   operationalNotes?: string;
 
   // Commercial
-  currentAccount: boolean;
-  acceptsCash: boolean;
-  acceptsTransfer: boolean;
-  acceptsCheque: boolean;
-  paymentTermDays: number;
-  paymentCondition: string; // e.g., "Contado", "7 días", "Cuenta Corriente 15 días"
+  currentAccount?: boolean;
+  acceptsCash?: boolean;
+  acceptsTransfer?: boolean;
+  acceptsCheque?: boolean;
+  paymentTermDays?: number;
+  paymentCondition?: string; // e.g., "Contado", "7 días", "Cuenta Corriente 15 días"
   commercialNotes?: string;
 
   // Banking
@@ -54,6 +55,21 @@ export interface Provider {
 
   // Status & Priority
   active: boolean;
+}
+
+export type PurchaseStatus = 'Recibida' | 'Anulada' | 'En Proceso';
+export type PaymentStatus = 'Pagada' | 'Pendiente' | 'Parcial' | 'Anulada';
+
+export interface ProviderPurchase {
+  id: string;
+  providerId: string;
+  purchaseDate: string; // [SYS]
+  voucherNumber: string; // Comprobante
+  totalAmount: number; // [AUTO]
+  paidAmount: number; // [AUTO]
+  purchaseStatus: PurchaseStatus;
+  paymentStatus: PaymentStatus;
+  notes?: string;
 }
 
 export interface Item {
@@ -205,18 +221,63 @@ export interface AuditLog {
   details?: string;
 }
 
+export type MovementType = 'Venta' | 'Recibo' | 'Ajuste';
+export type LineState = 'Pendiente' | 'Seleccionada' | 'Pagada';
+
+export interface CurrentAccountMovement {
+  id: string;
+  clientId: string;
+  dateTime: string;
+  voucherType: string;
+  type: MovementType;
+  total: number;
+  ticketDetail?: string;
+  lineState: LineState;
+}
+
 export interface Client {
   id: string;
   code: string;
-  name: string;
-  clientType: 'Salon' | 'Barra' | 'Eventos' | 'Delivery' | 'Corporativo';
-  contactName: string;
-  phone: string;
-  email: string;
+  name: string; // Cliente / Razón Social (Obligatorio)
+  phone: string; // Teléfono (Obligatorio)
+  address: string; // Dirección (Obligatorio)
+  hasCurrentAccount: boolean; // Cuenta Corriente (Sí/No, Obligatorio)
+  differentiatedBilling: boolean; // Cobro Diferenciado (Sí/No, Obligatorio, por defecto No)
+  isDefault: boolean; // Por Defecto (Sí/No, Obligatorio)
+  isGeneric: boolean; // Genérico (Sí/No, Obligatorio)
+  debt: number; // Deuda Moneda [AUTO]
+  active: boolean; // Activo (Sí/No, Obligatorio)
+  notes?: string; // Observaciones (Texto largo, opcional)
+
+  clientType?: 'Salon' | 'Barra' | 'Eventos' | 'Delivery' | 'Corporativo';
+  contactName?: string;
+  email?: string;
   cuit?: string;
-  address?: string;
   categoryId?: string;
-  active: boolean;
+}
+
+export type ModuleActionLevel = 'none' | 'view' | 'create' | 'edit' | 'full';
+
+export interface ModuleAccessMatrix {
+  kanban: ModuleActionLevel;
+  inbox: ModuleActionLevel;
+  items: ModuleActionLevel;
+  dashboard: ModuleActionLevel;
+  audit: ModuleActionLevel;
+  maestros: ModuleActionLevel;
+}
+
+export interface GranularRole {
+  id: string;
+  name: string;
+  description: string;
+  moduleAccess: ModuleAccessMatrix;
+}
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  description: string;
 }
 
 export interface AppUser {
@@ -226,7 +287,10 @@ export interface AppUser {
   email: string;
   phone?: string;
   address?: string;
-  role: UserRole;
+  profileId?: string;
+  profileName?: string;
+  assignedRoleIds: string[];
+  role?: UserRole;
   status: 'Activo' | 'Inactivo';
   lastAccess?: string;
   customPermissions?: Partial<UserPermissions>;

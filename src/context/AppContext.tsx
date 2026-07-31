@@ -75,6 +75,9 @@ interface AppContextType {
   hasPermission: (permission: keyof UserPermissions) => boolean;
   updateRolePermissions: (role: UserRole, newPerms: Partial<UserPermissions>) => void;
   providers: Provider[];
+  addProvider: (provider: Provider) => void;
+  updateProvider: (provider: Provider) => void;
+  deleteProvider: (providerId: string) => void;
   items: Item[];
   providerItems: ProviderItemRelation[];
   orders: Order[];
@@ -149,6 +152,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       email: 'admin@plegma.com',
       phone: '+54 11 5555-1111',
       address: 'Av. Santa Fe 1200, CABA',
+      profileId: 'p-1',
+      profileName: 'Administrador General',
+      assignedRoleIds: ['r-1'],
       role: 'admin',
       status: 'Activo',
       lastAccess: 'Hoy 10:30 hs',
@@ -168,6 +174,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       email: 'compras@plegma.com',
       phone: '+54 11 4444-2222',
       address: 'Calle Corrientes 3400, CABA',
+      profileId: 'p-2',
+      profileName: 'Encargado de Compras',
+      assignedRoleIds: ['r-2', 'r-5'],
       role: 'compras',
       status: 'Activo',
       lastAccess: 'Ayer 18:15 hs',
@@ -179,6 +188,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       email: 'recepcion@plegma.com',
       phone: '+54 11 3333-8888',
       address: 'Honduras 5100, CABA',
+      profileId: 'p-7',
+      profileName: 'Encargado de Depósito',
+      assignedRoleIds: ['r-3'],
       role: 'recepcion',
       status: 'Activo',
       lastAccess: 'Hace 2 horas',
@@ -287,6 +299,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const deleteUser = (userId: string) => {
     setUsers((prev) => (prev || []).filter((u) => u.id !== userId));
+  };
+
+  const addProvider = (newProvider: Provider) => {
+    setProviders((prev) => [newProvider, ...(prev || [])]);
+  };
+
+  const updateProvider = (updatedProvider: Provider) => {
+    setProviders((prev) => (prev || []).map((p) => (p.id === updatedProvider.id ? updatedProvider : p)));
+  };
+
+  const deleteProvider = (providerId: string) => {
+    setProviders((prev) => (prev || []).filter((p) => p.id !== providerId));
   };
 
   const updateUserCustomPermissions = (userId: string, perms: Partial<UserPermissions>) => {
@@ -430,8 +454,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const reorderProviderInDay = (providerId: string, day: DayOfWeek, direction: 'up' | 'down') => {
     setProviders((prev) => {
       const dayProviders = prev
-        .filter((p) => p.orderDays.includes(day))
-        .sort((a, b) => a.priority - b.priority);
+        .filter((p) => (p.orderDays ? p.orderDays.includes(day) : true))
+        .sort((a, b) => (a.priority || 0) - (b.priority || 0));
 
       const index = dayProviders.findIndex((p) => p.id === providerId);
       if (index === -1) return prev;
@@ -773,6 +797,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         hasPermission,
         updateRolePermissions,
         providers,
+        addProvider,
+        updateProvider,
+        deleteProvider,
         items,
         providerItems,
         orders,

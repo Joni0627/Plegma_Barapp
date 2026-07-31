@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Client, AppUser, Category, Warehouse, UserRole } from '../types';
+import { Client, AppUser, Category, Warehouse, UserRole, UserProfile, GranularRole, ModuleActionLevel, ModuleAccessMatrix, CurrentAccountMovement, Provider, ProviderPurchase } from '../types';
 import { Button } from './ui/Button';
 import { FormField, TextInput, SelectInput, SelectWithInlineAdd } from './ui/Form';
 import { StandardDataTable, Column } from './ui/DataTable';
@@ -27,6 +27,16 @@ import {
   Layout,
   Type,
   Paintbrush,
+  CreditCard,
+  FileText,
+  Phone,
+  Mail,
+  Search,
+  Filter,
+  ShoppingCart,
+  DollarSign,
+  Paperclip,
+  MessageSquare,
 } from 'lucide-react';
 
 interface MaestrosViewProps {
@@ -40,6 +50,9 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
 }) => {
   const {
     providers,
+    addProvider,
+    updateProvider,
+    deleteProvider,
     items,
     userRole,
     users,
@@ -59,36 +72,99 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
       id: 'cli-1',
       code: 'CLI-001',
       name: 'Salón Principal Las Heras',
-      clientType: 'Salón Eventos',
-      cuit: '30-71122334-9',
-      address: 'Av. Las Heras 2450',
-      email: 'salon@plegma.com',
       phone: '011-4555-9988',
+      address: 'Av. Las Heras 2450, CABA',
+      hasCurrentAccount: true,
+      differentiatedBilling: false,
+      isDefault: true,
+      isGeneric: false,
+      debt: 145000,
       active: true,
+      notes: 'Cliente preferencial para eventos de salón principal',
+      clientType: 'Salon',
+      cuit: '30-71122334-9',
+      email: 'salon@plegma.com',
     },
     {
       id: 'cli-2',
       code: 'CLI-002',
       name: 'Barra Speakeasy Palermo',
-      clientType: 'Barra / Coctelería',
-      cuit: '30-88776655-4',
-      address: 'Honduras 4890',
-      email: 'barras@plegma.com',
       phone: '011-4777-1122',
+      address: 'Honduras 4890, CABA',
+      hasCurrentAccount: true,
+      differentiatedBilling: true, // Cobro al costo
+      isDefault: false,
+      isGeneric: false,
+      debt: 68000,
       active: true,
+      notes: 'Habilitado cobro al costo operativo en insumos de coctelería',
+      clientType: 'Barra',
+      cuit: '30-88776655-4',
+      email: 'barras@plegma.com',
     },
     {
       id: 'cli-3',
       code: 'CLI-003',
-      name: 'Corporativo Tech Summit',
-      clientType: 'Catering Corporativo',
-      cuit: '30-65432109-1',
-      address: 'Puerto Madero 1100',
-      email: 'eventos@techsummit.com',
-      phone: '011-5222-3344',
+      name: 'Consumidor Final (Venta Mostrador)',
+      phone: '011-0000-0000',
+      address: 'Venta Directa Local',
+      hasCurrentAccount: false,
+      differentiatedBilling: false,
+      isDefault: false,
+      isGeneric: true,
+      debt: 0,
       active: true,
+      notes: 'Cliente genérico por defecto para comprobantes de mostrador',
+      clientType: 'Delivery',
+      cuit: '00-00000000-0',
+      email: 'generico@plegma.com',
     },
   ]);
+
+  const [currentAccountMovements, setCurrentAccountMovements] = useState<CurrentAccountMovement[]>([
+    {
+      id: 'mov-1',
+      clientId: 'cli-1',
+      dateTime: '2026-07-28 14:30 hs',
+      voucherType: 'Ticket #1042',
+      type: 'Venta',
+      total: 195000,
+      ticketDetail: '10x Vinos Malbec Reserva, 5x Tabla de Quesos VIP',
+      lineState: 'Pendiente',
+    },
+    {
+      id: 'mov-2',
+      clientId: 'cli-1',
+      dateTime: '2026-07-29 11:15 hs',
+      voucherType: 'Recibo #085',
+      type: 'Recibo',
+      total: 50000,
+      ticketDetail: 'Pago a cuenta vía Transferencia Bancaria',
+      lineState: 'Pagada',
+    },
+    {
+      id: 'mov-3',
+      clientId: 'cli-2',
+      dateTime: '2026-07-30 09:00 hs',
+      voucherType: 'Ticket #1050 (Al Costo)',
+      type: 'Venta',
+      total: 68000,
+      ticketDetail: '20x Gin Aposento, 10x Pack Tónica (Valorizado al Costo)',
+      lineState: 'Pendiente',
+    },
+  ]);
+
+  const [viewingCurrentAccountClient, setViewingCurrentAccountClient] = useState<Client | null>(null);
+
+  const getClientDebt = (clientId: string) => {
+    const movs = currentAccountMovements.filter((m) => m.clientId === clientId);
+    return movs.reduce((acc, m) => {
+      if (m.type === 'Venta') return acc + m.total;
+      if (m.type === 'Recibo') return acc - m.total;
+      if (m.type === 'Ajuste') return acc + m.total;
+      return acc;
+    }, 0);
+  };
 
   const [categories, setCategories] = useState<Category[]>([
     { id: 'cat-1', name: 'Fresco & Lácteos', description: 'Quesos, manteca, crema y lácteos frescos', itemCount: 12 },
@@ -103,17 +179,148 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
     { id: 'wh-3', code: 'BAR-01', name: 'Barra & Salón', type: 'Barra', responsibleName: 'Sofía Rossi', active: true },
   ]);
 
+  // Perfiles de Puesto (Cargos)
+  const [userProfiles, setUserProfiles] = useState<UserProfile[]>([
+    { id: 'p-1', name: 'Administrador General', description: 'Acceso y supervisión integral de todos los procesos del local' },
+    { id: 'p-2', name: 'Encargado de Compras', description: 'Planificación de pedidos, negociación y registro de compras' },
+    { id: 'p-3', name: 'Cocinero / Chef', description: 'Conteo de stock diario en cocina, requerimientos e insumos' },
+    { id: 'p-4', name: 'Cajero / Facturación', description: 'Control de órdenes, rendición de caja y pagos a proveedores' },
+    { id: 'p-5', name: 'Mozo / Atención Salón', description: 'Toma de comensales y seguimiento de órdenes' },
+    { id: 'p-6', name: 'Barman / Coctelería', description: 'Gestión de insumos de barra y stock de bebidas' },
+    { id: 'p-7', name: 'Encargado de Depósito', description: 'Recepción física de proveedores y control de stock central' },
+  ]);
+
+  // Roles Granulares (Permisos por Módulo)
+  const [granularRoles, setGranularRoles] = useState<GranularRole[]>([
+    {
+      id: 'r-1',
+      name: 'Rol Administrador Total',
+      description: 'Acceso total (ver, crear, editar y eliminar) a todos los módulos',
+      moduleAccess: { kanban: 'full', inbox: 'full', items: 'full', dashboard: 'full', audit: 'full', maestros: 'full' },
+    },
+    {
+      id: 'r-2',
+      name: 'Rol Compras & Pedidos',
+      description: 'Edición en Kanban e Inbox, alta de insumos y consulta de dashboard',
+      moduleAccess: { kanban: 'edit', inbox: 'edit', items: 'create', dashboard: 'view', audit: 'none', maestros: 'view' },
+    },
+    {
+      id: 'r-3',
+      name: 'Rol Recepción & Depósito',
+      description: 'Ingreso de mercaderías, actualización de insumos y auditoría',
+      moduleAccess: { kanban: 'edit', inbox: 'view', items: 'edit', dashboard: 'none', audit: 'view', maestros: 'none' },
+    },
+    {
+      id: 'r-4',
+      name: 'Rol Caja & Facturación',
+      description: 'Gestión completa de pagos, órdenes y métricas de facturación',
+      moduleAccess: { kanban: 'view', inbox: 'full', items: 'view', dashboard: 'view', audit: 'none', maestros: 'view' },
+    },
+    {
+      id: 'r-5',
+      name: 'Rol Solo Consulta (Auditor)',
+      description: 'Permiso de lectura únicamente en todos los módulos sin edición',
+      moduleAccess: { kanban: 'view', inbox: 'view', items: 'view', dashboard: 'view', audit: 'view', maestros: 'view' },
+    },
+  ]);
+
   // Active Sub-view State (null = Main Grid Dashboard)
   const [activeSubView, setActiveSubView] = useState<
-    'clientes' | 'usuarios' | 'perfiles' | 'categorias' | 'depositos' | 'branding' | null
+    'clientes' | 'proveedores' | 'usuarios' | 'perfiles' | 'categorias' | 'depositos' | 'branding' | null
   >(null);
 
   // Form Modal State (for creating or editing records)
   const [formModal, setFormModal] = useState<{
-    entity: 'cliente' | 'usuario' | 'categoria' | 'deposito';
+    entity: 'cliente' | 'proveedor' | 'usuario' | 'perfil' | 'rol' | 'categoria' | 'deposito';
     isNew: boolean;
     data: any;
   } | null>(null);
+
+  // Provider Purchases & Detail Modal State
+  const [providerPurchases, setProviderPurchases] = useState<ProviderPurchase[]>([
+    {
+      id: 'pur-1',
+      providerId: 'prov-4', // Carnicería 6 Esquinas
+      purchaseDate: '12/06/2026 11:45',
+      voucherNumber: 'FC A 0001-00002345',
+      totalAmount: 245000,
+      paidAmount: 245000,
+      purchaseStatus: 'Recibida',
+      paymentStatus: 'Pagada',
+      notes: 'Factura A de carne vacuna fresca y pollo',
+    },
+    {
+      id: 'pur-2',
+      providerId: 'prov-4',
+      purchaseDate: '05/06/2026 10:20',
+      voucherNumber: 'FC A 0001-00002312',
+      totalAmount: 375500,
+      paidAmount: 0,
+      purchaseStatus: 'Recibida',
+      paymentStatus: 'Pendiente',
+      notes: 'Compra a crédito 15 días',
+    },
+    {
+      id: 'pur-3',
+      providerId: 'prov-4',
+      purchaseDate: '29/05/2026 09:10',
+      voucherNumber: 'FC A 0001-00002290',
+      totalAmount: 186300,
+      paidAmount: 186300,
+      purchaseStatus: 'Recibida',
+      paymentStatus: 'Pagada',
+      notes: 'Pago por transferencia bancaria',
+    },
+    {
+      id: 'pur-4',
+      providerId: 'prov-4',
+      purchaseDate: '18/05/2026 14:33',
+      voucherNumber: 'FC A 0001-00002245',
+      totalAmount: 540000,
+      paidAmount: 0,
+      purchaseStatus: 'Recibida',
+      paymentStatus: 'Pendiente',
+      notes: 'Insumos evento salón principal',
+    },
+    {
+      id: 'pur-5',
+      providerId: 'prov-4',
+      purchaseDate: '02/05/2026 08:55',
+      voucherNumber: 'NC A 0001-00000234',
+      totalAmount: -45000,
+      paidAmount: -45000,
+      purchaseStatus: 'Anulada',
+      paymentStatus: 'Pagada',
+      notes: 'Nota de crédito por devolución parcial',
+    },
+    {
+      id: 'pur-6',
+      providerId: 'prov-1', // Turboblender
+      purchaseDate: '15/06/2026 16:00',
+      voucherNumber: 'FC A 0002-00011400',
+      totalAmount: 480000,
+      paidAmount: 200000,
+      purchaseStatus: 'Recibida',
+      paymentStatus: 'Parcial',
+      notes: 'Equipamiento licuadora industrial',
+    },
+  ]);
+
+  const [viewingProviderDetail, setViewingProviderDetail] = useState<Provider | null>(null);
+  const [activeProviderTab, setActiveProviderTab] = useState<'compras' | 'documentos' | 'notas' | 'contactos' | 'adjuntos'>('compras');
+
+  // Auto calculation functions for Provider Account State
+  const getProviderStats = (providerId: string) => {
+    const purchases = providerPurchases.filter((p) => p.providerId === providerId);
+    const validPurchases = purchases.filter((p) => p.purchaseStatus !== 'Anulada');
+    
+    const totalComprado = validPurchases.reduce((sum, p) => sum + p.totalAmount, 0);
+    const totalPagado = validPurchases.reduce((sum, p) => sum + p.paidAmount, 0);
+    const saldoPendiente = totalComprado - totalPagado;
+    const count = purchases.length;
+
+    return { totalComprado, totalPagado, saldoPendiente, count };
+  };
 
   // Confirmation Dialog State
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -159,13 +366,18 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
           id: client.id || '',
           code: client.code || '',
           name: client.name || '',
+          phone: client.phone || '',
+          address: client.address || '',
+          hasCurrentAccount: client.hasCurrentAccount ?? true,
+          differentiatedBilling: client.hasCurrentAccount ? (client.differentiatedBilling ?? false) : false,
+          isDefault: client.isDefault ?? false,
+          isGeneric: client.isGeneric ?? false,
+          debt: client.debt ?? getClientDebt(client.id),
+          active: client.active ?? true,
+          notes: client.notes || '',
           clientType: client.clientType || 'Salon',
           cuit: client.cuit || '',
-          address: client.address || '',
-          phone: client.phone || '',
           email: client.email || '',
-          categoryId: client.categoryId || '',
-          active: client.active ?? true,
         },
       });
     } else {
@@ -176,34 +388,83 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
           id: 'cli-' + Date.now(),
           code: `CLI-00${clients.length + 1}`,
           name: '',
+          phone: '',
+          address: '',
+          hasCurrentAccount: true,
+          differentiatedBilling: false, // Default = false
+          isDefault: false,
+          isGeneric: false,
+          debt: 0,
+          active: true,
+          notes: '',
           clientType: 'Salon',
           cuit: '',
-          address: '',
-          phone: '',
           email: '',
-          categoryId: '',
-          active: true,
         },
       });
     }
   };
 
-  const handleSaveClient = (clientData: Client, isNew: boolean) => {
-    if (!clientData.name?.trim()) return;
-    const actionWord = isNew ? 'guardar' : 'actualizar';
+  const handleSaveClient = (clientData: any, isNew: boolean) => {
+    // Validaciones 3.5: Cliente, Teléfono y Dirección son obligatorios
+    if (!clientData.name?.trim() || !clientData.phone?.trim() || !clientData.address?.trim()) {
+      showToast('Por favor completa los campos obligatorios: Cliente, Teléfono y Dirección.', 'danger');
+      return;
+    }
+
+    // Regla de Cobro Diferenciado: solo si Cuenta Corriente = Sí
+    const finalHasCC = Boolean(clientData.hasCurrentAccount);
+    const finalDiffBilling = finalHasCC ? Boolean(clientData.differentiatedBilling) : false;
+
+    const formattedClient: Client = {
+      id: clientData.id,
+      code: clientData.code || `CLI-${Date.now()}`,
+      name: clientData.name.trim(),
+      phone: clientData.phone.trim(),
+      address: clientData.address.trim(),
+      hasCurrentAccount: finalHasCC,
+      differentiatedBilling: finalDiffBilling,
+      isDefault: Boolean(clientData.isDefault),
+      isGeneric: Boolean(clientData.isGeneric),
+      debt: isNew ? 0 : (clientData.debt ?? getClientDebt(clientData.id)),
+      active: Boolean(clientData.active),
+      notes: clientData.notes || '',
+      clientType: clientData.clientType || 'Salon',
+      cuit: clientData.cuit || '',
+      email: clientData.email || '',
+    };
 
     setConfirmDialog({
       title: isNew ? 'Confirmar Nuevo Cliente' : 'Guardar Modificaciones de Cliente',
-      message: `¿Estás seguro de que deseas ${actionWord} los datos del cliente "${clientData.name}"?`,
+      message: `¿Estás seguro de guardar los datos del cliente "${formattedClient.name}"?`,
       confirmText: isNew ? 'Crear Cliente' : 'Guardar Cambios',
       onConfirm: () => {
-        if (isNew) {
-          setClients((prev) => [clientData, ...prev]);
-          showToast(`Cliente "${clientData.name}" registrado con éxito.`, 'success');
-        } else {
-          setClients((prev) => prev.map((c) => (c.id === clientData.id ? clientData : c)));
-          showToast(`Cliente "${clientData.name}" actualizado correctamente.`, 'success');
-        }
+        setClients((prev) => {
+          let updated = [...prev];
+          
+          // Regla 3.5: No debe permitirse más de un cliente marcado como Por Defecto = Sí
+          if (formattedClient.isDefault) {
+            updated = updated.map((c) => ({ ...c, isDefault: false }));
+          }
+
+          // Regla 3.5: No debe permitirse más de un cliente marcado como Genérico = Sí
+          if (formattedClient.isGeneric) {
+            updated = updated.map((c) => ({ ...c, isGeneric: false }));
+          }
+
+          if (isNew) {
+            return [formattedClient, ...updated];
+          } else {
+            return updated.map((c) => (c.id === formattedClient.id ? formattedClient : c));
+          }
+        });
+
+        showToast(
+          isNew
+            ? `Cliente "${formattedClient.name}" registrado con éxito.`
+            : `Cliente "${formattedClient.name}" actualizado correctamente.`,
+          'success'
+        );
         setFormModal(null);
       },
     });
@@ -223,6 +484,115 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
     });
   };
 
+  // 1.B PROVEEDORES
+  const handleOpenProviderForm = (provider?: Provider) => {
+    if (provider) {
+      setFormModal({
+        entity: 'proveedor',
+        isNew: false,
+        data: {
+          id: provider.id,
+          code: provider.code || '',
+          name: provider.name || '',
+          commercialName: provider.commercialName || '',
+          phone: provider.phone || '',
+          email: provider.email || '',
+          address: provider.address || '',
+          rubro: provider.rubro || 'Equipamiento',
+          subrubro: provider.subrubro || '',
+          cuit: provider.cuit || '',
+          active: provider.active ?? true,
+          notes: provider.notes || '',
+        },
+      });
+    } else {
+      setFormModal({
+        entity: 'proveedor',
+        isNew: true,
+        data: {
+          id: 'prov-' + Date.now(),
+          code: `PRV-00${providers.length + 1}`,
+          name: '',
+          commercialName: '',
+          phone: '',
+          email: '',
+          address: '',
+          rubro: 'Equipamiento',
+          subrubro: '',
+          cuit: '',
+          active: true,
+          notes: '',
+        },
+      });
+    }
+  };
+
+  const handleSaveProvider = (providerData: any, isNew: boolean) => {
+    // Validaciones 8: El campo Proveedor (Nombre) es obligatorio
+    if (!providerData.name?.trim()) {
+      showToast('Por favor ingresa el nombre o razón social del proveedor.', 'danger');
+      return;
+    }
+
+    const cleanName = providerData.name.trim();
+
+    // Validaciones 8: No se permite duplicar proveedores con el mismo nombre
+    const isDuplicate = providers.some(
+      (p) => p.id !== providerData.id && p.name.trim().toLowerCase() === cleanName.toLowerCase()
+    );
+    if (isDuplicate) {
+      showToast(`Ya existe un proveedor registrado con el nombre "${cleanName}".`, 'danger');
+      return;
+    }
+
+    const formattedProvider: Provider = {
+      id: providerData.id,
+      code: providerData.code || `PRV-${Date.now()}`,
+      name: cleanName,
+      commercialName: providerData.commercialName?.trim() || cleanName,
+      phone: providerData.phone?.trim() || '',
+      email: providerData.email?.trim() || '',
+      address: providerData.address?.trim() || '',
+      rubro: providerData.rubro || 'Varios',
+      subrubro: providerData.subrubro?.trim() || '',
+      cuit: providerData.cuit?.trim() || '',
+      active: Boolean(providerData.active),
+      notes: providerData.notes || '',
+      contactName: providerData.contactName || cleanName,
+      whatsapp: providerData.phone || '',
+    };
+
+    setConfirmDialog({
+      title: isNew ? 'Confirmar Nuevo Proveedor' : 'Guardar Modificaciones de Proveedor',
+      message: `¿Estás seguro de guardar los datos del proveedor "${formattedProvider.name}"?`,
+      confirmText: isNew ? 'Crear Proveedor' : 'Guardar Cambios',
+      onConfirm: () => {
+        if (isNew) {
+          addProvider(formattedProvider);
+          showToast(`Proveedor "${formattedProvider.name}" registrado con éxito.`, 'success');
+        } else {
+          updateProvider(formattedProvider);
+          showToast(`Proveedor "${formattedProvider.name}" actualizado correctamente.`, 'success');
+        }
+        setFormModal(null);
+      },
+    });
+  };
+
+  const handleDeleteProvider = (providerId: string, providerName: string) => {
+    setConfirmDialog({
+      title: '¡Atención! Eliminar Proveedor',
+      message: `¿Confirmas eliminar permanentemente al proveedor "${providerName}"?`,
+      confirmText: 'Eliminar Proveedor',
+      isDanger: true,
+      onConfirm: () => {
+        deleteProvider(providerId);
+        showToast(`Proveedor "${providerName}" eliminado.`, 'danger');
+        setFormModal(null);
+      },
+    });
+  };
+
   // 2. USUARIOS
   const handleOpenUserForm = (user?: AppUser) => {
     if (user) {
@@ -236,7 +606,8 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
           email: user.email || '',
           phone: user.phone || '',
           address: user.address || '',
-          role: user.role || 'compras',
+          profileId: user.profileId || userProfiles[0]?.id || 'p-1',
+          assignedRoleIds: user.assignedRoleIds || ['r-1'],
           status: user.status || 'Activo',
           lastAccess: user.lastAccess || 'Hoy',
           canInlineCreate: user.customPermissions?.canInlineCreate ?? true,
@@ -256,7 +627,8 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
           email: '',
           phone: '',
           address: '',
-          role: 'compras',
+          profileId: userProfiles[0]?.id || 'p-1',
+          assignedRoleIds: ['r-1'],
           status: 'Activo',
           canInlineCreate: true,
           canCreate: true,
@@ -270,6 +642,8 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
   const handleSaveUser = (userData: any, isNew: boolean) => {
     if (!userData.dni?.trim() || !userData.name?.trim() || !userData.email?.trim()) return;
 
+    const selectedProfile = userProfiles.find((p) => p.id === userData.profileId);
+
     const userToSave: AppUser = {
       id: userData.dni.trim(),
       dni: userData.dni.trim(),
@@ -277,7 +651,10 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
       email: userData.email.trim(),
       phone: userData.phone || '',
       address: userData.address || '',
-      role: userData.role || 'compras',
+      profileId: userData.profileId || 'p-1',
+      profileName: selectedProfile?.name || 'Administrador General',
+      assignedRoleIds: userData.assignedRoleIds || ['r-1'],
+      role: 'admin',
       status: userData.status || 'Activo',
       lastAccess: isNew ? 'Recién creado' : userData.lastAccess,
       customPermissions: {
@@ -314,6 +691,122 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
       onConfirm: () => {
         deleteUser(userId);
         showToast(`Usuario "${userName}" eliminado.`, 'danger');
+        setFormModal(null);
+      },
+    });
+  };
+
+  // 2.b PERFILES (Cargos)
+  const handleOpenProfileForm = (profile?: UserProfile) => {
+    if (profile) {
+      setFormModal({
+        entity: 'perfil',
+        isNew: false,
+        data: { ...profile },
+      });
+    } else {
+      setFormModal({
+        entity: 'perfil',
+        isNew: true,
+        data: {
+          id: 'p-' + Date.now(),
+          name: '',
+          description: '',
+        },
+      });
+    }
+  };
+
+  const handleSaveProfile = (profileData: UserProfile, isNew: boolean) => {
+    if (!profileData.name?.trim()) return;
+    setConfirmDialog({
+      title: isNew ? 'Crear Nuevo Perfil (Cargo)' : 'Guardar Modificaciones de Perfil',
+      message: `¿Confirmas ${isNew ? 'crear' : 'actualizar'} el perfil "${profileData.name}"?`,
+      confirmText: isNew ? 'Crear Perfil' : 'Guardar Cambios',
+      onConfirm: () => {
+        if (isNew) {
+          setUserProfiles((prev) => [...prev, profileData]);
+          showToast(`Perfil "${profileData.name}" registrado correctamente.`, 'success');
+        } else {
+          setUserProfiles((prev) => prev.map((p) => (p.id === profileData.id ? profileData : p)));
+          showToast(`Perfil "${profileData.name}" actualizado.`, 'success');
+        }
+        setFormModal(null);
+      },
+    });
+  };
+
+  const handleDeleteProfile = (profileId: string, profileName: string) => {
+    setConfirmDialog({
+      title: 'Eliminar Perfil (Cargo)',
+      message: `¿Confirmas eliminar el perfil "${profileName}"?`,
+      confirmText: 'Eliminar Perfil',
+      isDanger: true,
+      onConfirm: () => {
+        setUserProfiles((prev) => prev.filter((p) => p.id !== profileId));
+        showToast(`Perfil "${profileName}" eliminado.`, 'danger');
+        setFormModal(null);
+      },
+    });
+  };
+
+  // 2.c ROLES GRANULARES
+  const handleOpenRoleForm = (role?: GranularRole) => {
+    if (role) {
+      setFormModal({
+        entity: 'rol',
+        isNew: false,
+        data: JSON.parse(JSON.stringify(role)),
+      });
+    } else {
+      setFormModal({
+        entity: 'rol',
+        isNew: true,
+        data: {
+          id: 'r-' + Date.now(),
+          name: '',
+          description: '',
+          moduleAccess: {
+            kanban: 'view',
+            inbox: 'view',
+            items: 'view',
+            dashboard: 'view',
+            audit: 'none',
+            maestros: 'none',
+          },
+        },
+      });
+    }
+  };
+
+  const handleSaveRole = (roleData: GranularRole, isNew: boolean) => {
+    if (!roleData.name?.trim()) return;
+    setConfirmDialog({
+      title: isNew ? 'Crear Rol Granular' : 'Guardar Modificaciones de Rol',
+      message: `¿Confirmas ${isNew ? 'crear' : 'modificar'} el rol "${roleData.name}"?`,
+      confirmText: isNew ? 'Crear Rol' : 'Guardar Cambios',
+      onConfirm: () => {
+        if (isNew) {
+          setGranularRoles((prev) => [...prev, roleData]);
+          showToast(`Rol "${roleData.name}" creado con éxito.`, 'success');
+        } else {
+          setGranularRoles((prev) => prev.map((r) => (r.id === roleData.id ? roleData : r)));
+          showToast(`Rol "${roleData.name}" actualizado.`, 'success');
+        }
+        setFormModal(null);
+      },
+    });
+  };
+
+  const handleDeleteRole = (roleId: string, roleName: string) => {
+    setConfirmDialog({
+      title: 'Eliminar Rol Granular',
+      message: `¿Confirmas eliminar el rol "${roleName}"?`,
+      confirmText: 'Eliminar Rol',
+      isDanger: true,
+      onConfirm: () => {
+        setGranularRoles((prev) => prev.filter((r) => r.id !== roleId));
+        showToast(`Rol "${roleName}" eliminado.`, 'danger');
         setFormModal(null);
       },
     });
@@ -461,40 +954,238 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
 
   // --- TABLE COLUMNS ---
   const clientColumns: Column<Client>[] = [
-    { key: 'code', header: 'Código', width: '12%', render: (c) => <span>{c?.code || '-'}</span> },
-    { key: 'name', header: 'Cliente / Salón', render: (c) => <span className="font-bold text-slate-900">{c?.name || '-'}</span> },
-    { key: 'clientType', header: 'Tipo', render: (c) => <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded font-semibold text-[10px]">{c?.clientType || '-'}</span> },
-    { key: 'cuit', header: 'CUIT', render: (c) => <span className="font-mono text-slate-600">{c?.cuit || '-'}</span> },
-    { key: 'phone', header: 'Contacto', render: (c) => <span>{c?.phone || '-'}</span> },
+    {
+      key: 'name',
+      header: 'Cliente / Razón Social',
+      render: (c) => (
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-slate-900">{c?.name || '-'}</span>
+            {c?.isDefault && (
+              <span className="px-2 py-0.5 bg-amber-100 text-amber-900 font-extrabold text-[10px] rounded-full border border-amber-300">
+                Por Defecto
+              </span>
+            )}
+            {c?.isGeneric && (
+              <span className="px-2 py-0.5 bg-cyan-100 text-cyan-900 font-extrabold text-[10px] rounded-full border border-cyan-300">
+                Genérico
+              </span>
+            )}
+          </div>
+          <span className="text-[11px] text-slate-500 block">{c?.code || '-'} {c?.cuit ? `| CUIT: ${c.cuit}` : ''}</span>
+        </div>
+      ),
+    },
+    { key: 'phone', header: 'Teléfono', render: (c) => <span className="font-medium">{c?.phone || '-'}</span> },
+    { key: 'address', header: 'Dirección', render: (c) => <span className="text-slate-600 text-xs">{c?.address || '-'}</span> },
+    {
+      key: 'hasCurrentAccount',
+      header: 'Cuenta Corriente',
+      align: 'center',
+      render: (c) => (
+        <span className={`px-2.5 py-1 rounded-full font-extrabold text-[10px] ${c?.hasCurrentAccount ? 'bg-emerald-100 text-emerald-900' : 'bg-slate-100 text-slate-600'}`}>
+          {c?.hasCurrentAccount ? 'SÍ' : 'NO'}
+        </span>
+      ),
+    },
+    {
+      key: 'differentiatedBilling',
+      header: 'Cobro Diferenciado',
+      align: 'center',
+      render: (c) => (
+        <span className={`px-2.5 py-1 rounded-full font-extrabold text-[10px] ${c?.differentiatedBilling ? 'bg-purple-100 text-purple-900 border border-purple-300' : 'bg-slate-100 text-slate-500'}`}>
+          {c?.differentiatedBilling ? 'SÍ (Al Costo)' : 'NO'}
+        </span>
+      ),
+    },
+    {
+      key: 'debt',
+      header: 'Deuda [AUTO]',
+      align: 'right',
+      render: (c) => {
+        const debtVal = getClientDebt(c?.id || '');
+        return (
+          <span className={`font-mono font-extrabold text-xs ${debtVal > 0 ? 'text-rose-700' : 'text-slate-700'}`}>
+            ${debtVal.toLocaleString('es-AR')}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'active',
+      header: 'Estado',
+      align: 'center',
+      render: (c) => (
+        <span className={`px-2 py-0.5 rounded font-semibold text-[10px] ${c?.active ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}`}>
+          {c?.active ? 'Activo' : 'Inactivo'}
+        </span>
+      ),
+    },
     {
       key: 'actions',
-      header: 'Acción',
+      header: 'Acciones',
       align: 'center',
-      width: '10%',
+      width: '14%',
       render: (c) => (
-        <Button
-          onClick={(e) => {
-            e.stopPropagation();
-            if (c) handleOpenClientForm(c);
-          }}
-          variant="outline"
-          size="sm"
-          className="p-1.5 h-auto text-xs"
-        >
-          <Edit3 className="w-3.5 h-3.5 text-indigo-600" />
-        </Button>
+        <div className="flex items-center justify-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+          {c?.hasCurrentAccount && (
+            <Button
+              onClick={() => setViewingCurrentAccountClient(c)}
+              variant="outline"
+              size="sm"
+              className="p-1.5 h-auto text-[11px] bg-slate-50 hover:bg-indigo-50 border-slate-300 text-indigo-700"
+              title="Ver Ficha / Cuenta Corriente"
+            >
+              <FileText className="w-3.5 h-3.5" />
+            </Button>
+          )}
+          <Button
+            onClick={() => handleOpenClientForm(c)}
+            variant="outline"
+            size="sm"
+            className="p-1.5 h-auto text-xs"
+            title="Editar Cliente"
+          >
+            <Edit3 className="w-3.5 h-3.5 text-indigo-600" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
+
+  const providerColumns: Column<Provider>[] = [
+    {
+      key: 'name',
+      header: 'Proveedor',
+      render: (p) => (
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-slate-900">{p?.name || '-'}</span>
+          </div>
+          <span className="text-[11px] text-slate-500 block">
+            {p?.code || '-'} {p?.cuit ? `| CUIT: ${p.cuit}` : ''}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: 'phone',
+      header: 'Teléfono',
+      render: (p) => (
+        <div className="flex items-center gap-1.5 font-medium text-slate-700">
+          <span>{p?.phone || '-'}</span>
+          {p?.phone && (
+            <a
+              href={`https://wa.me/${p.phone.replace(/[^0-9]/g, '')}`}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="p-1 bg-emerald-50 text-emerald-600 rounded-md hover:bg-emerald-100 transition"
+              title="Contactar por WhatsApp"
+            >
+              <Phone className="w-3 h-3" />
+            </a>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'email',
+      header: 'Email',
+      render: (p) => (
+        <div className="flex items-center gap-1.5">
+          <span className="text-slate-600 text-xs truncate max-w-[180px]">{p?.email || '-'}</span>
+          {p?.email && (
+            <a
+              href={`mailto:${p.email}`}
+              onClick={(e) => e.stopPropagation()}
+              className="p-1 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition"
+              title="Enviar Email"
+            >
+              <Mail className="w-3 h-3" />
+            </a>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'rubro',
+      header: 'Rubro',
+      render: (p) => (
+        <div>
+          <span className="px-2.5 py-0.5 bg-indigo-100 text-indigo-900 font-bold text-[10px] rounded-full block w-fit">
+            {p?.rubro || 'General'}
+          </span>
+          {p?.subrubro && (
+            <span className="text-[10px] text-slate-500 mt-0.5 block">
+              {p.subrubro}
+            </span>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'active',
+      header: 'Estado',
+      align: 'center',
+      render: (p) => (
+        <span className={`px-2.5 py-1 rounded-full font-bold text-[10px] ${p?.active ? 'bg-emerald-100 text-emerald-900' : 'bg-amber-100 text-amber-900'}`}>
+          {p?.active ? 'Activo' : 'Inactivo'}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'Acciones',
+      align: 'center',
+      width: '14%',
+      render: (p) => (
+        <div className="flex items-center justify-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+          <Button
+            onClick={() => setViewingProviderDetail(p)}
+            variant="outline"
+            size="sm"
+            className="p-1.5 h-auto text-[11px] bg-slate-50 hover:bg-indigo-50 border-slate-300 text-indigo-700"
+            title="Ver Ficha / Estado de Cuenta"
+          >
+            <FileText className="w-3.5 h-3.5" />
+          </Button>
+          <Button
+            onClick={() => handleOpenProviderForm(p)}
+            variant="outline"
+            size="sm"
+            className="p-1.5 h-auto text-xs"
+            title="Editar Proveedor"
+          >
+            <Edit3 className="w-3.5 h-3.5 text-indigo-600" />
+          </Button>
+        </div>
       ),
     },
   ];
 
   const userColumns: Column<AppUser>[] = [
-    { key: 'dni', header: 'DNI (Key)', render: (u) => <span className="font-mono font-bold text-indigo-700">{u?.dni || u?.id || '-'}</span> },
+    { key: 'dni', header: 'DNI', render: (u) => <span className="font-mono font-bold text-indigo-700">{u?.dni || u?.id || '-'}</span> },
     { key: 'name', header: 'Nombre / Apellido', render: (u) => <span className="font-bold text-slate-900">{u?.name || '-'}</span> },
     { key: 'email', header: 'Email', render: (u) => <span>{u?.email || '-'}</span> },
-    { key: 'phone', header: 'Teléfono', render: (u) => <span>{u?.phone || '-'}</span> },
-    { key: 'address', header: 'Dirección', render: (u) => <span className="text-slate-500">{u?.address || '-'}</span> },
-    { key: 'role', header: 'Rol', render: (u) => <span className="px-2 py-0.5 bg-indigo-100 text-indigo-800 font-bold uppercase text-[10px] rounded">{u?.role || 'admin'}</span> },
-    { key: 'status', header: 'Estado', render: (u) => <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 font-semibold text-[10px] rounded">{u?.status || 'Activo'}</span> },
+    { key: 'profileName', header: 'Perfil (Cargo)', render: (u) => <span className="px-2.5 py-1 bg-purple-100 text-purple-900 font-bold text-xs rounded-lg">{u?.profileName || 'Administrador General'}</span> },
+    {
+      key: 'assignedRoleIds',
+      header: 'Roles Asignados',
+      render: (u) => {
+        const roles = (u?.assignedRoleIds || []).map((rid) => granularRoles.find((gr) => gr.id === rid)?.name || rid);
+        return (
+          <div className="flex flex-wrap gap-1">
+            {roles.map((rName, idx) => (
+              <span key={idx} className="px-2 py-0.5 bg-amber-100 text-amber-900 font-semibold text-[10px] rounded-full border border-amber-200 shadow-xs">
+                {rName}
+              </span>
+            ))}
+          </div>
+        );
+      },
+    },
+    { key: 'status', header: 'Estado', render: (u) => <span className={`px-2 py-0.5 font-semibold text-[10px] rounded ${u?.status === 'Activo' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'}`}>{u?.status || 'Activo'}</span> },
     {
       key: 'actions',
       header: 'Acción',
@@ -510,6 +1201,91 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
           size="sm"
           className="p-1.5 h-auto text-xs"
         >
+          <Edit3 className="w-3.5 h-3.5 text-indigo-600" />
+        </Button>
+      ),
+    },
+  ];
+
+  const profileColumns: Column<UserProfile>[] = [
+    { key: 'name', header: 'Nombre del Perfil (Cargo)', render: (p) => <span className="font-bold text-slate-900">{p?.name || '-'}</span> },
+    { key: 'description', header: 'Descripción / Responsabilidades del Cargo', render: (p) => <span className="text-slate-600 text-xs">{p?.description || '-'}</span> },
+    {
+      key: 'actions',
+      header: 'Acción',
+      align: 'center',
+      width: '12%',
+      render: (p) => (
+        <Button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (p) handleOpenProfileForm(p);
+          }}
+          variant="outline"
+          size="sm"
+          className="p-1.5 h-auto text-xs"
+        >
+          <Edit3 className="w-3.5 h-3.5 text-indigo-600" />
+        </Button>
+      ),
+    },
+  ];
+
+  const actionLevelBadges: Record<ModuleActionLevel, { label: string; color: string }> = {
+    none: { label: 'No ver', color: 'bg-slate-100 text-slate-500' },
+    view: { label: 'Ver', color: 'bg-blue-100 text-blue-800' },
+    create: { label: 'Crear', color: 'bg-emerald-100 text-emerald-800 font-semibold' },
+    edit: { label: 'Editar', color: 'bg-amber-100 text-amber-900 font-semibold' },
+    full: { label: 'Acceso Total', color: 'bg-purple-100 text-purple-900 font-extrabold' },
+  };
+
+  const granularRoleColumns: Column<GranularRole>[] = [
+    { key: 'name', header: 'Nombre del Rol', render: (r) => <span className="font-bold text-slate-900">{r?.name || '-'}</span> },
+    { key: 'description', header: 'Descripción', render: (r) => <span className="text-slate-500 text-xs">{r?.description || '-'}</span> },
+    {
+      key: 'moduleAccess',
+      header: 'Matriz de Permisos por Módulo',
+      render: (r) => {
+        if (!r?.moduleAccess) return <span>-</span>;
+        const modules: { key: keyof ModuleAccessMatrix; label: string }[] = [
+          { key: 'kanban', label: 'Kanban' },
+          { key: 'inbox', label: 'Pedidos' },
+          { key: 'items', label: 'Insumos' },
+          { key: 'dashboard', label: 'Dashboard' },
+          { key: 'audit', label: 'Auditoría' },
+          { key: 'maestros', label: 'Maestros' },
+        ];
+        return (
+          <div className="flex flex-wrap gap-1">
+            {modules.map((m) => {
+              const level = r.moduleAccess[m.key] || 'none';
+              const cfg = actionLevelBadges[level];
+              return (
+                <span key={m.key} className={`px-2 py-0.5 rounded text-[10px] border border-slate-200 ${cfg.color}`}>
+                  <strong>{m.label}:</strong> {cfg.label}
+                </span>
+              );
+            })}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'actions',
+      header: 'Acción',
+      align: 'center',
+      width: '12%',
+      render: (r) => (
+        <Button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (r) handleOpenRoleForm(r);
+          }}
+          variant="outline"
+          size="sm"
+          className="p-1.5 h-auto text-xs"
+        >
+          <Edit3 className="w-3.5 h-3.5 text-indigo-600" />
         </Button>
       ),
     },
@@ -698,13 +1474,13 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
                   </div>
                 </div>
                 <Button
-                  onClick={onOpenNewProvider}
+                  onClick={() => setActiveSubView('proveedores')}
                   variant="outline"
                   size="sm"
                   className="mt-6 w-full justify-between"
                   rightIcon={<ChevronRight className="w-4 h-4" />}
                 >
-                  Registrar Proveedor
+                  Ver Tabla Proveedores
                 </Button>
               </div>
 
@@ -1019,6 +1795,53 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
         </div>
       )}
 
+      {/* VISTA 1.B: TABLA MAESTRO PROVEEDORES */}
+      {activeSubView === 'proveedores' && (
+        <div className="space-y-6 animate-fadeIn">
+          {/* Header Sub-view con Botón Volver */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setActiveSubView(null)}
+                leftIcon={<ArrowLeft className="w-4 h-4" />}
+              >
+                Volver a Maestros
+              </Button>
+              <div className="h-6 w-px bg-slate-200 hidden sm:block" />
+              <div>
+                <h2 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+                  <Store className="w-5 h-5 text-indigo-600" />
+                  <span>Maestro de Proveedores</span>
+                </h2>
+                <p className="text-xs text-slate-500">Centraliza datos de contacto, rubro y estado de proveedores. Haz clic en una fila para editar o consultar su ficha de compras.</p>
+              </div>
+            </div>
+            <Button
+              onClick={() => handleOpenProviderForm()}
+              variant="primary"
+              size="md"
+              leftIcon={<Plus className="w-4 h-4" />}
+              requiredPermission="canCreate"
+              hideIfNoPermission={false}
+            >
+              + Nuevo Proveedor
+            </Button>
+          </div>
+
+          <StandardDataTable
+            data={providers}
+            columns={providerColumns}
+            keyExtractor={(p) => p?.id || p?.code || Math.random().toString()}
+            searchFilterKey={(p) => `${p?.code || ''} ${p?.name || ''} ${p?.phone || ''} ${p?.email || ''} ${p?.rubro || ''} ${p?.subrubro || ''}`}
+            searchPlaceholder="Buscar proveedor por nombre, teléfono, email o rubro..."
+            title="Proveedores Registrados"
+            onRowClick={(p) => handleOpenProviderForm(p)}
+          />
+        </div>
+      )}
+
       {/* VISTA 2: TABLA MAESTRO USUARIOS */}
       {activeSubView === 'usuarios' && (
         <div className="space-y-6 animate-fadeIn">
@@ -1066,106 +1889,93 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
         </div>
       )}
 
-      {/* VISTA 3: PERFILES & PERMISOS (RBAC) */}
+      {/* VISTA 3: PERFILES (CARGOS) & ROLES GRANULARES */}
       {activeSubView === 'perfiles' && (
-        <div className="space-y-6 animate-fadeIn">
+        <div className="space-y-8 animate-fadeIn">
           {/* Header Sub-view con Botón Volver */}
-          <div className="flex items-center gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setActiveSubView(null)}
-              leftIcon={<ArrowLeft className="w-4 h-4" />}
-            >
-              Volver a Maestros
-            </Button>
-            <div className="h-6 w-px bg-slate-200" />
-            <div>
-              <h2 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-cyan-600" />
-                <span>Matriz de Permisos Estandarizados (RBAC)</span>
-              </h2>
-              <p className="text-xs text-slate-500">Configura permisos especiales por rol para botones y creación inline dentro de desplegables.</p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setActiveSubView(null)}
+                leftIcon={<ArrowLeft className="w-4 h-4" />}
+              >
+                Volver a Maestros
+              </Button>
+              <div className="h-6 w-px bg-slate-200 hidden sm:block" />
+              <div>
+                <h2 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-cyan-600" />
+                  <span>Gestión de Perfiles (Cargos) & Roles Granulares</span>
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Crea los cargos del personal y define roles granulares con permisos específicos por cada módulo (No ver, Ver, Crear, Editar, Acceso Total).
+                </p>
+              </div>
             </div>
           </div>
 
-          <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center justify-between text-xs text-amber-900">
-            <div className="flex items-center gap-2">
-              <Lock className="w-4 h-4 text-amber-600" />
-              <span>Rol Actualmente Activo en Navbar: <strong className="uppercase font-bold text-amber-900">{userRole}</strong></span>
+          {/* SECCIÓN 1: PERFILES (CARGOS DE PUESTO) */}
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900 text-white p-4 rounded-xl">
+              <div>
+                <h3 className="font-bold text-sm flex items-center gap-2">
+                  <UserCheck className="w-4 h-4 text-purple-400" />
+                  <span>1. Catálogo de Perfiles (Cargos del Personal)</span>
+                </h3>
+                <p className="text-xs text-slate-300">Función u ocupación dentro del local (Ej. Administrador, Cocinero, Cajero, Mozo, Barman, Depósito).</p>
+              </div>
+              <Button
+                onClick={() => handleOpenProfileForm()}
+                variant="primary"
+                size="sm"
+                leftIcon={<Plus className="w-4 h-4" />}
+              >
+                + Nuevo Perfil (Cargo)
+              </Button>
             </div>
-            <span className="text-[11px] text-amber-700 font-medium">Los cambios aplicados abajo se reflejan inmediatamente</span>
+
+            <StandardDataTable
+              data={userProfiles}
+              columns={profileColumns}
+              keyExtractor={(p) => p?.id || Math.random().toString()}
+              searchFilterKey={(p) => `${p?.name || ''} ${p?.description || ''}`}
+              searchPlaceholder="Buscar perfil por nombre o cargo..."
+              title="Perfiles (Cargos) Registrados"
+              onRowClick={(p) => handleOpenProfileForm(p)}
+            />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {(['admin', 'compras', 'recepcion', 'caja'] as UserRole[]).map((r) => {
-              const perms = rolePermissions[r];
-              return (
-                <div key={r} className="p-6 bg-white border border-slate-200 rounded-2xl space-y-4 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-bold text-slate-900 text-base">{roleNames[r]}</h4>
-                      <p className="text-xs text-slate-500 mt-0.5">{roleDescriptions[r]}</p>
-                    </div>
-                    <span className="px-2.5 py-1 bg-slate-100 text-slate-800 font-mono text-xs rounded-full uppercase font-bold">{r}</span>
-                  </div>
+          {/* SECCIÓN 2: ROLES GRANULARES (PERMISOS POR MÓDULO) */}
+          <div className="space-y-4 pt-4 border-t border-slate-200">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900 text-white p-4 rounded-xl">
+              <div>
+                <h3 className="font-bold text-sm flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-amber-400" />
+                  <span>2. Roles Granulares & Matriz de Permisos por Módulo</span>
+                </h3>
+                <p className="text-xs text-slate-300">Configuración de acciones permitidas (No ver, Ver, Crear, Editar, Acceso Total) por cada funcionalidad.</p>
+              </div>
+              <Button
+                onClick={() => handleOpenRoleForm()}
+                variant="primary"
+                size="sm"
+                leftIcon={<Plus className="w-4 h-4" />}
+              >
+                + Nuevo Rol Granular
+              </Button>
+            </div>
 
-                  <div className="space-y-3 pt-3 border-t border-slate-100 text-xs">
-                    <label className="flex items-center justify-between cursor-pointer hover:bg-slate-50 p-2.5 rounded-xl border border-slate-100 transition">
-                      <span className="text-slate-800 font-semibold">Boton (+) en Desplegables</span>
-                      <input
-                        type="checkbox"
-                        checked={Boolean(perms?.canInlineCreate)}
-                        onChange={(e) => {
-                          updateRolePermissions(r, { canInlineCreate: e.target.checked });
-                          showToast(`Permisos del rol ${roleNames[r]} actualizados.`, 'info');
-                        }}
-                        className="w-4 h-4 text-amber-500 rounded focus:ring-amber-500"
-                      />
-                    </label>
-
-                    <label className="flex items-center justify-between cursor-pointer hover:bg-slate-50 p-2.5 rounded-xl border border-slate-100 transition">
-                      <span className="text-slate-800 font-semibold">Permiso para Crear</span>
-                      <input
-                        type="checkbox"
-                        checked={Boolean(perms?.canCreate)}
-                        onChange={(e) => {
-                          updateRolePermissions(r, { canCreate: e.target.checked });
-                          showToast(`Permisos del rol ${roleNames[r]} actualizados.`, 'info');
-                        }}
-                        className="w-4 h-4 text-amber-500 rounded focus:ring-amber-500"
-                      />
-                    </label>
-
-                    <label className="flex items-center justify-between cursor-pointer hover:bg-slate-50 p-2.5 rounded-xl border border-slate-100 transition">
-                      <span className="text-slate-800 font-semibold">Permiso para Editar</span>
-                      <input
-                        type="checkbox"
-                        checked={Boolean(perms?.canEdit)}
-                        onChange={(e) => {
-                          updateRolePermissions(r, { canEdit: e.target.checked });
-                          showToast(`Permisos del rol ${roleNames[r]} actualizados.`, 'info');
-                        }}
-                        className="w-4 h-4 text-amber-500 rounded focus:ring-amber-500"
-                      />
-                    </label>
-
-                    <label className="flex items-center justify-between cursor-pointer hover:bg-slate-50 p-2.5 rounded-xl border border-slate-100 transition">
-                      <span className="text-slate-800 font-semibold">Permiso para Eliminar</span>
-                      <input
-                        type="checkbox"
-                        checked={Boolean(perms?.canDelete)}
-                        onChange={(e) => {
-                          updateRolePermissions(r, { canDelete: e.target.checked });
-                          showToast(`Permisos del rol ${roleNames[r]} actualizados.`, 'info');
-                        }}
-                        className="w-4 h-4 text-amber-500 rounded focus:ring-amber-500"
-                      />
-                    </label>
-                  </div>
-                </div>
-              );
-            })}
+            <StandardDataTable
+              data={granularRoles}
+              columns={granularRoleColumns}
+              keyExtractor={(r) => r?.id || Math.random().toString()}
+              searchFilterKey={(r) => `${r?.name || ''} ${r?.description || ''}`}
+              searchPlaceholder="Buscar rol por nombre o permisos..."
+              title="Roles Granulares Registrados"
+              onRowClick={(r) => handleOpenRoleForm(r)}
+            />
           </div>
         </div>
       )}
@@ -1924,35 +2734,43 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
                 className="space-y-4"
               >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                  <FormField label="Código de Cliente">
+                  <FormField label="Cliente (Nombre o Razón Social)" required>
+                    <TextInput
+                      type="text"
+                      placeholder="Ej. Restaurante Las Heras S.A."
+                      value={formModal.data.name || ''}
+                      onChange={(e) => setFormModal({ ...formModal, data: { ...formModal.data, name: e.target.value } })}
+                      required
+                    />
+                  </FormField>
+
+                  <FormField label="Teléfono de Contacto" required>
+                    <TextInput
+                      type="text"
+                      placeholder="Ej. 011-4555-9988"
+                      value={formModal.data.phone || ''}
+                      onChange={(e) => setFormModal({ ...formModal, data: { ...formModal.data, phone: e.target.value } })}
+                      required
+                    />
+                  </FormField>
+
+                  <div className="sm:col-span-2">
+                    <FormField label="Dirección (Fiscal o Domicilio)" required>
+                      <TextInput
+                        type="text"
+                        placeholder="Ej. Av. Las Heras 2450, CABA"
+                        value={formModal.data.address || ''}
+                        onChange={(e) => setFormModal({ ...formModal, data: { ...formModal.data, address: e.target.value } })}
+                        required
+                      />
+                    </FormField>
+                  </div>
+
+                  <FormField label="Código de Cliente (Opcional)">
                     <TextInput
                       type="text"
                       value={formModal.data.code || ''}
                       onChange={(e) => setFormModal({ ...formModal, data: { ...formModal.data, code: e.target.value } })}
-                    />
-                  </FormField>
-
-                  <FormField label="Tipo de Cliente">
-                    <SelectInput
-                      options={[
-                        { value: 'Salon', label: 'Salón Principal' },
-                        { value: 'Barra', label: 'Barra / Cocktails' },
-                        { value: 'Eventos', label: 'Eventos / Catering' },
-                        { value: 'Delivery', label: 'Delivery / Takeaway' },
-                        { value: 'Corporativo', label: 'Cliente Corporativo' },
-                      ]}
-                      value={formModal.data.clientType || 'Salon'}
-                      onChange={(e) => setFormModal({ ...formModal, data: { ...formModal.data, clientType: e.target.value } })}
-                    />
-                  </FormField>
-
-                  <FormField label="Nombre del Cliente / Salón" required>
-                    <TextInput
-                      type="text"
-                      placeholder="Ej. Salón Palermo Soho"
-                      value={formModal.data.name || ''}
-                      onChange={(e) => setFormModal({ ...formModal, data: { ...formModal.data, name: e.target.value } })}
-                      required
                     />
                   </FormField>
 
@@ -1964,58 +2782,134 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
                       onChange={(e) => setFormModal({ ...formModal, data: { ...formModal.data, cuit: e.target.value } })}
                     />
                   </FormField>
+                </div>
 
-                  <FormField label="Teléfono de Contacto">
-                    <TextInput
-                      type="text"
-                      placeholder="+54 11 4444-5555"
-                      value={formModal.data.phone || ''}
-                      onChange={(e) => setFormModal({ ...formModal, data: { ...formModal.data, phone: e.target.value } })}
-                    />
-                  </FormField>
+                {/* BLOQUE CONFIGURACIONES DE CLIENTE */}
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3 text-xs">
+                  <h5 className="font-bold text-slate-800 flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                    <span>Configuración Operativa & Cuenta Corriente</span>
+                  </h5>
 
-                  <FormField label="Email de Contacto">
-                    <TextInput
-                      type="email"
-                      placeholder="contacto@salon.com"
-                      value={formModal.data.email || ''}
-                      onChange={(e) => setFormModal({ ...formModal, data: { ...formModal.data, email: e.target.value } })}
-                    />
-                  </FormField>
-
-                  <div className="sm:col-span-2">
-                    <FormField label="Dirección Física">
-                      <TextInput
-                        type="text"
-                        placeholder="Honduras 4800, CABA"
-                        value={formModal.data.address || ''}
-                        onChange={(e) => setFormModal({ ...formModal, data: { ...formModal.data, address: e.target.value } })}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Cuenta Corriente */}
+                    <label className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition ${formModal.data.hasCurrentAccount ? 'bg-emerald-50 border-emerald-300' : 'bg-white border-slate-200'}`}>
+                      <div>
+                        <span className="font-bold text-slate-900 block">Cuenta Corriente</span>
+                        <span className="text-[10px] text-slate-500 block">Permite operar a crédito / saldo pendiente</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(formModal.data.hasCurrentAccount)}
+                        onChange={(e) => {
+                          const val = e.target.checked;
+                          setFormModal({
+                            ...formModal,
+                            data: {
+                              ...formModal.data,
+                              hasCurrentAccount: val,
+                              differentiatedBilling: val ? formModal.data.differentiatedBilling : false,
+                            },
+                          });
+                        }}
+                        className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
                       />
-                    </FormField>
+                    </label>
+
+                    {/* Cobro Diferenciado [NUEVO] */}
+                    <label className={`flex items-center justify-between p-3 rounded-xl border transition ${formModal.data.hasCurrentAccount ? (formModal.data.differentiatedBilling ? 'bg-purple-50 border-purple-300 cursor-pointer' : 'bg-white border-slate-200 cursor-pointer') : 'bg-slate-100 border-slate-200 opacity-60 cursor-not-allowed'}`}>
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-slate-900 block">Cobro Diferenciado</span>
+                          <span className="px-1.5 py-0.2 bg-purple-600 text-white font-extrabold text-[9px] rounded">NUEVO</span>
+                        </div>
+                        <span className="text-[10px] text-slate-500 block">Ventas valorizadas al costo en lugar de precio venta</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        disabled={!formModal.data.hasCurrentAccount}
+                        checked={Boolean(formModal.data.differentiatedBilling)}
+                        onChange={(e) =>
+                          setFormModal({
+                            ...formModal,
+                            data: { ...formModal.data, differentiatedBilling: e.target.checked },
+                          })
+                        }
+                        className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500 disabled:opacity-50"
+                      />
+                    </label>
+
+                    {/* Por Defecto */}
+                    <label className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition ${formModal.data.isDefault ? 'bg-amber-50 border-amber-300' : 'bg-white border-slate-200'}`}>
+                      <div>
+                        <span className="font-bold text-slate-900 block">Cliente Por Defecto</span>
+                        <span className="text-[10px] text-slate-500 block">Propuesto automáticamente en nuevas ventas</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(formModal.data.isDefault)}
+                        onChange={(e) =>
+                          setFormModal({
+                            ...formModal,
+                            data: { ...formModal.data, isDefault: e.target.checked },
+                          })
+                        }
+                        className="w-4 h-4 text-amber-500 rounded focus:ring-amber-500"
+                      />
+                    </label>
+
+                    {/* Genérico */}
+                    <label className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition ${formModal.data.isGeneric ? 'bg-cyan-50 border-cyan-300' : 'bg-white border-slate-200'}`}>
+                      <div>
+                        <span className="font-bold text-slate-900 block">Cliente Genérico</span>
+                        <span className="text-[10px] text-slate-500 block">Para ventas sin identificación específica</span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(formModal.data.isGeneric)}
+                        onChange={(e) =>
+                          setFormModal({
+                            ...formModal,
+                            data: { ...formModal.data, isGeneric: e.target.checked },
+                          })
+                        }
+                        className="w-4 h-4 text-cyan-600 rounded focus:ring-cyan-500"
+                      />
+                    </label>
                   </div>
 
-                  <div className="sm:col-span-2">
-                    <FormField
-                      label="Rubro / Categoría de Venta"
-                      hint={
-                        hasPermission('canInlineCreate')
-                          ? '✓ Puedes hacer clic en el botón + para agregar un nuevo rubro en vivo'
-                          : '🔒 Tu rol actual no tiene permiso para agregar rubros desde el desplegable'
-                      }
-                    >
-                      <SelectWithInlineAdd
-                        options={categories.map((c) => ({ value: c.id, label: c.name }))}
-                        value={formModal.data.categoryId || ''}
-                        onChange={(e) => setFormModal({ ...formModal, data: { ...formModal.data, categoryId: e.target.value } })}
-                        placeholder="Seleccionar Rubro..."
-                        onInlineAdd={(newCatName) => handleAddInlineCategory(newCatName)}
-                        inlineAddTitle="Crear Rubro Rápido"
-                        inlineAddPlaceholder="Ej. Coctelería VIP"
-                        requiredPermission="canInlineCreate"
+                  {/* Estado Activo */}
+                  <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between">
+                    <span className="font-bold text-slate-800">Estado del Cliente:</span>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(formModal.data.active)}
+                        onChange={(e) =>
+                          setFormModal({
+                            ...formModal,
+                            data: { ...formModal.data, active: e.target.checked },
+                          })
+                        }
+                        className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
                       />
-                    </FormField>
+                      <span className={`font-bold text-xs ${formModal.data.active ? 'text-emerald-700' : 'text-slate-500'}`}>
+                        {formModal.data.active ? 'Cliente Habilitado (Activo)' : 'Inactivo'}
+                      </span>
+                    </label>
                   </div>
                 </div>
+
+                {/* Observaciones */}
+                <FormField label="Observaciones / Notas Adicionales">
+                  <textarea
+                    rows={2}
+                    placeholder="Notas o información adicional del cliente..."
+                    value={formModal.data.notes || ''}
+                    onChange={(e) => setFormModal({ ...formModal, data: { ...formModal.data, notes: e.target.value } })}
+                    className="w-full text-xs p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none"
+                  />
+                </FormField>
 
                 <div className="flex items-center justify-between pt-4 border-t border-slate-100 gap-3">
                   {!formModal.isNew ? (
@@ -2044,6 +2938,168 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
               </form>
             )}
 
+            {/* FORMULARIO PROVEEDOR */}
+            {formModal.entity === 'proveedor' && (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSaveProvider(formModal.data, formModal.isNew);
+                }}
+                className="space-y-4"
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <FormField label="Proveedor (Nombre o Razón Social)" required hint="No se permiten nombres duplicados">
+                    <TextInput
+                      type="text"
+                      placeholder="Ej. Carnicería 6 Esquinas S.A."
+                      value={formModal.data.name || ''}
+                      onChange={(e) => setFormModal({ ...formModal, data: { ...formModal.data, name: e.target.value } })}
+                      required
+                    />
+                  </FormField>
+
+                  <FormField label="CUIT / Identificación Fiscal">
+                    <TextInput
+                      type="text"
+                      placeholder="Ej. 30-99887766-5"
+                      value={formModal.data.cuit || ''}
+                      onChange={(e) => setFormModal({ ...formModal, data: { ...formModal.data, cuit: e.target.value } })}
+                    />
+                  </FormField>
+
+                  <FormField label="Teléfono de Contacto">
+                    <TextInput
+                      type="text"
+                      placeholder="Ej. 351 555-8888"
+                      value={formModal.data.phone || ''}
+                      onChange={(e) => setFormModal({ ...formModal, data: { ...formModal.data, phone: e.target.value } })}
+                    />
+                  </FormField>
+
+                  <FormField label="Correo Electrónico (Email)">
+                    <TextInput
+                      type="email"
+                      placeholder="Ej. ventas@6esquinas.com.ar"
+                      value={formModal.data.email || ''}
+                      onChange={(e) => setFormModal({ ...formModal, data: { ...formModal.data, email: e.target.value } })}
+                    />
+                  </FormField>
+
+                  <div className="sm:col-span-2">
+                    <FormField label="Dirección Física">
+                      <TextInput
+                        type="text"
+                        placeholder="Ej. Av. Siempre Viva 1234, Córdoba"
+                        value={formModal.data.address || ''}
+                        onChange={(e) => setFormModal({ ...formModal, data: { ...formModal.data, address: e.target.value } })}
+                      />
+                    </FormField>
+                  </div>
+
+                  <FormField
+                    label="Rubro Principal [CFG]"
+                    hint={
+                      hasPermission('canInlineCreate')
+                        ? '✓ Puedes hacer clic en el botón + para agregar un nuevo rubro'
+                        : '🔒 Tu rol no tiene permiso para agregar rubros en vivo'
+                    }
+                  >
+                    <SelectWithInlineAdd
+                      options={[
+                        { value: 'Equipamiento', label: 'Equipamiento' },
+                        { value: 'Ferretería', label: 'Ferretería' },
+                        { value: 'Almacén & Secos', label: 'Almacén & Secos' },
+                        { value: 'Carnicería & Fritos', label: 'Carnicería & Fritos' },
+                        { value: 'Limpieza', label: 'Limpieza' },
+                        { value: 'Electrónica', label: 'Electrónica' },
+                        { value: 'Varios', label: 'Varios' },
+                        ...categories.map((c) => ({ value: c.name, label: c.name })),
+                      ]}
+                      value={formModal.data.rubro || 'Equipamiento'}
+                      onChange={(e) => setFormModal({ ...formModal, data: { ...formModal.data, rubro: e.target.value } })}
+                      placeholder="Seleccionar Rubro..."
+                      onInlineAdd={(newCatName) => handleAddInlineCategory(newCatName)}
+                      inlineAddTitle="Crear Rubro Rápido"
+                      inlineAddPlaceholder="Ej. Panadería & Repostería"
+                      requiredPermission="canInlineCreate"
+                    />
+                  </FormField>
+
+                  <FormField label="Subrubro [CFG]">
+                    <TextInput
+                      type="text"
+                      placeholder="Ej. Carnes Vacunas & Aves"
+                      value={formModal.data.subrubro || ''}
+                      onChange={(e) => setFormModal({ ...formModal, data: { ...formModal.data, subrubro: e.target.value } })}
+                    />
+                  </FormField>
+                </div>
+
+                {/* Estado del Proveedor */}
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between text-xs">
+                  <div>
+                    <span className="font-bold text-slate-900 block">Estado del Proveedor</span>
+                    <span className="text-[10px] text-slate-500 block">
+                      Los proveedores inactivos no estarán disponibles para nuevas compras o cargas de gastos
+                    </span>
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={Boolean(formModal.data.active)}
+                      onChange={(e) =>
+                        setFormModal({
+                          ...formModal,
+                          data: { ...formModal.data, active: e.target.checked },
+                        })
+                      }
+                      className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
+                    />
+                    <span className={`font-bold text-xs ${formModal.data.active ? 'text-emerald-700' : 'text-amber-700'}`}>
+                      {formModal.data.active ? 'Activo (Habilitado)' : 'Inactivo'}
+                    </span>
+                  </label>
+                </div>
+
+                {/* Observaciones */}
+                <FormField label="Observaciones / Notas de Proveedor">
+                  <textarea
+                    rows={2}
+                    placeholder="Notas o información comercial del proveedor..."
+                    value={formModal.data.notes || ''}
+                    onChange={(e) => setFormModal({ ...formModal, data: { ...formModal.data, notes: e.target.value } })}
+                    className="w-full text-xs p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none"
+                  />
+                </FormField>
+
+                <div className="flex items-center justify-between pt-4 border-t border-slate-100 gap-3">
+                  {!formModal.isNew ? (
+                    <Button
+                      type="button"
+                      variant="danger"
+                      size="md"
+                      leftIcon={<Trash2 className="w-4 h-4" />}
+                      onClick={() => handleDeleteProvider(formModal.data.id, formModal.data.name)}
+                      requiredPermission="canDelete"
+                      hideIfNoPermission={false}
+                    >
+                      Eliminar Proveedor
+                    </Button>
+                  ) : (
+                    <div />
+                  )}
+                  <div className="flex items-center gap-3">
+                    <Button type="button" variant="outline" size="md" onClick={() => setFormModal(null)}>
+                      Cancelar
+                    </Button>
+                    <Button type="submit" variant="primary" size="md" requiredPermission={formModal.isNew ? 'canCreate' : 'canEdit'} hideIfNoPermission={false}>
+                      {formModal.isNew ? 'Guardar Proveedor' : 'Guardar Modificaciones'}
+                    </Button>
+                  </div>
+                </div>
+              </form>
+            )}
+
             {/* FORMULARIO USUARIO */}
             {formModal.entity === 'usuario' && (
               <form
@@ -2054,7 +3110,7 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
                 className="space-y-4 text-xs"
               >
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <FormField label="DNI (Key DB)" required hint="Identificador único">
+                  <FormField label="DNI" required hint="Número de documento de identidad">
                     <TextInput
                       type="text"
                       placeholder="Ej. 35123456"
@@ -2094,74 +3150,99 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
                     />
                   </FormField>
 
-                  <FormField label="Dirección">
-                    <TextInput
-                      type="text"
-                      placeholder="Av. Corrientes 1234"
-                      value={formModal.data.address || ''}
-                      onChange={(e) => setFormModal({ ...formModal, data: { ...formModal.data, address: e.target.value } })}
-                    />
-                  </FormField>
+                  <div className="sm:col-span-2">
+                    <FormField label="Dirección Física">
+                      <TextInput
+                        type="text"
+                        placeholder="Av. Corrientes 1234"
+                        value={formModal.data.address || ''}
+                        onChange={(e) => setFormModal({ ...formModal, data: { ...formModal.data, address: e.target.value } })}
+                      />
+                    </FormField>
+                  </div>
 
-                  <FormField label="Rol Base">
-                    <SelectInput
-                      options={[
-                        { value: 'admin', label: 'Administrador Total' },
-                        { value: 'compras', label: 'Encargado Compras' },
-                        { value: 'recepcion', label: 'Recepcionista' },
-                        { value: 'caja', label: 'Caja / Tesorería' },
-                      ]}
-                      value={formModal.data.role || 'compras'}
-                      onChange={(e) => setFormModal({ ...formModal, data: { ...formModal.data, role: e.target.value } })}
-                    />
-                  </FormField>
+                  <div className="sm:col-span-2">
+                    <FormField label="Perfil (Cargo del Puesto)">
+                      <SelectInput
+                        options={userProfiles.map((p) => ({ value: p.id, label: `${p.name} - ${p.description}` }))}
+                        value={formModal.data.profileId || userProfiles[0]?.id || ''}
+                        onChange={(e) => setFormModal({ ...formModal, data: { ...formModal.data, profileId: e.target.value } })}
+                      />
+                    </FormField>
+                  </div>
                 </div>
 
-                {/* Permisos Especiales Checkboxes */}
+                {/* Asignación de Múltiples Roles Checkboxes */}
+                <div className="pt-3 border-t border-slate-200 space-y-2">
+                  <h5 className="font-bold text-slate-800 flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4 text-amber-600" />
+                      <span>Roles Asignados al Usuario (Permite Múltiples Roles por Rotación):</span>
+                    </span>
+                    <span className="text-[10px] text-slate-500 font-normal">Marca todos los roles aplicables</span>
+                  </h5>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-1 bg-slate-50 rounded-xl border border-slate-200">
+                    {granularRoles.map((r) => {
+                      const isChecked = (formModal.data.assignedRoleIds || []).includes(r.id);
+                      return (
+                        <label
+                          key={r.id}
+                          className={`flex items-start gap-2.5 p-2.5 rounded-lg border transition cursor-pointer ${
+                            isChecked ? 'bg-amber-50 border-amber-300' : 'bg-white border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              const current: string[] = formModal.data.assignedRoleIds || [];
+                              const updated = e.target.checked
+                                ? [...current, r.id]
+                                : current.filter((id: string) => id !== r.id);
+                              setFormModal({
+                                ...formModal,
+                                data: { ...formModal.data, assignedRoleIds: updated },
+                              });
+                            }}
+                            className="mt-0.5 w-4 h-4 text-amber-500 rounded focus:ring-amber-500"
+                          />
+                          <div>
+                            <div className="font-bold text-slate-900 text-xs">{r.name}</div>
+                            <div className="text-[10px] text-slate-500">{r.description}</div>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Permiso Especial Individual para Desplegables */}
                 <div className="pt-3 border-t border-slate-200 space-y-2">
                   <h5 className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
                     <ShieldCheck className="w-4 h-4 text-indigo-600" />
-                    <span>Permisos Especiales del Usuario:</span>
+                    <span>Permiso Especial Individual:</span>
                   </h5>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <label className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg border hover:bg-slate-100 cursor-pointer">
+                  <div>
+                    <label className="flex items-center gap-3 p-3 bg-indigo-50/70 rounded-xl border border-indigo-200 hover:bg-indigo-100/60 cursor-pointer transition">
                       <input
                         type="checkbox"
                         checked={Boolean(formModal.data.canInlineCreate)}
-                        onChange={(e) => setFormModal({ ...formModal, data: { ...formModal.data, canInlineCreate: e.target.checked } })}
-                        className="w-4 h-4 text-amber-500 rounded focus:ring-amber-500"
+                        onChange={(e) =>
+                          setFormModal({
+                            ...formModal,
+                            data: { ...formModal.data, canInlineCreate: e.target.checked },
+                          })
+                        }
+                        className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
                       />
-                      <span className="font-semibold text-slate-700">Ver Botón "+" en Desplegables</span>
-                    </label>
-
-                    <label className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg border hover:bg-slate-100 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={Boolean(formModal.data.canCreate)}
-                        onChange={(e) => setFormModal({ ...formModal, data: { ...formModal.data, canCreate: e.target.checked } })}
-                        className="w-4 h-4 text-amber-500 rounded focus:ring-amber-500"
-                      />
-                      <span className="font-semibold text-slate-700">Alta de Registros (+ Crear)</span>
-                    </label>
-
-                    <label className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg border hover:bg-slate-100 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={Boolean(formModal.data.canEdit)}
-                        onChange={(e) => setFormModal({ ...formModal, data: { ...formModal.data, canEdit: e.target.checked } })}
-                        className="w-4 h-4 text-amber-500 rounded focus:ring-amber-500"
-                      />
-                      <span className="font-semibold text-slate-700">Permiso para Editar</span>
-                    </label>
-
-                    <label className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg border hover:bg-slate-100 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={Boolean(formModal.data.canDelete)}
-                        onChange={(e) => setFormModal({ ...formModal, data: { ...formModal.data, canDelete: e.target.checked } })}
-                        className="w-4 h-4 text-amber-500 rounded focus:ring-amber-500"
-                      />
-                      <span className="font-semibold text-slate-700">Permiso para Eliminar</span>
+                      <div>
+                        <span className="font-bold text-indigo-950 text-xs block">
+                          Habilitar botón (+) para Agregar en Campos Desplegables
+                        </span>
+                        <span className="text-[10px] text-indigo-700">
+                          Permite al usuario crear nuevos rubros o elementos en vivo directamente desde los selectores desplegables.
+                        </span>
+                      </div>
                     </label>
                   </div>
                 </div>
@@ -2187,6 +3268,169 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
                     </Button>
                     <Button type="submit" variant="primary" size="md" requiredPermission={formModal.isNew ? 'canCreate' : 'canEdit'} hideIfNoPermission={false}>
                       {formModal.isNew ? 'Dar de Alta Usuario' : 'Guardar Modificaciones'}
+                    </Button>
+                  </div>
+                </div>
+              </form>
+            )}
+
+            {/* FORMULARIO PERFIL (CARGO) */}
+            {formModal.entity === 'perfil' && (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSaveProfile(formModal.data, formModal.isNew);
+                }}
+                className="space-y-4 text-xs"
+              >
+                <div className="space-y-3">
+                  <FormField label="Nombre del Perfil / Cargo" required>
+                    <TextInput
+                      type="text"
+                      placeholder="Ej. Barman / Coctelería Principal"
+                      value={formModal.data.name || ''}
+                      onChange={(e) => setFormModal({ ...formModal, data: { ...formModal.data, name: e.target.value } })}
+                      required
+                    />
+                  </FormField>
+
+                  <FormField label="Descripción de Funciones & Responsabilidades">
+                    <TextInput
+                      type="text"
+                      placeholder="Ej. Control de stock de licores, insumos de coctelería y apertura de barra"
+                      value={formModal.data.description || ''}
+                      onChange={(e) => setFormModal({ ...formModal, data: { ...formModal.data, description: e.target.value } })}
+                    />
+                  </FormField>
+                </div>
+
+                <div className="flex items-center justify-between pt-4 border-t border-slate-100 gap-3">
+                  {!formModal.isNew ? (
+                    <Button
+                      type="button"
+                      variant="danger"
+                      size="md"
+                      leftIcon={<Trash2 className="w-4 h-4" />}
+                      onClick={() => handleDeleteProfile(formModal.data.id, formModal.data.name)}
+                    >
+                      Eliminar Perfil
+                    </Button>
+                  ) : (
+                    <div />
+                  )}
+                  <div className="flex items-center gap-3">
+                    <Button type="button" variant="outline" size="md" onClick={() => setFormModal(null)}>
+                      Cancelar
+                    </Button>
+                    <Button type="submit" variant="primary" size="md">
+                      {formModal.isNew ? 'Crear Perfil' : 'Guardar Modificaciones'}
+                    </Button>
+                  </div>
+                </div>
+              </form>
+            )}
+
+            {/* FORMULARIO ROL GRANULAR */}
+            {formModal.entity === 'rol' && (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSaveRole(formModal.data, formModal.isNew);
+                }}
+                className="space-y-4 text-xs"
+              >
+                <div className="space-y-3">
+                  <FormField label="Nombre del Rol Granular" required>
+                    <TextInput
+                      type="text"
+                      placeholder="Ej. Rol Recepción & Auditoría Depósito"
+                      value={formModal.data.name || ''}
+                      onChange={(e) => setFormModal({ ...formModal, data: { ...formModal.data, name: e.target.value } })}
+                      required
+                    />
+                  </FormField>
+
+                  <FormField label="Descripción / Ámbito de Acción">
+                    <TextInput
+                      type="text"
+                      placeholder="Ej. Permite verificar entregas de insumos y consultar el módulo de auditoría"
+                      value={formModal.data.description || ''}
+                      onChange={(e) => setFormModal({ ...formModal, data: { ...formModal.data, description: e.target.value } })}
+                    />
+                  </FormField>
+
+                  {/* Matriz de Acciones por Módulo */}
+                  <div className="pt-3 border-t border-slate-200 space-y-3">
+                    <h5 className="font-bold text-slate-800 flex items-center justify-between text-xs">
+                      <span className="flex items-center gap-1.5">
+                        <ShieldCheck className="w-4 h-4 text-indigo-600" />
+                        <span>Nivel de Permiso por Módulo de la App:</span>
+                      </span>
+                    </h5>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {[
+                        { key: 'kanban', label: 'Tablero Semanal (Kanban)' },
+                        { key: 'inbox', label: 'Pedidos & Pagos (Inbox)' },
+                        { key: 'items', label: 'Maestro de Insumos' },
+                        { key: 'dashboard', label: 'Dashboard de Compras' },
+                        { key: 'audit', label: 'Módulo Auditoría' },
+                        { key: 'maestros', label: 'Maestros & Parámetros' },
+                      ].map((mod) => {
+                        const currentLevel = formModal.data.moduleAccess?.[mod.key] || 'none';
+                        return (
+                          <div key={mod.key} className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-1.5">
+                            <span className="font-bold text-slate-900 block">{mod.label}</span>
+                            <SelectInput
+                              options={[
+                                { value: 'none', label: '🚫 No ver (Sin acceso)' },
+                                { value: 'view', label: '👁️ Ver (Solo Lectura)' },
+                                { value: 'create', label: '➕ Crear (Ver + Alta)' },
+                                { value: 'edit', label: '✏️ Editar (Ver + Crear + Modificar)' },
+                                { value: 'full', label: '👑 Acceso Total (Ver + Crear + Editar + Eliminar)' },
+                              ]}
+                              value={currentLevel}
+                              onChange={(e) => {
+                                const newLevel = e.target.value;
+                                setFormModal({
+                                  ...formModal,
+                                  data: {
+                                    ...formModal.data,
+                                    moduleAccess: {
+                                      ...formModal.data.moduleAccess,
+                                      [mod.key]: newLevel,
+                                    },
+                                  },
+                                });
+                              }}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-4 border-t border-slate-100 gap-3">
+                  {!formModal.isNew ? (
+                    <Button
+                      type="button"
+                      variant="danger"
+                      size="md"
+                      leftIcon={<Trash2 className="w-4 h-4" />}
+                      onClick={() => handleDeleteRole(formModal.data.id, formModal.data.name)}
+                    >
+                      Eliminar Rol
+                    </Button>
+                  ) : (
+                    <div />
+                  )}
+                  <div className="flex items-center gap-3">
+                    <Button type="button" variant="outline" size="md" onClick={() => setFormModal(null)}>
+                      Cancelar
+                    </Button>
+                    <Button type="submit" variant="primary" size="md">
+                      {formModal.isNew ? 'Crear Rol Granular' : 'Guardar Modificaciones'}
                     </Button>
                   </div>
                 </div>
@@ -2326,6 +3570,368 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL FICHA DE CLIENTE & CUENTA CORRIENTE (SOLO VISUALIZACIÓN 3.2) */}
+      {viewingCurrentAccountClient && (
+        <div className="fixed inset-0 z-[90] bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div
+            style={{ fontFamily: branding.fontFamily ? `'${branding.fontFamily}', sans-serif` : 'inherit' }}
+            className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto no-scrollbar p-6 space-y-6 shadow-2xl border border-slate-200 animate-fadeIn"
+          >
+            {/* Header del Modal */}
+            <div className="flex items-start justify-between border-b pb-4">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-emerald-100 text-emerald-800 rounded-2xl">
+                  <FileText className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xl font-black text-slate-900">
+                      {viewingCurrentAccountClient.name}
+                    </h3>
+                    <span className="px-2.5 py-0.5 bg-slate-100 text-slate-700 text-xs font-mono font-bold rounded-full border">
+                      {viewingCurrentAccountClient.code}
+                    </span>
+                    {viewingCurrentAccountClient.isDefault && (
+                      <span className="px-2 py-0.5 bg-amber-100 text-amber-900 font-extrabold text-[10px] rounded-full border border-amber-300">
+                        Por Defecto
+                      </span>
+                    )}
+                    {viewingCurrentAccountClient.isGeneric && (
+                      <span className="px-2 py-0.5 bg-cyan-100 text-cyan-900 font-extrabold text-[10px] rounded-full border border-cyan-300">
+                        Genérico
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1 flex items-center gap-3">
+                    <span>📞 {viewingCurrentAccountClient.phone}</span>
+                    <span>📍 {viewingCurrentAccountClient.address}</span>
+                    {viewingCurrentAccountClient.cuit && <span>📄 CUIT: {viewingCurrentAccountClient.cuit}</span>}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setViewingCurrentAccountClient(null)}
+                className="p-1 text-slate-400 hover:text-slate-600 transition"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Resumen Deuda & Badges de Cuenta Corriente */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Deuda Pendiente AUTO */}
+              <div className="p-4 bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl text-white space-y-1 shadow-md">
+                <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-400 block">Deuda Pendiente [AUTO]</span>
+                <span className="text-2xl font-black font-mono text-emerald-400 block">
+                  ${getClientDebt(viewingCurrentAccountClient.id).toLocaleString('es-AR')}
+                </span>
+                <span className="text-[10px] text-slate-400 block">Calculado en tiempo real según movimientos</span>
+              </div>
+
+              {/* Indicador Cuenta Corriente */}
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl space-y-1">
+                <span className="text-[10px] uppercase font-extrabold text-emerald-800 block">Condición de Cuenta Corriente</span>
+                <span className="text-sm font-bold text-emerald-950 block">Habilitado para Operar a Crédito</span>
+                <span className="text-[10px] text-emerald-700 block">Las ventas pueden facturarse con pago Cuenta Corriente</span>
+              </div>
+
+              {/* Indicador Cobro Diferenciado */}
+              <div className={`p-4 rounded-2xl border space-y-1 ${viewingCurrentAccountClient.differentiatedBilling ? 'bg-purple-50 border-purple-300' : 'bg-slate-50 border-slate-200'}`}>
+                <span className="text-[10px] uppercase font-extrabold text-purple-900 block">Cobro Diferenciado</span>
+                <span className="text-sm font-bold text-purple-950 block">
+                  {viewingCurrentAccountClient.differentiatedBilling ? 'SÍ — Valorizado al Costo' : 'NO — Precio de Venta Normal'}
+                </span>
+                <span className="text-[10px] text-purple-700 block">
+                  {viewingCurrentAccountClient.differentiatedBilling ? 'Las ventas se imputan al costo vigente del insumo' : 'Facturación estándar'}
+                </span>
+              </div>
+            </div>
+
+            {/* Tabla Historial de Movimientos 3.2 (Solo Visualización) */}
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center justify-between">
+                <h4 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-emerald-600" />
+                  <span>Historial de Movimientos de Cuenta Corriente (Solo Visualización)</span>
+                </h4>
+                <span className="text-[11px] text-slate-500 font-medium">No permite ingreso ni edición directa</span>
+              </div>
+
+              <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-100/80 text-slate-700 font-extrabold border-b border-slate-200">
+                    <tr>
+                      <th className="py-3 px-4">Fecha / Hora [SYS]</th>
+                      <th className="py-3 px-4">Comprobante</th>
+                      <th className="py-3 px-4">Tipo Movimiento</th>
+                      <th className="py-3 px-4">Detalle Ticket</th>
+                      <th className="py-3 px-4 text-right">Importe [AUTO]</th>
+                      <th className="py-3 px-4 text-center">Estado [SYS]</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-slate-800">
+                    {currentAccountMovements.filter((m) => m.clientId === viewingCurrentAccountClient.id).length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-8 text-center text-slate-400 font-medium">
+                          No hay movimientos registrados en la cuenta corriente de este cliente.
+                        </td>
+                      </tr>
+                    ) : (
+                      currentAccountMovements
+                        .filter((m) => m.clientId === viewingCurrentAccountClient.id)
+                        .map((mov) => (
+                          <tr key={mov.id} className="hover:bg-slate-50 transition">
+                            <td className="py-3 px-4 font-mono text-[11px] text-slate-600">{mov.dateTime}</td>
+                            <td className="py-3 px-4 font-bold text-slate-900">{mov.voucherType}</td>
+                            <td className="py-3 px-4">
+                              <span className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] inline-flex items-center gap-1 ${mov.type === 'Venta' ? 'bg-amber-100 text-amber-900 border border-amber-300' : mov.type === 'Recibo' ? 'bg-emerald-100 text-emerald-900 border border-emerald-300' : 'bg-blue-100 text-blue-900 border border-blue-300'}`}>
+                                {mov.type === 'Venta' && '🛒 Venta'}
+                                {mov.type === 'Recibo' && '💲 Recibo'}
+                                {mov.type === 'Ajuste' && '🔄 Ajuste'}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 text-slate-600 max-w-xs truncate" title={mov.ticketDetail}>
+                              {mov.ticketDetail || '-'}
+                            </td>
+                            <td className={`py-3 px-4 text-right font-mono font-bold ${mov.type === 'Venta' ? 'text-rose-700' : 'text-emerald-700'}`}>
+                              {mov.type === 'Venta' ? '+' : '-'}${mov.total.toLocaleString('es-AR')}
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              <span className={`px-2 py-0.5 rounded-full font-extrabold text-[10px] ${mov.lineState === 'Pagada' ? 'bg-emerald-100 text-emerald-900' : mov.lineState === 'Seleccionada' ? 'bg-purple-100 text-purple-900' : 'bg-amber-100 text-amber-900'}`}>
+                                {mov.lineState}
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Footer Cerrar */}
+            <div className="flex justify-end pt-3 border-t border-slate-100">
+              <Button variant="outline" size="md" onClick={() => setViewingCurrentAccountClient(null)}>
+                Cerrar Ficha
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL FICHA DE PROVEEDOR & ESTADO DE CUENTA (DETALLE & COMPRAS 4 & 5) */}
+      {viewingProviderDetail && (
+        <div className="fixed inset-0 z-[90] bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div
+            style={{ fontFamily: branding.fontFamily ? `'${branding.fontFamily}', sans-serif` : 'inherit' }}
+            className="bg-white rounded-3xl max-w-5xl w-full max-h-[90vh] overflow-y-auto no-scrollbar p-6 space-y-6 shadow-2xl border border-slate-200 animate-fadeIn"
+          >
+            {/* Header Ficha del Proveedor */}
+            <div className="flex items-start justify-between border-b pb-4">
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-blue-100 text-blue-800 rounded-2xl mt-1">
+                  <Store className="w-7 h-7" />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-2xl font-black text-slate-900">
+                      {viewingProviderDetail.name}
+                    </h3>
+                    <span className="px-2.5 py-0.5 bg-slate-100 text-slate-700 text-xs font-mono font-bold rounded-full border">
+                      {viewingProviderDetail.code}
+                    </span>
+                    <span className={`px-2.5 py-0.5 rounded-full font-extrabold text-[10px] ${viewingProviderDetail.active ? 'bg-emerald-100 text-emerald-900' : 'bg-amber-100 text-amber-900'}`}>
+                      {viewingProviderDetail.active ? 'Activo' : 'Inactivo'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-xs text-slate-600">
+                    <p className="flex items-center gap-1.5">
+                      <span className="font-bold text-slate-700">📍 Dirección:</span>
+                      <span>{viewingProviderDetail.address || 'Sin especificar'}</span>
+                    </p>
+                    <p className="flex items-center gap-1.5">
+                      <span className="font-bold text-slate-700">📞 TEL:</span>
+                      <span>{viewingProviderDetail.phone || 'Sin especificar'}</span>
+                    </p>
+                    <p className="flex items-center gap-1.5">
+                      <span className="font-bold text-slate-700">✉️ Email:</span>
+                      <span>{viewingProviderDetail.email || 'Sin especificar'}</span>
+                    </p>
+                    <p className="flex items-center gap-1.5">
+                      <span className="font-bold text-slate-700">🏷️ Rubro:</span>
+                      <span>{viewingProviderDetail.rubro || 'General'} {viewingProviderDetail.subrubro ? `(${viewingProviderDetail.subrubro})` : ''}</span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => {
+                    const target = viewingProviderDetail;
+                    setViewingProviderDetail(null);
+                    handleOpenProviderForm(target);
+                  }}
+                  variant="outline"
+                  size="sm"
+                  leftIcon={<Edit3 className="w-4 h-4 text-indigo-600" />}
+                >
+                  Editar Proveedor
+                </Button>
+                <button
+                  onClick={() => setViewingProviderDetail(null)}
+                  className="p-1 text-slate-400 hover:text-slate-600 transition"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            {/* Panel Estado de Cuenta (Resumen Financiero 4 [AUTO]) */}
+            {(() => {
+              const stats = getProviderStats(viewingProviderDetail.id);
+              return (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  {/* Total Comprado */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-center space-y-1">
+                    <span className="text-[10px] uppercase font-extrabold text-slate-500 block">Total Comprado [AUTO]</span>
+                    <span className="text-xl font-black font-mono text-emerald-700 block">
+                      ${stats.totalComprado.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+
+                  {/* Total Pagado */}
+                  <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-center space-y-1">
+                    <span className="text-[10px] uppercase font-extrabold text-emerald-800 block">Total Pagado [AUTO]</span>
+                    <span className="text-xl font-black font-mono text-emerald-900 block">
+                      ${stats.totalPagado.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+
+                  {/* Saldo Pendiente */}
+                  <div className={`p-4 rounded-2xl border text-center space-y-1 ${stats.saldoPendiente > 0 ? 'bg-amber-50 border-amber-300' : 'bg-slate-50 border-slate-200'}`}>
+                    <span className="text-[10px] uppercase font-extrabold text-amber-900 block">Saldo Pendiente [AUTO]</span>
+                    <span className={`text-xl font-black font-mono block ${stats.saldoPendiente > 0 ? 'text-amber-800' : 'text-slate-700'}`}>
+                      ${stats.saldoPendiente.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+
+                  {/* Compras Realizadas */}
+                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl text-center space-y-1">
+                    <span className="text-[10px] uppercase font-extrabold text-blue-800 block">Compras Realizadas</span>
+                    <span className="text-xl font-black font-mono text-blue-900 block">
+                      {stats.count}
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Pestañas de la Ficha (COMPRAS, DOCUMENTOS, NOTAS, CONTACTOS, ADJUNTOS) */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto no-scrollbar">
+                {[
+                  { id: 'compras', label: 'COMPRAS', icon: <ShoppingCart className="w-3.5 h-3.5" /> },
+                  { id: 'documentos', label: 'DOCUMENTOS', icon: <FileText className="w-3.5 h-3.5" /> },
+                  { id: 'notas', label: 'NOTAS', icon: <MessageSquare className="w-3.5 h-3.5" /> },
+                  { id: 'contactos', label: 'CONTACTOS', icon: <Phone className="w-3.5 h-3.5" /> },
+                  { id: 'adjuntos', label: 'ADJUNTOS', icon: <Paperclip className="w-3.5 h-3.5" /> },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveProviderTab(tab.id as any)}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+                      activeProviderTab === tab.id
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {tab.icon}
+                    <span>{tab.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* CONTENIDO PESTAÑA COMPRAS */}
+              {activeProviderTab === 'compras' && (
+                <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-100/80 text-slate-700 font-extrabold border-b border-slate-200">
+                      <tr>
+                        <th className="py-3 px-4">Fecha Compra [SYS]</th>
+                        <th className="py-3 px-4">Comprobante</th>
+                        <th className="py-3 px-4 text-right">Total Compra [AUTO]</th>
+                        <th className="py-3 px-4 text-center">Estado Compra</th>
+                        <th className="py-3 px-4 text-center">Estado Pago</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 text-slate-800">
+                      {providerPurchases.filter((p) => p.providerId === viewingProviderDetail.id).length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="py-8 text-center text-slate-400 font-medium">
+                            No hay comprobantes de compra registrados para este proveedor.
+                          </td>
+                        </tr>
+                      ) : (
+                        providerPurchases
+                          .filter((p) => p.providerId === viewingProviderDetail.id)
+                          .map((pur) => (
+                            <tr key={pur.id} className="hover:bg-slate-50 transition">
+                              <td className="py-3 px-4 font-mono text-[11px] text-slate-600">{pur.purchaseDate}</td>
+                              <td className="py-3 px-4 font-bold text-slate-900">{pur.voucherNumber}</td>
+                              <td className="py-3 px-4 text-right font-mono font-bold text-slate-900">
+                                ${pur.totalAmount.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                              </td>
+                              <td className="py-3 px-4 text-center">
+                                <span className={`px-2.5 py-0.5 rounded-full font-bold text-[10px] ${pur.purchaseStatus === 'Anulada' ? 'bg-rose-100 text-rose-800 border border-rose-300' : 'bg-blue-100 text-blue-900 border border-blue-200'}`}>
+                                  {pur.purchaseStatus}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-center">
+                                <span className={`px-2.5 py-0.5 rounded-full font-extrabold text-[10px] ${
+                                  pur.paymentStatus === 'Pagada'
+                                    ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                                    : pur.paymentStatus === 'Pendiente'
+                                    ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                    : pur.paymentStatus === 'Parcial'
+                                    ? 'bg-purple-100 text-purple-900 border border-purple-300'
+                                    : 'bg-rose-100 text-rose-900 border border-rose-300'
+                                }`}>
+                                  {pur.paymentStatus}
+                                </span>
+                              </td>
+                            </tr>
+                          ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* OTRAS PESTAÑAS (DOCUMENTOS, NOTAS, CONTACTOS, ADJUNTOS) */}
+              {activeProviderTab !== 'compras' && (
+                <div className="p-8 border border-slate-200 rounded-2xl bg-slate-50 text-center space-y-2">
+                  <span className="text-xs font-bold text-slate-700 block uppercase">
+                    Sección {activeProviderTab.toUpperCase()}
+                  </span>
+                  <p className="text-xs text-slate-500">
+                    Registro complementario de {activeProviderTab} para el proveedor {viewingProviderDetail.name}.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer Cerrar */}
+            <div className="flex justify-end pt-3 border-t border-slate-100">
+              <Button variant="outline" size="md" onClick={() => setViewingProviderDetail(null)}>
+                Cerrar Ficha
+              </Button>
+            </div>
           </div>
         </div>
       )}
