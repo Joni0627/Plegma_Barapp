@@ -1,5 +1,15 @@
 import { Provider, Item, ProviderItemRelation, Order, ReceptionHoursConfig, PriceHistoryEntry, AuditLog } from '../types';
 
+export const DEFAULT_RUBROS: string[] = [
+  'Equipamiento',
+  'Ferretería',
+  'Almacén & Secos',
+  'Carnicería & Fritos',
+  'Limpieza',
+  'Electrónica',
+  'Varios',
+];
+
 export const INITIAL_RECEPTION_HOURS: ReceptionHoursConfig = {
   morningStart: '08:00',
   morningEnd: '12:00',

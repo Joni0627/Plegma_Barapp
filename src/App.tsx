@@ -35,6 +35,23 @@ function MainLayout() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [editingProvider, setEditingProvider] = useState<Provider | null | 'new'>(null);
 
+  const [maestrosSubTab, setMaestrosSubTab] = useState<
+    'clientes' | 'proveedores' | 'usuarios' | 'categorias' | 'depositos' | 'cuentas' | 'branding' | null
+  >(null);
+
+  const handleNavigateTab = (tabId: string) => {
+    if (tabId.startsWith('maestros-')) {
+      const sub = tabId.replace('maestros-', '') as any;
+      setMaestrosSubTab(sub);
+      setCurrentTab('maestros');
+    } else {
+      if (tabId === 'maestros') {
+        setMaestrosSubTab(null);
+      }
+      setCurrentTab(tabId as any);
+    }
+  };
+
   // Quick Action Handlers from Kanban
   const handleSelectProvider = (provider: Provider) => {
     setSelectedProviderForSheet(provider);
@@ -91,7 +108,7 @@ function MainLayout() {
       {/* Top Navbar or Sidebar */}
       <Navbar
         currentTab={currentTab}
-        setCurrentTab={setCurrentTab}
+        setCurrentTab={handleNavigateTab}
         onOpenSettings={() => setIsSettingsOpen(true)}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
@@ -107,6 +124,7 @@ function MainLayout() {
             onReceiveGoods={handleReceiveGoods}
             onRecordPayment={handleRecordPayment}
             onNewProvider={() => setEditingProvider('new')}
+            onOpenSettings={() => setIsSettingsOpen(true)}
           />
         )}
 
@@ -133,6 +151,7 @@ function MainLayout() {
           <MaestrosView
             onNavigateToItems={() => setCurrentTab('items')}
             onOpenNewProvider={() => setEditingProvider('new')}
+            initialSubView={maestrosSubTab}
           />
         )}
       </main>

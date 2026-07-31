@@ -32,6 +32,7 @@ export interface Provider {
   orderDays?: DayOfWeek[];
   deliveryDays?: DayOfWeek[];
   priority?: number; // 1 = highest
+  dayPriorities?: Partial<Record<DayOfWeek, number>>;
   purchaseFrequency?: 'Semanal' | 'Bisemanal' | 'Diario' | 'Quincenal';
   cutoffTime?: string; // e.g., "14:00"
   habitualLeadTimeDays?: number;

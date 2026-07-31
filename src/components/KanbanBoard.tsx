@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Provider, DayOfWeek, ProcessState } from '../types';
+import { DEFAULT_RUBROS } from '../data/initialData';
 import {
   Calendar,
-  ChevronUp,
-  ChevronDown,
+  GripVertical,
   AlertTriangle,
   ClipboardList,
   CheckCircle2,
@@ -13,7 +13,7 @@ import {
   Truck,
   ArrowRight,
   SlidersHorizontal,
-  Plus,
+  Clock,
 } from 'lucide-react';
 
 interface KanbanBoardProps {
@@ -22,7 +22,8 @@ interface KanbanBoardProps {
   onStartOrderReview: (provider: Provider) => void;
   onReceiveGoods: (provider: Provider) => void;
   onRecordPayment: (provider: Provider) => void;
-  onNewProvider: () => void;
+  onNewProvider?: () => void;
+  onOpenSettings?: () => void;
 }
 
 const DAYS: DayOfWeek[] = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
@@ -40,102 +41,125 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   onStartOrderReview,
   onReceiveGoods,
   onRecordPayment,
-  onNewProvider,
+  onOpenSettings,
 }) => {
   const {
     providers,
+    orders,
     getProviderState,
     getProviderActiveOrder,
-    reorderProviderInDay,
+    moveProviderToPosition,
     userRole,
+    receptionHours,
   } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRubro, setSelectedRubro] = useState<string>('todos');
   const [selectedDayMobile, setSelectedDayMobile] = useState<DayOfWeek>(getCurrentDayName());
 
+  // Drag and drop state
+  const [draggedCard, setDraggedCard] = useState<{ providerId: string; sourceDay: DayOfWeek } | null>(null);
+  const [dragOverTarget, setDragOverTarget] = useState<string | null>(null);
+
   const currentDay = getCurrentDayName();
 
-  // Extract unique rubros for filter
-  const rubros = Array.from(new Set(providers.map((p) => p.rubro).filter(Boolean))) as string[];
+  // Extract unique rubros for filter matching DEFAULT_RUBROS catalog
+  const rubros = Array.from(
+    new Set([...DEFAULT_RUBROS, ...providers.map((p) => p.rubro).filter(Boolean)])
+  ) as string[];
 
   // Helper for status badge colors & text
   const getStatusBadge = (state: ProcessState) => {
     switch (state) {
       case 'Pendiente de conteo':
         return {
-          bg: 'bg-amber-100 text-amber-800 border-amber-200',
+          bg: 'bg-amber-100 text-amber-900 border-amber-200',
           dot: 'bg-amber-500',
           label: 'Pendiente de Conteo',
           action: 'Realizar Conteo',
+          btnBg: 'bg-amber-600 hover:bg-amber-700 text-white',
           icon: ClipboardList,
           color: 'text-amber-600',
         };
       case 'Conteo finalizado':
         return {
-          bg: 'bg-blue-100 text-blue-800 border-blue-200',
+          bg: 'bg-blue-100 text-blue-900 border-blue-200',
           dot: 'bg-blue-500',
           label: 'Conteo Finalizado',
-          action: 'Revisar Pedido Sugerido',
+          action: 'Revisar Pedido',
+          btnBg: 'bg-blue-600 hover:bg-blue-700 text-white',
           icon: CheckCircle2,
           color: 'text-blue-600',
         };
       case 'Pedido confirmado':
         return {
-          bg: 'bg-purple-100 text-purple-800 border-purple-200',
+          bg: 'bg-purple-100 text-purple-900 border-purple-200',
           dot: 'bg-purple-500',
           label: 'Pedido Confirmado',
-          action: 'Ver Documento Pedido',
+          action: 'Confirmar Pedido',
+          btnBg: 'bg-purple-600 hover:bg-purple-700 text-white',
           icon: Truck,
           color: 'text-purple-600',
         };
       case 'Pendiente de entrega':
         return {
-          bg: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+          bg: 'bg-indigo-100 text-indigo-900 border-indigo-200',
           dot: 'bg-indigo-500',
           label: 'Pendiente de Entrega',
-          action: 'Registrar Ingreso Mercadería',
+          action: 'Registrar Ingreso',
+          btnBg: 'bg-indigo-600 hover:bg-indigo-700 text-white',
           icon: Truck,
           color: 'text-indigo-600',
         };
       case 'Entregado / Ingresado':
         return {
-          bg: 'bg-teal-100 text-teal-800 border-teal-200',
+          bg: 'bg-teal-100 text-teal-900 border-teal-200',
           dot: 'bg-teal-500',
           label: 'Ingresado en Stock',
           action: 'Registrar Pago',
+          btnBg: 'bg-teal-600 hover:bg-teal-700 text-white',
           icon: PackageCheck,
           color: 'text-teal-600',
         };
       case 'Pendiente de pago':
         return {
-          bg: 'bg-rose-100 text-rose-800 border-rose-200',
+          bg: 'bg-rose-100 text-rose-900 border-rose-200',
           dot: 'bg-rose-500',
           label: 'Pendiente de Pago',
-          action: 'Saldar Deuda / Pago',
+          action: 'Registrar Pago',
+          btnBg: 'bg-rose-600 hover:bg-rose-700 text-white',
           icon: DollarSign,
           color: 'text-rose-600',
         };
       case 'Pagado':
       case 'Finalizado':
         return {
-          bg: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+          bg: 'bg-emerald-100 text-emerald-900 border-emerald-200',
           dot: 'bg-emerald-500',
           label: 'Finalizado / Pagado',
-          action: 'Ver Historial',
+          action: 'Ver Ficha',
+          btnBg: 'bg-slate-800 hover:bg-slate-900 text-white',
           icon: CheckCircle2,
           color: 'text-emerald-600',
         };
       default:
         return {
-          bg: 'bg-slate-100 text-slate-800 border-slate-200',
+          bg: 'bg-slate-100 text-slate-900 border-slate-200',
           dot: 'bg-slate-500',
           label: state,
           action: 'Ver Ficha',
+          btnBg: 'bg-slate-800 hover:bg-slate-900 text-white',
           icon: ArrowRight,
           color: 'text-slate-600',
         };
     }
+  };
+
+  const getProviderPriorityForDay = (provider: Provider, day: DayOfWeek) => {
+    if (provider.dayPriorities && provider.dayPriorities[day] !== undefined) {
+      return provider.dayPriorities[day]!;
+    }
+    return provider.priority || 999;
   };
 
   // Filter providers function
@@ -152,7 +176,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         if (selectedRubro !== 'todos' && p.rubro !== selectedRubro) return false;
         return true;
       })
-      .sort((a, b) => (a.priority || 0) - (b.priority || 0));
+      .sort((a, b) => getProviderPriorityForDay(a, day) - getProviderPriorityForDay(b, day));
   };
 
   return (
@@ -172,7 +196,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
           </p>
         </div>
 
-        {/* Filters & Add Provider button */}
+        {/* Filters */}
         <div className="flex flex-wrap items-center gap-3">
           {/* Search Input */}
           <div className="relative">
@@ -185,7 +209,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             />
           </div>
 
-          {/* Rubro Selector */}
+          {/* Rubro Selector (Idéntico a Modal Alta de Proveedores / Tabla CFG Rubros) */}
           <div className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1.5 border border-slate-300 rounded-xl text-xs">
             <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400" />
             <select
@@ -202,14 +226,18 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             </select>
           </div>
 
-          {/* Add Provider Button (Admin only) */}
-          {(userRole === 'admin' || userRole === 'compras') && (
+          {/* Horarios de Recepción Button */}
+          {onOpenSettings && (
             <button
-              onClick={onNewProvider}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-600 text-white font-semibold text-xs hover:bg-orange-700 shadow-sm transition"
+              onClick={onOpenSettings}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-100 hover:border-slate-400 shadow-xs transition"
+              title="Configurar horarios de recepción de proveedores"
             >
-              <Plus className="w-4 h-4" />
-              <span>Nuevo Proveedor</span>
+              <Clock className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+              <span>Horarios Recepción</span>
+              <span className="font-mono text-[10px] text-slate-500 font-normal">
+                ({receptionHours.morningStart}-{receptionHours.morningEnd})
+              </span>
             </button>
           )}
         </div>
@@ -259,7 +287,21 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
           return (
             <div
               key={day}
-              className={`flex flex-col bg-slate-100/90 rounded-2xl p-3 border ${
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                const pId = e.dataTransfer.getData('providerId') || draggedCard?.providerId;
+                const srcDay = (e.dataTransfer.getData('sourceDay') as DayOfWeek) || draggedCard?.sourceDay;
+                if (pId && srcDay) {
+                  moveProviderToPosition(pId, srcDay, day);
+                }
+                setDraggedCard(null);
+                setDragOverTarget(null);
+              }}
+              className={`flex flex-col bg-slate-100/90 rounded-2xl p-3 border transition-colors ${
                 isToday
                   ? 'border-orange-400 bg-orange-50/20 ring-2 ring-orange-400/20'
                   : 'border-slate-200'
@@ -299,121 +341,154 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                     const badgeInfo = getStatusBadge(state);
                     const BadgeIcon = badgeInfo.icon;
 
+                    const providerOrders = orders.filter((o) => o.providerId === provider.id);
+                    const pendingDebt = providerOrders.reduce((sum, o) => sum + (o.remainingDebt || 0), 0);
+                    const hasAlert = pendingDebt > 0 || state === 'Pendiente de pago';
+
+                    const isBeingDragged = draggedCard?.providerId === provider.id;
+                    const isTarget = dragOverTarget === `${day}-${provider.id}`;
+
                     return (
                       <div
                         key={`${provider.id}-${day}`}
-                        className="bg-white rounded-xl p-3.5 shadow-sm border border-slate-200/90 hover:shadow-md hover:border-slate-300 transition-all cursor-pointer relative group flex flex-col justify-between"
+                        draggable={userRole === 'admin' || userRole === 'compras'}
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('providerId', provider.id);
+                          e.dataTransfer.setData('sourceDay', day);
+                          setDraggedCard({ providerId: provider.id, sourceDay: day });
+                        }}
+                        onDragEnd={() => {
+                          setDraggedCard(null);
+                          setDragOverTarget(null);
+                        }}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = 'move';
+                          setDragOverTarget(`${day}-${provider.id}`);
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const pId = e.dataTransfer.getData('providerId') || draggedCard?.providerId;
+                          const srcDay = (e.dataTransfer.getData('sourceDay') as DayOfWeek) || draggedCard?.sourceDay;
+                          if (pId && srcDay) {
+                            moveProviderToPosition(pId, srcDay, day, provider.id);
+                          }
+                          setDraggedCard(null);
+                          setDragOverTarget(null);
+                        }}
+                        className={`bg-white rounded-2xl p-3 shadow-xs border transition-all cursor-pointer relative group flex flex-col justify-between overflow-hidden ${
+                          isTarget ? 'border-orange-500 ring-2 ring-orange-400/40 scale-[1.02]' : 'border-slate-200/90 hover:shadow-md hover:border-slate-300'
+                        } ${isBeingDragged ? 'opacity-40 border-dashed border-orange-400' : 'opacity-100'}`}
                         onClick={() => onSelectProvider(provider)}
                       >
-                        {/* Top Card Row: Priority, Logo & Reorder Controls */}
+                        {/* Top Card Row: Priority Rank, Rubro, Alert & Drag Handle */}
                         <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
+                          <div className="flex items-center justify-between gap-1 mb-2">
+                            <div className="flex items-center gap-1.5 overflow-hidden">
                               {/* Priority Rank Pill */}
                               <span
-                                className="w-5 h-5 rounded-full bg-slate-900 text-white font-extrabold text-[10px] flex items-center justify-center shadow-xs"
-                                title={`Prioridad ${provider.priority}`}
+                                className="w-5 h-5 rounded-full bg-slate-900 text-white font-black text-[10px] flex items-center justify-center shrink-0 shadow-xs"
+                                title={`Prioridad ${provider.priority || index + 1}`}
                               >
                                 {index + 1}
                               </span>
 
                               {/* Rubro Badge */}
-                              <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">
-                                {provider.rubro}
+                              <span
+                                className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200 truncate max-w-[85px]"
+                                title={provider.rubro || 'General'}
+                              >
+                                {provider.rubro || 'General'}
                               </span>
+
+                              {/* Alert Badge */}
+                              {hasAlert && (
+                                <span
+                                  className="p-0.5 text-rose-600 bg-rose-50 rounded border border-rose-200 shrink-0 flex items-center gap-0.5"
+                                  title={`Alerta: Deuda pendiente $${pendingDebt.toLocaleString('es-AR')}`}
+                                >
+                                  <AlertTriangle className="w-3 h-3 text-rose-500" />
+                                </span>
+                              )}
                             </div>
 
-                            {/* Reorder Buttons (Admin/Compras) */}
+                            {/* Drag Handle Icon (Admin/Compras) */}
                             {(userRole === 'admin' || userRole === 'compras') && (
                               <div
-                                className="flex items-center gap-0.5 opacity-60 group-hover:opacity-100 transition"
+                                className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-grab active:cursor-grabbing transition shrink-0"
+                                title="Mantén presionado para arrastrar y reordenar la tarjeta"
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                <button
-                                  disabled={index === 0}
-                                  onClick={() => reorderProviderInDay(provider.id, day, 'up')}
-                                  className="p-1 hover:bg-slate-100 rounded text-slate-600 disabled:opacity-20"
-                                  title="Mover arriba"
-                                >
-                                  <ChevronUp className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  disabled={index === dayProviders.length - 1}
-                                  onClick={() => reorderProviderInDay(provider.id, day, 'down')}
-                                  className="p-1 hover:bg-slate-100 rounded text-slate-600 disabled:opacity-20"
-                                  title="Mover abajo"
-                                >
-                                  <ChevronDown className="w-3.5 h-3.5" />
-                                </button>
+                                <GripVertical className="w-4 h-4" />
                               </div>
                             )}
                           </div>
 
-                          {/* Provider Info Header */}
-                          <div className="flex items-start gap-2.5 my-1.5">
+                          {/* Provider Header (Logo & Name) */}
+                          <div className="flex items-center gap-2.5 my-1">
                             {provider.logoUrl ? (
                               <img
                                 src={provider.logoUrl}
                                 alt={provider.name}
-                                className="w-10 h-10 rounded-lg object-cover border border-slate-200 shadow-xs shrink-0"
+                                className="w-9 h-9 rounded-xl object-cover border border-slate-200 shadow-xs shrink-0"
                               />
                             ) : (
-                              <div className="w-10 h-10 rounded-lg bg-orange-100 text-orange-700 font-bold flex items-center justify-center border border-orange-200 shrink-0">
-                                {provider.name.substring(0, 2).toUpperCase()}
+                              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 text-white font-black text-xs flex items-center justify-center shadow-xs shrink-0">
+                                {(provider.name || 'P').substring(0, 2).toUpperCase()}
                               </div>
                             )}
-                            <div className="overflow-hidden">
-                              <h4 className="font-bold text-xs text-slate-900 leading-tight truncate">
+                            <div className="overflow-hidden min-w-0 flex-1">
+                              <h4 className="font-extrabold text-xs text-slate-900 leading-snug truncate" title={provider.name}>
                                 {provider.name}
                               </h4>
-                              <p className="text-[11px] text-slate-500 truncate">
-                                {provider.contactName} • {provider.phone}
+                              <p className="text-[10px] text-slate-500 truncate" title={`${provider.contactName || ''} ${provider.phone || ''}`}>
+                                {provider.contactName || provider.phone ? `${provider.contactName || ''} ${provider.phone ? '• ' + provider.phone : ''}` : 'Proveedor Registrado'}
                               </p>
                             </div>
                           </div>
 
-                          {/* Cutoff & Delivery Schedule info */}
-                          <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-600">
-                            <span>
-                              Cierre:{' '}
-                              <strong className="text-slate-800">{provider.cutoffTime} hs</strong>
-                            </span>
-                            <span>
-                              Entrega:{' '}
-                              <strong className="text-slate-800">
-                                {provider.deliveryDays.join(', ')}
+                          {/* Schedule Info (Día Pedido & Entrega Esperada) */}
+                          <div className="mt-2 pt-2 border-t border-slate-100 grid grid-cols-2 gap-1 text-[10px] text-slate-600">
+                            <div className="truncate">
+                              <span className="text-slate-400 block">Día Pedido:</span>
+                              <strong className="text-slate-800 font-bold">{day}</strong>
+                            </div>
+                            <div className="truncate text-right">
+                              <span className="text-slate-400 block">Entrega:</span>
+                              <strong className="text-slate-800 font-bold" title={(provider.deliveryDays || []).join(', ')}>
+                                {(provider.deliveryDays || []).slice(0, 2).join(', ')}
+                                {(provider.deliveryDays || []).length > 2 ? '...' : ''}
                               </strong>
-                            </span>
+                            </div>
                           </div>
 
-                          {/* Financial or Order Amount preview if active order exists */}
-                          {activeOrder && (
-                            <div className="mt-2 bg-slate-50 p-2 rounded-lg border border-slate-200 flex items-center justify-between text-xs">
-                              <span className="text-slate-500 font-medium">
-                                #{activeOrder.orderNumber}:
+                          {/* Importe Estimado o Pendiente */}
+                          {(activeOrder || pendingDebt > 0) && (
+                            <div className="mt-2 bg-slate-50 px-2.5 py-1.5 rounded-xl border border-slate-200 flex items-center justify-between text-[11px]">
+                              <span className="text-slate-500 font-medium truncate">
+                                {activeOrder ? `#${activeOrder.orderNumber}` : 'Saldo Pendiente'}:
                               </span>
-                              <strong className="text-slate-900 font-bold">
-                                ${' '}
-                                {(activeOrder.finalReceivedTotal || activeOrder.estimatedTotal).toLocaleString(
-                                  'es-AR'
-                                )}
+                              <strong className={`font-mono font-black ${pendingDebt > 0 && !activeOrder ? 'text-rose-600' : 'text-slate-900'}`}>
+                                ${(activeOrder ? (activeOrder.finalReceivedTotal || activeOrder.estimatedTotal) : pendingDebt).toLocaleString('es-AR')}
                               </strong>
                             </div>
                           )}
 
-                          {/* Process State Badge */}
-                          <div className="mt-3">
+                          {/* Estado del Proceso */}
+                          <div className="mt-2.5">
                             <span
-                              className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-md border ${badgeInfo.bg} w-full justify-center`}
+                              className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-1 rounded-lg border ${badgeInfo.bg} w-full justify-center truncate`}
+                              title={badgeInfo.label}
                             >
-                              <span className={`w-1.5 h-1.5 rounded-full ${badgeInfo.dot}`} />
-                              <span>{badgeInfo.label}</span>
+                              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${badgeInfo.dot}`} />
+                              <span className="truncate">{badgeInfo.label}</span>
                             </span>
                           </div>
                         </div>
 
-                        {/* Primary Recommended Action Button */}
-                        <div className="mt-3 pt-2.5 border-t border-slate-100">
+                        {/* Próxima Acción Recomendada (Botón Acción Directa) */}
+                        <div className="mt-3 pt-2 border-t border-slate-100">
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -421,24 +496,19 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                                 onStartStockCount(provider);
                               } else if (state === 'Conteo finalizado') {
                                 onStartOrderReview(provider);
-                              } else if (
-                                state === 'Pedido confirmado' ||
-                                state === 'Pendiente de entrega'
-                              ) {
+                              } else if (state === 'Pedido confirmado' || state === 'Pendiente de entrega') {
                                 onReceiveGoods(provider);
-                              } else if (
-                                state === 'Entregado / Ingresado' ||
-                                state === 'Pendiente de pago'
-                              ) {
+                              } else if (state === 'Entregado / Ingresado' || state === 'Pendiente de pago') {
                                 onRecordPayment(provider);
                               } else {
                                 onSelectProvider(provider);
                               }
                             }}
-                            className="w-full flex items-center justify-center gap-1.5 bg-slate-900 text-white hover:bg-orange-600 text-xs font-bold py-1.5 px-2.5 rounded-lg transition-colors shadow-xs"
+                            className={`w-full flex items-center justify-center gap-1.5 ${badgeInfo.btnBg || 'bg-slate-900 hover:bg-orange-600 text-white'} text-xs font-bold py-1.5 px-2 rounded-xl transition-all shadow-xs truncate`}
+                            title={badgeInfo.action}
                           >
-                            <BadgeIcon className="w-3.5 h-3.5" />
-                            <span>{badgeInfo.action}</span>
+                            <BadgeIcon className="w-3.5 h-3.5 shrink-0" />
+                            <span className="truncate">{badgeInfo.action}</span>
                           </button>
                         </div>
                       </div>
