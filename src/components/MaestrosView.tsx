@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Client, AppUser, Category, Warehouse, UserRole, UserProfile, GranularRole, ModuleActionLevel, ModuleAccessMatrix, CurrentAccountMovement, Provider, ProviderPurchase } from '../types';
+import { DEFAULT_RUBROS } from '../data/initialData';
 import { Button } from './ui/Button';
 import { FormField, TextInput, SelectInput, SelectWithInlineAdd } from './ui/Form';
 import { StandardDataTable, Column } from './ui/DataTable';
@@ -42,11 +43,13 @@ import {
 interface MaestrosViewProps {
   onNavigateToItems: () => void;
   onOpenNewProvider: () => void;
+  initialSubView?: 'clientes' | 'proveedores' | 'usuarios' | 'categorias' | 'depositos' | 'cuentas' | 'branding' | null;
 }
 
 export const MaestrosView: React.FC<MaestrosViewProps> = ({
   onNavigateToItems,
   onOpenNewProvider,
+  initialSubView,
 }) => {
   const {
     providers,
@@ -226,8 +229,14 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
 
   // Active Sub-view State (null = Main Grid Dashboard)
   const [activeSubView, setActiveSubView] = useState<
-    'clientes' | 'proveedores' | 'usuarios' | 'perfiles' | 'categorias' | 'depositos' | 'branding' | null
-  >(null);
+    'clientes' | 'proveedores' | 'usuarios' | 'perfiles' | 'categorias' | 'depositos' | 'cuentas' | 'branding' | null
+  >(initialSubView || null);
+
+  React.useEffect(() => {
+    if (initialSubView !== undefined) {
+      setActiveSubView(initialSubView);
+    }
+  }, [initialSubView]);
 
   // Form Modal State (for creating or editing records)
   const [formModal, setFormModal] = useState<{
@@ -2997,7 +3006,7 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
                   </div>
 
                   <FormField
-                    label="Rubro Principal [CFG]"
+                    label="Rubro Principal"
                     hint={
                       hasPermission('canInlineCreate')
                         ? '✓ Puedes hacer clic en el botón + para agregar un nuevo rubro'
@@ -3006,13 +3015,7 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
                   >
                     <SelectWithInlineAdd
                       options={[
-                        { value: 'Equipamiento', label: 'Equipamiento' },
-                        { value: 'Ferretería', label: 'Ferretería' },
-                        { value: 'Almacén & Secos', label: 'Almacén & Secos' },
-                        { value: 'Carnicería & Fritos', label: 'Carnicería & Fritos' },
-                        { value: 'Limpieza', label: 'Limpieza' },
-                        { value: 'Electrónica', label: 'Electrónica' },
-                        { value: 'Varios', label: 'Varios' },
+                        ...DEFAULT_RUBROS.map((r) => ({ value: r, label: r })),
                         ...categories.map((c) => ({ value: c.name, label: c.name })),
                       ]}
                       value={formModal.data.rubro || 'Equipamiento'}
@@ -3025,7 +3028,7 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
                     />
                   </FormField>
 
-                  <FormField label="Subrubro [CFG]">
+                  <FormField label="Subrubro">
                     <TextInput
                       type="text"
                       placeholder="Ej. Carnes Vacunas & Aves"

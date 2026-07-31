@@ -94,6 +94,12 @@ interface AppContextType {
   getProviderActiveOrder: (providerId: string) => Order | undefined;
   getProviderActiveCount: (providerId: string) => StockCount | undefined;
   reorderProviderInDay: (providerId: string, day: DayOfWeek, direction: 'up' | 'down') => void;
+  moveProviderToPosition: (
+    draggedProviderId: string,
+    sourceDay: DayOfWeek,
+    targetDay: DayOfWeek,
+    targetProviderId?: string
+  ) => void;
   updateProviderDays: (providerId: string, orderDays: DayOfWeek[], deliveryDays: DayOfWeek[]) => void;
   
   // Stock Counts
@@ -476,6 +482,78 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     logAudit('Reordenar Proveedores', 'proveedor', providerId, `Mover prioridad en día ${day}`);
   };
 
+  const moveProviderToPosition = (
+    draggedProviderId: string,
+    sourceDay: DayOfWeek,
+    targetDay: DayOfWeek,
+    targetProviderId?: string
+  ) => {
+    setProviders((prev) => {
+      const dragged = prev.find((p) => p.id === draggedProviderId);
+      if (!dragged) return prev;
+
+      let updatedProviders = [...prev];
+
+      // 1. Update orderDays if dragged across day columns
+      if (sourceDay !== targetDay) {
+        const currentOrderDays = dragged.orderDays || [];
+        const newOrderDays = Array.from(
+          new Set([...currentOrderDays.filter((d) => d !== sourceDay), targetDay])
+        );
+        updatedProviders = updatedProviders.map((p) =>
+          p.id === draggedProviderId ? { ...p, orderDays: newOrderDays } : p
+        );
+      }
+
+      // Helper to get priority for day
+      const getPriority = (p: Provider, day: DayOfWeek) => {
+        if (p.dayPriorities && p.dayPriorities[day] !== undefined) {
+          return p.dayPriorities[day]!;
+        }
+        return p.priority || 999;
+      };
+
+      // 2. Reorder priorities within targetDay column independently
+      const targetDayProviders = updatedProviders
+        .filter((p) => (p.orderDays ? p.orderDays.includes(targetDay) : true))
+        .sort((a, b) => getPriority(a, targetDay) - getPriority(b, targetDay));
+
+      const draggedIdx = targetDayProviders.findIndex((p) => p.id === draggedProviderId);
+      if (draggedIdx === -1) return updatedProviders;
+
+      const [removed] = targetDayProviders.splice(draggedIdx, 1);
+
+      let insertIdx = targetDayProviders.length;
+      if (targetProviderId) {
+        const targetIdx = targetDayProviders.findIndex((p) => p.id === targetProviderId);
+        if (targetIdx !== -1) {
+          insertIdx = targetIdx;
+        }
+      }
+
+      targetDayProviders.splice(insertIdx, 0, removed);
+
+      // Assign independent priority for targetDay ONLY
+      const dayPriorityMap = new Map<string, number>();
+      targetDayProviders.forEach((p, idx) => {
+        dayPriorityMap.set(p.id, idx + 1);
+      });
+
+      return updatedProviders.map((p) => {
+        if (dayPriorityMap.has(p.id)) {
+          const newDayPriorities = {
+            ...(p.dayPriorities || {}),
+            [targetDay]: dayPriorityMap.get(p.id)!,
+          };
+          return { ...p, dayPriorities: newDayPriorities };
+        }
+        return p;
+      });
+    });
+
+    logAudit('Drag & Drop Proveedor', 'proveedor', draggedProviderId, `Arrastrar a ${targetDay}`);
+  };
+
   const updateProviderDays = (providerId: string, orderDays: DayOfWeek[], deliveryDays: DayOfWeek[]) => {
     setProviders((prev) =>
       prev.map((p) => (p.id === providerId ? { ...p, orderDays, deliveryDays } : p))
@@ -814,6 +892,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         getProviderActiveOrder,
         getProviderActiveCount,
         reorderProviderInDay,
+        moveProviderToPosition,
         updateProviderDays,
         saveStockCount,
         createOrder,
