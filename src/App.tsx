@@ -18,16 +18,20 @@ import { EmployeeMasterView } from './components/EmployeeMasterView';
 import { ClockView } from './components/ClockView';
 import { AdvancesConsumptionsView } from './components/AdvancesConsumptionsView';
 import { PayrunsView } from './components/PayrunsView';
+import { MobileHomeView } from './components/MobileHomeView';
+import { MobileBottomNav } from './components/MobileBottomNav';
 import { Toast } from './components/ui/Toast';
+import { useIsMobile } from './hooks/useIsMobile';
 import { Provider, Order, StockCount } from './types';
 
 function MainLayout() {
   const { providers, orders, branding } = useApp();
+  const isMobile = useIsMobile(768);
   const isSidebar = branding?.navigationStyle === 'sidebar';
 
-  const [currentTab, setCurrentTab] = useState<
-    'kanban' | 'inbox' | 'items' | 'dashboard' | 'audit' | 'maestros' | 'recursos_humanos'
-  >('kanban');
+  const [currentTab, setCurrentTab] = useState<string>(() =>
+    window.innerWidth < 768 ? 'mobile_home' : 'kanban'
+  );
 
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -132,7 +136,27 @@ function MainLayout() {
       />
 
       {/* Main Container View Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 lg:p-8 space-y-6 overflow-x-hidden">
+      <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 lg:p-8 space-y-6 overflow-x-hidden pb-20 md:pb-6">
+        {/* Mobile Sub-module Back Header Button */}
+        {isMobile && currentTab !== 'mobile_home' && (
+          <div className="md:hidden flex items-center justify-between pb-2 border-b border-slate-200">
+            <button
+              type="button"
+              onClick={() => setCurrentTab('mobile_home')}
+              className="flex items-center gap-1 text-xs font-bold text-rose-600 hover:text-rose-700 py-1 px-2.5 bg-rose-50 rounded-xl border border-rose-200 transition"
+            >
+              <span>← Volver al Inicio</span>
+            </button>
+          </div>
+        )}
+
+        {currentTab === 'mobile_home' && (
+          <MobileHomeView
+            onNavigateTab={handleNavigateTab}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+          />
+        )}
+
         {currentTab === 'kanban' && (
           <KanbanBoard
             onSelectProvider={handleSelectProvider}
@@ -245,6 +269,13 @@ function MainLayout() {
 
       {/* Global Toast Notifications */}
       <Toast />
+
+      {/* Fixed Mobile Bottom Navigation Bar */}
+      <MobileBottomNav
+        currentTab={currentTab}
+        onNavigateTab={handleNavigateTab}
+        onToggleMobileMenu={() => handleNavigateTab('maestros')}
+      />
     </div>
   );
 }

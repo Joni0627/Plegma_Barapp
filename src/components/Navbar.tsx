@@ -518,45 +518,45 @@ export const Navbar: React.FC<NavbarProps> = ({
             })}
           </div>
 
-          {/* Toggle Chevron for Mobile / Expanded Grid */}
+          {/* Toggle Chevron / Hamburger for Mobile */}
           <div className="flex md:hidden items-center justify-center">
             <button
               onClick={() => setIsTopNavCollapsed(!isTopNavCollapsed)}
-              className="p-2.5 rounded-full bg-slate-800/80 hover:bg-slate-700/90 text-amber-400 hover:text-white transition-all duration-300 border border-slate-700/60 shadow-md group shrink-0"
+              className="p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-amber-400 hover:text-white transition border border-slate-700/60 shadow-md shrink-0"
               title={isTopNavCollapsed ? "Desplegar menú de módulos" : "Ocultar menú"}
             >
               <ChevronDown
-                className={`w-5 h-5 transition-transform duration-300 ${
-                  !isTopNavCollapsed ? 'rotate-180 text-amber-300' : 'group-hover:translate-y-0.5'
+                className={`w-4 h-4 transition-transform duration-300 ${
+                  !isTopNavCollapsed ? 'rotate-180 text-amber-300' : ''
                 }`}
               />
             </button>
           </div>
 
           {/* Actions Right (Rol, Reset) */}
-          <div className="flex items-center gap-2.5 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
 
-            {/* Role Selector */}
-            <div className="flex items-center gap-1.5 bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-700">
+            {/* Role Selector with max-w truncation */}
+            <div className="flex items-center gap-1 bg-slate-800 px-2 py-1 rounded-lg border border-slate-700 max-w-[110px] sm:max-w-none">
               <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
                 Rol:
               </span>
               <select
                 value={userRole}
                 onChange={handleRoleChange}
-                className="bg-transparent text-xs text-amber-300 font-semibold focus:outline-none cursor-pointer"
+                className="bg-transparent text-[11px] sm:text-xs text-amber-300 font-semibold focus:outline-none cursor-pointer truncate w-full"
               >
                 <option value="admin" className="bg-slate-800 text-white">
-                  👑 Administrador
+                  👑 Admin
                 </option>
                 <option value="compras" className="bg-slate-800 text-white">
-                  🛒 Usu. Compras
+                  🛒 Compras
                 </option>
                 <option value="recepcion" className="bg-slate-800 text-white">
-                  📦 Usu. Recepción
+                  📦 Recepción
                 </option>
                 <option value="caja" className="bg-slate-800 text-white">
-                  💵 Usu. Caja / Pagos
+                  💵 Caja / Pagos
                 </option>
               </select>
             </div>
@@ -568,69 +568,87 @@ export const Navbar: React.FC<NavbarProps> = ({
                   resetToDefaults();
                 }
               }}
-              className="p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition"
+              className="p-1.5 sm:p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition"
               title="Restablecer datos de prueba"
             >
-              <RotateCcw className="w-4 h-4" />
+              <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* EXPANDED GRID SECTION PANEL (Mobile or when toggled) */}
+      {/* OFF-CANVAS MOBILE DRAWER / OVERLAY PANEL */}
       {!isTopNavCollapsed && (
-        <div
-          style={{ backgroundColor: branding?.menuBgHex || '#0f172a' }}
-          className="border-t border-slate-800/80 shadow-2xl py-4 px-4 sm:px-6 lg:px-8 transition-all duration-300 ease-in-out md:hidden"
-        >
-          <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {NAV_SECTIONS.map((section) => {
-              const SectionIcon = section.icon;
-              const isSectionActive = section.items.some((item) => item.id === currentTab);
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex flex-col justify-end sm:justify-center p-3 sm:p-6 md:hidden animate-fadeIn">
+          <div
+            style={{ backgroundColor: branding?.menuBgHex || '#0f172a' }}
+            className="w-full max-h-[85vh] rounded-3xl border border-slate-800 shadow-2xl flex flex-col overflow-hidden text-white"
+          >
+            {/* Drawer Header */}
+            <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/90">
+              <div className="flex items-center gap-2">
+                <Store className="w-5 h-5 text-amber-400" />
+                <h3 className="font-extrabold text-sm tracking-tight">Menú de Módulos & Gestión</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsTopNavCollapsed(true)}
+                className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition"
+              >
+                ✕
+              </button>
+            </div>
 
-              return (
-                <div
-                  key={section.id}
-                  className={`p-3.5 rounded-2xl border transition-all ${
-                    isSectionActive
-                      ? 'bg-slate-900/90 border-amber-500/50 ring-1 ring-amber-500/20'
-                      : 'bg-slate-900/50 border-slate-800'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-slate-800">
-                    <SectionIcon className="w-4 h-4 text-amber-400" />
-                    <h4 className="font-extrabold text-xs text-white uppercase tracking-wider">
-                      {section.label}
-                    </h4>
-                  </div>
+            {/* Drawer Content Body */}
+            <div className="p-4 overflow-y-auto space-y-4 text-xs no-scrollbar">
+              {NAV_SECTIONS.map((section) => {
+                const SectionIcon = section.icon;
+                const isSectionActive = section.items.some((item) => item.id === currentTab);
 
-                  <div className="space-y-1.5">
-                    {section.items.map((item) => {
-                      const ItemIcon = item.icon;
-                      const isSubActive = currentTab === item.id || effectiveTab === item.id;
-                      return (
-                        <button
-                          key={item.id}
-                          onClick={() => {
-                            setCurrentTab(item.id);
-                            setIsTopNavCollapsed(true);
-                          }}
-                          style={getNavItemStyle(isSubActive)}
-                          className={`w-full flex items-center gap-2.5 p-2 rounded-xl text-left text-xs font-bold transition ${
-                            isSubActive
-                              ? 'shadow-xs'
-                              : 'opacity-80 hover:opacity-100'
-                          }`}
-                        >
-                          <ItemIcon className="w-4 h-4 shrink-0" style={{ color: getSubmenuIconColor(isSubActive) }} strokeWidth={strokeWidth} />
-                          <span className="truncate">{item.label}</span>
-                        </button>
-                      );
-                    })}
+                return (
+                  <div
+                    key={section.id}
+                    className={`p-3 rounded-2xl border transition-all ${
+                      isSectionActive
+                        ? 'bg-slate-900/90 border-amber-500/50 ring-1 ring-amber-500/20'
+                        : 'bg-slate-900/50 border-slate-800'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-slate-800">
+                      <SectionIcon className="w-4 h-4 text-amber-400" />
+                      <h4 className="font-extrabold text-xs text-white uppercase tracking-wider">
+                        {section.label}
+                      </h4>
+                    </div>
+
+                    <div className="space-y-1">
+                      {section.items.map((item) => {
+                        const ItemIcon = item.icon;
+                        const isSubActive = currentTab === item.id || effectiveTab === item.id;
+                        return (
+                          <button
+                            key={item.id}
+                            onClick={() => {
+                              setCurrentTab(item.id);
+                              setIsTopNavCollapsed(true);
+                            }}
+                            style={getNavItemStyle(isSubActive)}
+                            className={`w-full flex items-center gap-2.5 p-2 rounded-xl text-left text-xs font-bold transition ${
+                              isSubActive
+                                ? 'shadow-xs'
+                                : 'opacity-80 hover:opacity-100'
+                            }`}
+                          >
+                            <ItemIcon className="w-4 h-4 shrink-0" style={{ color: getSubmenuIconColor(isSubActive) }} strokeWidth={strokeWidth} />
+                            <span className="truncate">{item.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
