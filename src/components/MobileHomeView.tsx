@@ -4,6 +4,7 @@ import {
   Search,
   Bell,
   AlertTriangle,
+  LogOut,
   Store,
   ChevronRight,
   Eye,
@@ -96,6 +97,16 @@ export const MobileHomeView: React.FC<MobileHomeViewProps> = ({
             <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 text-white rounded-full text-[9px] font-black flex items-center justify-center border border-white">
               2
             </span>
+          </button>
+
+          {/* Logout Button */}
+          <button
+            type="button"
+            onClick={() => showToast('Sesión cerrada exitosamente. Redirigiendo...', 'info')}
+            className="w-8 h-8 rounded-full bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 hover:bg-rose-100 transition shadow-xs"
+            title="Cerrar Sesión"
+          >
+            <LogOut className="w-4 h-4" />
           </button>
         </div>
       </div>
