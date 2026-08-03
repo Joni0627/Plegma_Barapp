@@ -49,7 +49,7 @@ export const PurchasingDashboard: React.FC = () => {
       </div>
 
       {/* Main KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
           <span className="text-xs text-slate-400 font-bold uppercase tracking-wider block">
             Total Compras Período

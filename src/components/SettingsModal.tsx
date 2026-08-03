@@ -148,17 +148,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ onClose }) => {
           </div>
         </div>
 
-        <div className="bg-slate-900 p-4 border-t border-slate-800 flex justify-end gap-2 text-white">
+        <div className="bg-slate-900 p-4 border-t border-slate-800 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 text-white">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 font-bold text-xs rounded-xl"
+            className="w-full sm:w-auto px-4 py-2.5 bg-slate-800 hover:bg-slate-700 font-bold text-xs rounded-xl text-center"
           >
             Cancelar
           </button>
           <button
             type="submit"
-            className="px-5 py-2 bg-orange-600 hover:bg-orange-500 font-extrabold text-xs rounded-xl shadow-md flex items-center gap-1.5"
+            className="w-full sm:w-auto px-5 py-2.5 bg-orange-600 hover:bg-orange-500 font-extrabold text-xs rounded-xl shadow-md flex items-center justify-center gap-1.5"
           >
             <Save className="w-4 h-4" />
             <span>Guardar Horarios</span>

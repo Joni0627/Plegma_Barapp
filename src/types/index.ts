@@ -351,8 +351,14 @@ export type FontFamilyOption =
   | 'Cinzel';
 
 export interface BrandingConfig {
-  // Brand Logo
+  // Brand Logo & Company Details
   logoUrl?: string;
+  companyName?: string;
+  companySubtitle?: string;
+  cuit?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
 
   // Navigation Layout
   navigationStyle: NavigationStyle;
@@ -408,4 +414,183 @@ export interface BrandingConfig {
   fontFamily: FontFamilyOption;
   fontSizeScale: 'compact' | 'normal' | 'large';
   headingFontWeight: 'font-bold' | 'font-extrabold' | 'font-black';
+}
+
+// ----------------------------------------------------
+// RECURSOS HUMANOS (RR.HH.) - EMPLEADOS TYPES
+// ----------------------------------------------------
+
+export type EmployeeDayOfWeek =
+  | 'Lunes'
+  | 'Martes'
+  | 'Miércoles'
+  | 'Jueves'
+  | 'Viernes'
+  | 'Sábado'
+  | 'Domingo';
+
+export interface HourlyRateLog {
+  id: string;
+  employeeId: string;
+  timestamp: string; // Fecha Hora Modificación [SYS]
+  oldPrice: number; // Valor Anterior [AUTO]
+  newPrice: number; // Valor Nuevo
+  percentageIncrease: number; // % Aumento = ((Nuevo - Anterior) / Anterior) * 100 [AUTO]
+  modifiedBy: string; // Usuario Modificación [EXT]
+  notes?: string; // Observaciones
+}
+
+export interface WorkScheduleItem {
+  id: string;
+  employeeId: string;
+  day: EmployeeDayOfWeek;
+  startTime: string; // e.g. "08:00"
+  endTime: string; // e.g. "16:00"
+  specialHourlyRate?: number; // Moneda (Tarifa especial)
+  active: boolean; // Si / No
+  notes?: string;
+}
+
+export interface Employee {
+  id: string;
+  dni: string; // Número, Obligatorio, Único
+  name: string; // Texto, Obligatorio (Nombre y apellido)
+  address: string; // Texto, Obligatorio (Domicilio)
+  phone: string; // Texto/Número, Obligatorio
+  birthDate?: string; // Fecha
+  gender?: 'Masculino' | 'Femenino' | 'Otro';
+  position: string; // Lista [CFG] Puestos, Obligatorio
+  profile: string; // Lista [CFG] Perfiles, Obligatorio
+  loginEmail?: string; // Email
+  isSharedEmail?: boolean; // Si / No
+  enableClockIn: boolean; // Si / No, Obligatorio
+  hourlyRate: number; // Moneda, Obligatorio
+  isPartner: boolean; // Si / No, Obligatorio
+  relatedProviderId?: string; // Lista [EXT] Proveedores
+  active: boolean; // Si / No, Obligatorio
+
+  // Datos de Cuenta / Pago
+  bankCompany?: 'Mercado Pago' | 'Naranja X' | 'Banco' | 'Ualá' | 'Otra';
+  accountType?: 'Caja de Ahorro' | 'Cuenta Corriente' | 'CVU';
+  cbuCvu?: string;
+  alias?: string;
+
+  // Logs & Work Schedule
+  hourlyRateLogs?: HourlyRateLog[];
+  schedule?: WorkScheduleItem[];
+}
+
+export type ClockState = 'Abierta' | 'Cerrada' | 'Corregida' | 'Anulada';
+
+export interface ClockRecord {
+  id: string;
+  employeeId: string;
+  dni: string;
+  employeeName: string;
+  checkIn: string; // YYYY-MM-DD HH:mm:ss
+  checkOut?: string; // YYYY-MM-DD HH:mm:ss
+  hoursWorked?: number; // Duration in hours (e.g. 7.5)
+  hourlyRate: number; // Frozen rate at check-in time
+  totalCost?: number; // hoursWorked * hourlyRate
+  state: ClockState;
+  modifiedBy?: string;
+  modificationReason?: string;
+  modifiedAt?: string;
+  notes?: string;
+}
+
+export type AdvanceStatus = 'Pendiente' | 'En descuento' | 'Descontado' | 'Anulado';
+
+export interface EmployeeConsumption {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  dni: string;
+  date: string; // YYYY-MM-DD HH:mm
+  orderNumber: string;
+  amount: number;
+  detail: string;
+  liquidationPeriod?: string; // e.g. "Julio/2026"
+  status: 'Pendiente' | 'Aplicado';
+}
+
+export interface AdvanceInstallment {
+  installmentNumber: number;
+  amount: number;
+  liquidationPeriod: string; // e.g. "Julio/2026"
+  status: 'Pendiente' | 'Aplicado';
+  appliedIn?: string;
+}
+
+export interface EmployeeAdvance {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  dni: string;
+  date: string; // YYYY-MM-DD HH:mm
+  amount: number;
+  detail?: string;
+  paymentMethod?: string;
+  cashRegister?: string;
+  liquidationStartPeriod: string; // e.g. "Julio/2026"
+  isInstallments: boolean;
+  installmentsCount: number;
+  installmentAmount: number;
+  pendingBalance: number;
+  status: AdvanceStatus;
+  installments: AdvanceInstallment[];
+  createdUser?: string;
+}
+
+export type PayrunStatus = 'Pendiente' | 'En curso' | 'Liquidada' | 'Anulada';
+export type EmployeePayrunStatus = 'Pendiente' | 'En proceso' | 'Pagado';
+
+export interface PayrunDeduction {
+  id: string;
+  concept: string; // "Adelanto de Sueldo" | "Consumo de Empleado"
+  detail: string; // e.g. "3/4 cuota (1 de 3)" or "Pedido #40.663"
+  amount: number;
+  sourceId?: string;
+}
+
+export interface PayrunEmployeeDetail {
+  employeeId: string;
+  employeeName: string;
+  dni: string;
+  position: string;
+  hoursWorkedStr: string; // HH:MM:SS
+  hoursWorkedDecimal: number;
+  hourlyRate: number;
+  grossAmount: number;
+  deductions: PayrunDeduction[];
+  totalDeductions: number;
+  netAmount: number;
+  paidAmount: number;
+  pendingAmount: number;
+  status: EmployeePayrunStatus;
+  paymentMethod?: string;
+  cashRegister?: string;
+  paymentDate?: string;
+}
+
+export interface Payrun {
+  id: string;
+  periodName: string;
+  startDate: string; // YYYY-MM-DD HH:mm
+  endDate: string; // YYYY-MM-DD HH:mm
+  employeeCount: number;
+  totalToPay: number;
+  totalPaid: number;
+  totalPending: number;
+  status: PayrunStatus;
+  employeesDetails: PayrunEmployeeDetail[];
+  createdAt: string;
+}
+
+export type ToastType = 'success' | 'error' | 'info' | 'warning';
+
+export interface ToastNotification {
+  id: string;
+  message: string;
+  type: ToastType;
 }

@@ -81,13 +81,13 @@ export function StandardDataTable<T>({
     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-0">
       {/* Table Header Controls */}
       {(title || searchFilterKey || headerActions) && (
-        <div className="p-4 md:p-6 bg-slate-50 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="p-3 sm:p-4 md:p-6 bg-slate-50 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
           <div>
             {title && <h3 className="font-bold text-slate-900 text-base md:text-lg">{title}</h3>}
             {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full md:w-auto">
             {searchFilterKey && (
               <div className="relative w-full sm:w-64">
                 <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
@@ -106,7 +106,7 @@ export function StandardDataTable<T>({
       )}
 
       {/* Table Container */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto w-full max-w-full touch-pan-x">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-slate-100/80 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
