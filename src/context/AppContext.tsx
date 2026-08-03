@@ -15,6 +15,16 @@ import {
   UserPermissions,
   AppUser,
   BrandingConfig,
+  Employee,
+  HourlyRateLog,
+  ClockRecord,
+  EmployeeConsumption,
+  EmployeeAdvance,
+  Payrun,
+  PayrunEmployeeDetail,
+  PayrunDeduction,
+  ToastType,
+  ToastNotification,
 } from '../types';
 import {
   INITIAL_PROVIDERS,
@@ -24,6 +34,13 @@ import {
   INITIAL_RECEPTION_HOURS,
   INITIAL_PRICE_HISTORY,
   INITIAL_AUDIT_LOGS,
+  INITIAL_EMPLOYEES,
+  INITIAL_CLOCK_RECORDS,
+  INITIAL_EMPLOYEE_CONSUMPTIONS,
+  INITIAL_EMPLOYEE_ADVANCES,
+  INITIAL_PAYRUNS,
+  DEFAULT_POSITIONS,
+  DEFAULT_PROFILES,
 } from '../data/initialData';
 
 const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, UserPermissions> = {
@@ -88,6 +105,28 @@ interface AppContextType {
   auditLogs: AuditLog[];
   branding: BrandingConfig;
   updateBranding: (newConfig: Partial<BrandingConfig>) => void;
+  employees: Employee[];
+  addOrUpdateEmployee: (emp: Employee) => void;
+  toggleEmployeeStatus: (employeeId: string) => void;
+  addHourlyRateLog: (employeeId: string, newRate: number, notes?: string) => void;
+  clockRecords: ClockRecord[];
+  clockIn: (dni: string) => { success: boolean; message: string; record?: ClockRecord };
+  clockOut: (dni: string) => { success: boolean; message: string; record?: ClockRecord };
+  correctClockRecord: (id: string, checkIn: string, checkOut: string, reason: string) => void;
+  voidClockRecord: (id: string, reason: string) => void;
+  employeeConsumptions: EmployeeConsumption[];
+  employeeAdvances: EmployeeAdvance[];
+  addOrUpdateAdvance: (adv: EmployeeAdvance) => void;
+  voidAdvance: (advanceId: string) => void;
+  payruns: Payrun[];
+  createPayrun: (startDate: string, endDate: string, periodName?: string) => { success: boolean; message: string; payrun?: Payrun };
+  markEmployeePaid: (payrunId: string, employeeId: string, paymentMethod: string, cashRegister: string) => void;
+  unmarkEmployeePaid: (payrunId: string, employeeId: string) => void;
+  voidPayrun: (payrunId: string) => void;
+
+  toast: ToastNotification | null;
+  showToast: (message: string, type?: ToastType) => void;
+  hideToast: () => void;
 
   // Actions
   getProviderState: (providerId: string) => ProcessState;
@@ -213,7 +252,481 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [priceHistory, setPriceHistory] = useState<PriceHistoryEntry[]>(INITIAL_PRICE_HISTORY);
   const [expenses, setExpenses] = useState<ExpenseRecord[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>(INITIAL_AUDIT_LOGS);
+  const [employees, setEmployees] = useState<Employee[]>(() => {
+    try {
+      const saved = localStorage.getItem('plegma_employees');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return INITIAL_EMPLOYEES;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('plegma_employees', JSON.stringify(employees));
+    } catch (e) {}
+  }, [employees]);
+
+  const addOrUpdateEmployee = (emp: Employee) => {
+    setEmployees((prev) => {
+      const idx = prev.findIndex((e) => e.id === emp.id);
+      if (idx >= 0) {
+        const copy = [...prev];
+        copy[idx] = emp;
+        return copy;
+      }
+      return [emp, ...prev];
+    });
+  };
+
+  const toggleEmployeeStatus = (employeeId: string) => {
+    setEmployees((prev) =>
+      prev.map((e) => (e.id === employeeId ? { ...e, active: !e.active } : e))
+    );
+  };
+
+  const addHourlyRateLog = (employeeId: string, newRate: number, notes?: string) => {
+    setEmployees((prev) =>
+      prev.map((e) => {
+        if (e.id !== employeeId) return e;
+        const oldRate = e.hourlyRate;
+        const pct = oldRate > 0 ? ((newRate - oldRate) / oldRate) * 100 : 0;
+        const newLog: HourlyRateLog = {
+          id: 'log-' + Date.now(),
+          employeeId,
+          timestamp: new Date().toISOString().replace('T', ' ').substring(0, 16),
+          oldPrice: oldRate,
+          newPrice: newRate,
+          percentageIncrease: Number(pct.toFixed(2)),
+          modifiedBy: 'ADMINISTRADOR',
+          notes,
+        };
+        return {
+          ...e,
+          hourlyRate: newRate,
+          hourlyRateLogs: [newLog, ...(e.hourlyRateLogs || [])],
+        };
+      })
+    );
+  };
+
+  const [clockRecords, setClockRecords] = useState<ClockRecord[]>(() => {
+    try {
+      const saved = localStorage.getItem('plegma_clock_records');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return INITIAL_CLOCK_RECORDS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('plegma_clock_records', JSON.stringify(clockRecords));
+    } catch (e) {}
+  }, [clockRecords]);
+
+  const clockIn = (dni: string) => {
+    const cleanDni = dni.trim();
+    const emp = employees.find((e) => e.dni === cleanDni);
+    if (!emp) {
+      return { success: false, message: `No se encontró ningún empleado registrado con el DNI ${cleanDni}.` };
+    }
+    if (!emp.active) {
+      return { success: false, message: `El empleado ${emp.name} se encuentra INACTIVO en la plantilla.` };
+    }
+    if (!emp.enableClockIn) {
+      return { success: false, message: `El empleado ${emp.name} no tiene habilitada la marcación de horas.` };
+    }
+
+    const openRecord = clockRecords.find(
+      (r) => r.dni === cleanDni && r.state === 'Abierta'
+    );
+    if (openRecord) {
+      return {
+        success: false,
+        message: `El empleado ${emp.name} ya posee una marcación ABIERTA desde las ${openRecord.checkIn.substring(11)}. Registre la salida primero.`,
+        record: openRecord,
+      };
+    }
+
+    const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
+    const newRecord: ClockRecord = {
+      id: 'clk-' + Date.now(),
+      employeeId: emp.id,
+      dni: emp.dni,
+      employeeName: emp.name,
+      checkIn: nowStr,
+      hourlyRate: emp.hourlyRate || 0,
+      state: 'Abierta',
+    };
+
+    setClockRecords((prev) => [newRecord, ...prev]);
+    return {
+      success: true,
+      message: `Entrada registrada exitosamente para ${emp.name} a las ${nowStr.substring(11)}.`,
+      record: newRecord,
+    };
+  };
+
+  const clockOut = (dni: string) => {
+    const cleanDni = dni.trim();
+    const emp = employees.find((e) => e.dni === cleanDni);
+    if (!emp) {
+      return { success: false, message: `No se encontró ningún empleado registrado con el DNI ${cleanDni}.` };
+    }
+
+    const openRecord = clockRecords.find(
+      (r) => r.dni === cleanDni && r.state === 'Abierta'
+    );
+    if (!openRecord) {
+      return {
+        success: false,
+        message: `El empleado ${emp.name} no posee ninguna marcación ABIERTA pendiente de salida.`,
+      };
+    }
+
+    const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
+    
+    const tIn = new Date(openRecord.checkIn.replace(' ', 'T')).getTime();
+    const tOut = new Date(nowStr.replace(' ', 'T')).getTime();
+    const diffMs = Math.max(0, tOut - tIn);
+    const hoursDecimal = Number((diffMs / (1000 * 60 * 60)).toFixed(2));
+    const totalCost = Number((hoursDecimal * openRecord.hourlyRate).toFixed(2));
+
+    const updatedRecord: ClockRecord = {
+      ...openRecord,
+      checkOut: nowStr,
+      hoursWorked: hoursDecimal,
+      totalCost,
+      state: 'Cerrada',
+    };
+
+    setClockRecords((prev) =>
+      prev.map((r) => (r.id === openRecord.id ? updatedRecord : r))
+    );
+
+    return {
+      success: true,
+      message: `Salida registrada exitosamente para ${emp.name}. Jornada total: ${hoursDecimal} hs. Costo: $${totalCost.toLocaleString('es-AR')}.`,
+      record: updatedRecord,
+    };
+  };
+
+  const correctClockRecord = (id: string, checkIn: string, checkOut: string, reason: string) => {
+    setClockRecords((prev) =>
+      prev.map((r) => {
+        if (r.id !== id) return r;
+
+        let hoursDecimal = r.hoursWorked;
+        let totalCost = r.totalCost;
+
+        if (checkIn && checkOut) {
+          const tIn = new Date(checkIn.replace(' ', 'T')).getTime();
+          const tOut = new Date(checkOut.replace(' ', 'T')).getTime();
+          const diffMs = Math.max(0, tOut - tIn);
+          hoursDecimal = Number((diffMs / (1000 * 60 * 60)).toFixed(2));
+          totalCost = Number((hoursDecimal * r.hourlyRate).toFixed(2));
+        }
+
+        return {
+          ...r,
+          checkIn,
+          checkOut: checkOut || undefined,
+          hoursWorked: hoursDecimal,
+          totalCost,
+          state: 'Corregida',
+          modifiedBy: 'ADMINISTRADOR',
+          modificationReason: reason,
+          modifiedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+        };
+      })
+    );
+  };
+
+  const voidClockRecord = (id: string, reason: string) => {
+    setClockRecords((prev) =>
+      prev.map((r) =>
+        r.id === id
+          ? {
+              ...r,
+              state: 'Anulada',
+              modifiedBy: 'ADMINISTRADOR',
+              modificationReason: reason,
+              modifiedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+            }
+          : r
+      )
+    );
+  };
+
+  const [employeeConsumptions, setEmployeeConsumptions] = useState<EmployeeConsumption[]>(() => {
+    try {
+      const saved = localStorage.getItem('plegma_employee_consumptions');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return INITIAL_EMPLOYEE_CONSUMPTIONS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('plegma_employee_consumptions', JSON.stringify(employeeConsumptions));
+    } catch (e) {}
+  }, [employeeConsumptions]);
+
+  const [employeeAdvances, setEmployeeAdvances] = useState<EmployeeAdvance[]>(() => {
+    try {
+      const saved = localStorage.getItem('plegma_employee_advances');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return INITIAL_EMPLOYEE_ADVANCES;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('plegma_employee_advances', JSON.stringify(employeeAdvances));
+    } catch (e) {}
+  }, [employeeAdvances]);
+
+  const addOrUpdateAdvance = (adv: EmployeeAdvance) => {
+    setEmployeeAdvances((prev) => {
+      const idx = prev.findIndex((a) => a.id === adv.id);
+      if (idx >= 0) {
+        const copy = [...prev];
+        copy[idx] = adv;
+        return copy;
+      }
+      return [adv, ...prev];
+    });
+  };
+
+  const voidAdvance = (advanceId: string) => {
+    setEmployeeAdvances((prev) =>
+      prev.map((a) => (a.id === advanceId ? { ...a, status: 'Anulado', pendingBalance: 0 } : a))
+    );
+  };
+
+  const [payruns, setPayruns] = useState<Payrun[]>(() => {
+    try {
+      const saved = localStorage.getItem('plegma_payruns');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return INITIAL_PAYRUNS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('plegma_payruns', JSON.stringify(payruns));
+    } catch (e) {}
+  }, [payruns]);
+
+  const createPayrun = (startDate: string, endDate: string, customPeriodName?: string) => {
+    if (!startDate || !endDate) {
+      return { success: false, message: 'Debe ingresar fecha y hora de inicio y fin.' };
+    }
+    if (new Date(endDate) <= new Date(startDate)) {
+      return { success: false, message: 'La fecha de fin debe ser posterior a la fecha de inicio.' };
+    }
+
+    const activeEmps = employees.filter((e) => e.active);
+    if (activeEmps.length === 0) {
+      return { success: false, message: 'No hay empleados activos en la nómina.' };
+    }
+
+    const details: PayrunEmployeeDetail[] = activeEmps.map((emp) => {
+      const empClocks = clockRecords.filter(
+        (c) =>
+          c.employeeId === emp.id &&
+          c.state !== 'Anulada' &&
+          c.checkIn >= startDate &&
+          c.checkIn <= endDate
+      );
+
+      const totalHoursDecimal = empClocks.reduce((sum, c) => sum + (c.hoursWorked || 0), 0);
+      const hoursInt = Math.floor(totalHoursDecimal);
+      const minsInt = Math.round((totalHoursDecimal - hoursInt) * 60);
+      const hoursWorkedStr = `${String(hoursInt).padStart(2, '0')}:${String(minsInt).padStart(2, '0')}:00`;
+
+      const hourlyRate = emp.hourlyRate || 3000;
+      const grossAmount = Number((totalHoursDecimal * hourlyRate).toFixed(2));
+
+      const deductions: PayrunDeduction[] = [];
+
+      const empConsumptions = employeeConsumptions.filter(
+        (c) => c.employeeId === emp.id && c.status === 'Pendiente'
+      );
+      empConsumptions.forEach((c) => {
+        deductions.push({
+          id: 'ded-' + c.id,
+          concept: 'Consumo de Empleado',
+          detail: `Pedido #${c.orderNumber}`,
+          amount: c.amount,
+          sourceId: c.id,
+        });
+      });
+
+      const empAdvances = employeeAdvances.filter(
+        (a) => a.employeeId === emp.id && (a.status === 'Pendiente' || a.status === 'En descuento')
+      );
+      empAdvances.forEach((adv) => {
+        const pendingInst = adv.installments.find((i) => i.status === 'Pendiente');
+        if (pendingInst) {
+          deductions.push({
+            id: 'ded-' + adv.id + '-' + pendingInst.installmentNumber,
+            concept: 'Adelanto de Sueldo',
+            detail: `${pendingInst.installmentNumber}/${adv.installmentsCount} cuota`,
+            amount: pendingInst.amount,
+            sourceId: adv.id,
+          });
+        }
+      });
+
+      const totalDeductions = Number(
+        deductions.reduce((sum, d) => sum + d.amount, 0).toFixed(2)
+      );
+
+      const netAmount = Math.max(0, Number((grossAmount - totalDeductions).toFixed(2)));
+
+      return {
+        employeeId: emp.id,
+        employeeName: emp.name,
+        dni: emp.dni,
+        position: emp.position,
+        hoursWorkedStr: totalHoursDecimal > 0 ? hoursWorkedStr : '00:00:00',
+        hoursWorkedDecimal: totalHoursDecimal,
+        hourlyRate,
+        grossAmount,
+        deductions,
+        totalDeductions,
+        netAmount,
+        paidAmount: 0,
+        pendingAmount: netAmount,
+        status: 'Pendiente',
+      };
+    });
+
+    const totalToPay = Number(details.reduce((sum, d) => sum + d.netAmount, 0).toFixed(2));
+    const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
+
+    const newPayrunRecord: Payrun = {
+      id: 'payrun-' + Date.now(),
+      periodName: customPeriodName || `Período ${startDate.split(' ')[0]} al ${endDate.split(' ')[0]}`,
+      startDate,
+      endDate,
+      employeeCount: activeEmps.length,
+      totalToPay,
+      totalPaid: 0,
+      totalPending: totalToPay,
+      status: 'Pendiente',
+      employeesDetails: details,
+      createdAt: nowStr,
+    };
+
+    setPayruns((prev) => [newPayrunRecord, ...prev]);
+    return { success: true, message: 'Liquidación creada exitosamente.', payrun: newPayrunRecord };
+  };
+
+  const markEmployeePaid = (
+    payrunId: string,
+    employeeId: string,
+    paymentMethod: string,
+    cashRegister: string
+  ) => {
+    const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
+    setPayruns((prev) =>
+      prev.map((pr) => {
+        if (pr.id !== payrunId) return pr;
+
+        const updatedDetails = pr.employeesDetails.map((det) => {
+          if (det.employeeId !== employeeId) return det;
+          return {
+            ...det,
+            status: 'Pagado' as const,
+            paidAmount: det.netAmount,
+            pendingAmount: 0,
+            paymentMethod,
+            cashRegister,
+            paymentDate: nowStr,
+          };
+        });
+
+        const totalPaid = Number(updatedDetails.reduce((sum, d) => sum + d.paidAmount, 0).toFixed(2));
+        const totalPending = Number((pr.totalToPay - totalPaid).toFixed(2));
+        const status = totalPending <= 0 ? 'Liquidada' : totalPaid > 0 ? 'En curso' : 'Pendiente';
+
+        return {
+          ...pr,
+          totalPaid,
+          totalPending: Math.max(0, totalPending),
+          status,
+          employeesDetails: updatedDetails,
+        };
+      })
+    );
+  };
+
+  const unmarkEmployeePaid = (payrunId: string, employeeId: string) => {
+    setPayruns((prev) =>
+      prev.map((pr) => {
+        if (pr.id !== payrunId) return pr;
+
+        const updatedDetails = pr.employeesDetails.map((det) => {
+          if (det.employeeId !== employeeId) return det;
+          return {
+            ...det,
+            status: 'Pendiente' as const,
+            paidAmount: 0,
+            pendingAmount: det.netAmount,
+            paymentMethod: undefined,
+            cashRegister: undefined,
+            paymentDate: undefined,
+          };
+        });
+
+        const totalPaid = Number(updatedDetails.reduce((sum, d) => sum + d.paidAmount, 0).toFixed(2));
+        const totalPending = Number((pr.totalToPay - totalPaid).toFixed(2));
+        const status = totalPaid === 0 ? 'Pendiente' : totalPending > 0 ? 'En curso' : 'Liquidada';
+
+        return {
+          ...pr,
+          totalPaid,
+          totalPending,
+          status,
+          employeesDetails: updatedDetails,
+        };
+      })
+    );
+  };
+
+  const voidPayrun = (payrunId: string) => {
+    setPayruns((prev) =>
+      prev.map((pr) => (pr.id === payrunId ? { ...pr, status: 'Anulada' } : pr))
+    );
+  };
+
+  const [toast, setToast] = useState<ToastNotification | null>(null);
+
+  const hideToast = () => setToast(null);
+
+  const showToast = (message: string, type: ToastType = 'success') => {
+    setToast({
+      id: 'toast-' + Date.now(),
+      message,
+      type,
+    });
+  };
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => {
+      setToast(null);
+    }, 3500);
+    return () => clearTimeout(timer);
+  }, [toast]);
   const [branding, setBranding] = useState<BrandingConfig>({
+    companyName: 'PLEGMA BARAPP S.A.',
+    companySubtitle: 'Gastronomía & Servicios de Restaurante',
+    cuit: '30-71289341-9',
+    address: 'Av. Libertador 1420, CABA',
+    phone: '+54 11 4892-0192',
+    email: 'contacto@plegmabarapp.com',
     navigationStyle: 'top',
     menuBgHex: '#0f172a',
     menuTextHex: '#94a3b8',
@@ -903,6 +1416,27 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         auditLogs,
         branding,
         updateBranding,
+        employees,
+        addOrUpdateEmployee,
+        toggleEmployeeStatus,
+        addHourlyRateLog,
+        clockRecords,
+        clockIn,
+        clockOut,
+        correctClockRecord,
+        voidClockRecord,
+        employeeConsumptions,
+        employeeAdvances,
+        addOrUpdateAdvance,
+        voidAdvance,
+        payruns,
+        createPayrun,
+        markEmployeePaid,
+        unmarkEmployeePaid,
+        voidPayrun,
+        toast,
+        showToast,
+        hideToast,
         getProviderState,
         getProviderActiveOrder,
         getProviderActiveCount,

@@ -14,6 +14,11 @@ import { SettingsModal } from './components/SettingsModal';
 import { AuditLogModal } from './components/AuditLogModal';
 import { ProviderEditModal } from './components/ProviderEditModal';
 import { MaestrosView } from './components/MaestrosView';
+import { EmployeeMasterView } from './components/EmployeeMasterView';
+import { ClockView } from './components/ClockView';
+import { AdvancesConsumptionsView } from './components/AdvancesConsumptionsView';
+import { PayrunsView } from './components/PayrunsView';
+import { Toast } from './components/ui/Toast';
 import { Provider, Order, StockCount } from './types';
 
 function MainLayout() {
@@ -21,7 +26,7 @@ function MainLayout() {
   const isSidebar = branding?.navigationStyle === 'sidebar';
 
   const [currentTab, setCurrentTab] = useState<
-    'kanban' | 'inbox' | 'items' | 'dashboard' | 'audit' | 'maestros'
+    'kanban' | 'inbox' | 'items' | 'dashboard' | 'audit' | 'maestros' | 'recursos_humanos'
   >('kanban');
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -39,14 +44,24 @@ function MainLayout() {
     'clientes' | 'proveedores' | 'usuarios' | 'categorias' | 'depositos' | 'cuentas' | 'branding' | null
   >(null);
 
+  const [rrhhSubTab, setRrhhSubTab] = useState<
+    'empleados' | 'marcacion' | 'adelantos' | 'liquidaciones' | null
+  >('empleados');
+
   const handleNavigateTab = (tabId: string) => {
     if (tabId.startsWith('maestros-')) {
       const sub = tabId.replace('maestros-', '') as any;
       setMaestrosSubTab(sub);
       setCurrentTab('maestros');
+    } else if (tabId.startsWith('rrhh-')) {
+      const sub = tabId.replace('rrhh-', '') as any;
+      setRrhhSubTab(sub);
+      setCurrentTab('recursos_humanos');
     } else {
       if (tabId === 'maestros') {
         setMaestrosSubTab(null);
+      } else if (tabId === 'recursos_humanos') {
+        setRrhhSubTab('empleados');
       }
       setCurrentTab(tabId as any);
     }
@@ -103,7 +118,7 @@ function MainLayout() {
   return (
     <div
       style={{ backgroundColor: branding?.appBgHex || '#f8fafc' }}
-      className={`min-h-screen font-sans text-slate-900 flex ${isSidebar ? 'flex-col md:flex-row' : 'flex-col'} antialiased transition-colors`}
+      className={`min-h-screen w-full overflow-x-hidden font-sans text-slate-900 flex ${isSidebar ? 'flex-col md:flex-row' : 'flex-col'} antialiased transition-colors`}
     >
       {/* Top Navbar or Sidebar */}
       <Navbar
@@ -113,10 +128,11 @@ function MainLayout() {
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
         maestrosSubTab={maestrosSubTab}
+        rrhhSubTab={rrhhSubTab}
       />
 
       {/* Main Container View Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 lg:p-8 space-y-6 overflow-x-hidden">
         {currentTab === 'kanban' && (
           <KanbanBoard
             onSelectProvider={handleSelectProvider}
@@ -147,6 +163,15 @@ function MainLayout() {
         {currentTab === 'dashboard' && <PurchasingDashboard />}
 
         {currentTab === 'audit' && <AuditLogModal />}
+
+        {currentTab === 'recursos_humanos' && (
+          <>
+            {(!rrhhSubTab || rrhhSubTab === 'empleados') && <EmployeeMasterView />}
+            {rrhhSubTab === 'marcacion' && <ClockView />}
+            {rrhhSubTab === 'adelantos' && <AdvancesConsumptionsView />}
+            {rrhhSubTab === 'liquidaciones' && <PayrunsView />}
+          </>
+        )}
 
         {currentTab === 'maestros' && (
           <MaestrosView
@@ -217,6 +242,9 @@ function MainLayout() {
           onClose={() => setEditingProvider(null)}
         />
       )}
+
+      {/* Global Toast Notifications */}
+      <Toast />
     </div>
   );
 }

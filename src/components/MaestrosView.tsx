@@ -2150,6 +2150,88 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
                 </div>
               </div>
 
+              {/* BLOQUE DATOS DE EMPRESA Y CABECERA DE DOCUMENTOS / PDF */}
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                  <Building2 className="w-4 h-4 text-rose-600" />
+                  <h3 className="font-bold text-slate-900 text-sm">
+                    Datos del Negocio / Empresa (Cabecera de Documentos & PDF)
+                  </h3>
+                </div>
+
+                <p className="text-xs text-slate-500">
+                  Estos datos se imprimirán automáticamente en los membretes y cabeceras de todos los documentos, comprobantes y recibos de sueldo generados en formato PDF por la aplicación.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">Nombre Comercial / Razón Social:</label>
+                    <input
+                      type="text"
+                      value={branding.companyName || ''}
+                      onChange={(e) => updateBranding({ companyName: e.target.value })}
+                      placeholder="PLEGMA BARAPP S.A."
+                      className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">Subtítulo / Rubro:</label>
+                    <input
+                      type="text"
+                      value={branding.companySubtitle || ''}
+                      onChange={(e) => updateBranding({ companySubtitle: e.target.value })}
+                      placeholder="Gastronomía & Servicios de Restaurante"
+                      className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">CUIT / Identificación Fiscal:</label>
+                    <input
+                      type="text"
+                      value={branding.cuit || ''}
+                      onChange={(e) => updateBranding({ cuit: e.target.value })}
+                      placeholder="30-71289341-9"
+                      className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">Dirección Comercial:</label>
+                    <input
+                      type="text"
+                      value={branding.address || ''}
+                      onChange={(e) => updateBranding({ address: e.target.value })}
+                      placeholder="Av. Libertador 1420, CABA"
+                      className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">Teléfono de Contacto:</label>
+                    <input
+                      type="text"
+                      value={branding.phone || ''}
+                      onChange={(e) => updateBranding({ phone: e.target.value })}
+                      placeholder="+54 11 4892-0192"
+                      className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">Correo Electrónico:</label>
+                    <input
+                      type="email"
+                      value={branding.email || ''}
+                      onChange={(e) => updateBranding({ email: e.target.value })}
+                      placeholder="contacto@plegmabarapp.com"
+                      className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl font-bold"
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* BLOQUE 1: DISPOSICIÓN Y MENÚ DE NAVEGACIÓN */}
               <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                 <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
@@ -2749,7 +2831,7 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
 
             {/* Panel Lateral: PREVISUALIZACIÓN EN VIVO (REALISTIC MINI APP MOCKUP) */}
             <div className="space-y-6">
-              <div className="bg-slate-950 text-white p-5 rounded-3xl space-y-4 shadow-2xl border border-slate-800 sticky top-20">
+              <div className="bg-slate-950 text-white p-4 sm:p-5 rounded-3xl space-y-4 shadow-2xl border border-slate-800 relative lg:sticky lg:top-20">
                 {/* Sandbox Header */}
                 <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                   <div className="flex items-center gap-2">

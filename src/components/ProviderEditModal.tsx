@@ -93,7 +93,7 @@ export const ProviderEditModal: React.FC<ProviderEditModalProps> = ({
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
           <div>
             <label className="font-bold text-slate-700 block mb-1">Nombre Comercial:</label>
             <input
@@ -198,17 +198,17 @@ export const ProviderEditModal: React.FC<ProviderEditModalProps> = ({
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+        <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-3 border-t border-slate-100">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 bg-slate-100 text-slate-700 font-bold text-xs rounded-xl"
+            className="w-full sm:w-auto px-4 py-2.5 bg-slate-100 text-slate-700 font-bold text-xs rounded-xl text-center"
           >
             Cancelar
           </button>
           <button
             type="submit"
-            className="px-5 py-2 bg-orange-600 text-white font-extrabold text-xs rounded-xl hover:bg-orange-700 shadow-md flex items-center gap-1.5"
+            className="w-full sm:w-auto px-5 py-2.5 bg-orange-600 text-white font-extrabold text-xs rounded-xl hover:bg-orange-700 shadow-md flex items-center justify-center gap-1.5"
           >
             <Save className="w-4 h-4" />
             <span>Guardar Proveedor</span>

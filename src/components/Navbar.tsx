@@ -31,6 +31,7 @@ interface NavbarProps {
   searchQuery: string;
   setSearchQuery: (q: string) => void;
   maestrosSubTab?: string | null;
+  rrhhSubTab?: string | null;
 }
 
 export interface NavSubItem {
@@ -75,6 +76,17 @@ const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
+    id: 'recursos_humanos',
+    label: 'Recursos Humanos',
+    icon: Users,
+    items: [
+      { id: 'rrhh-empleados', label: 'Empleados', description: 'Fichas, puestos, valor hora & cronogramas', icon: Users },
+      { id: 'rrhh-marcacion', label: 'Marcación', description: 'Registro de reloj & control de asistencia', icon: Clock },
+      { id: 'rrhh-adelantos', label: 'Adelantos / Consumos', description: 'Vales, adelantos & consumos de personal', icon: CreditCard },
+      { id: 'rrhh-liquidaciones', label: 'Liquidaciones', description: 'Cálculo de haberes & horas trabajadas', icon: FileText },
+    ],
+  },
+  {
     id: 'maestros',
     label: 'Maestros',
     icon: Layers,
@@ -94,6 +106,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   setCurrentTab,
   onOpenSettings,
   maestrosSubTab,
+  rrhhSubTab,
 }) => {
   const { userRole, setUserRole, receptionHours, resetToDefaults, branding } = useApp();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -104,6 +117,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     gestion_operativa: true,
     compras_comprobantes: true,
     reportes_control: true,
+    recursos_humanos: true,
     maestros: true,
   });
 
@@ -154,7 +168,12 @@ export const Navbar: React.FC<NavbarProps> = ({
     return branding?.submenuIconHex || branding?.menuIconHex || branding?.menuTextHex || undefined;
   };
 
-  const effectiveTab = (currentTab === 'maestros' && maestrosSubTab) ? `maestros-${maestrosSubTab}` : currentTab;
+  const effectiveTab =
+    currentTab === 'maestros' && maestrosSubTab
+      ? `maestros-${maestrosSubTab}`
+      : currentTab === 'recursos_humanos' && rrhhSubTab
+      ? `rrhh-${rrhhSubTab}`
+      : currentTab;
 
   // Active section helper
   const currentSection = NAV_SECTIONS.find((sec) =>

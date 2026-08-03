@@ -371,17 +371,17 @@ export const GoodsReceptionModal: React.FC<GoodsReceptionModalProps> = ({ order,
         </div>
 
         {/* Modal Footer */}
-        <div className="bg-slate-900 p-4 border-t border-slate-800 flex items-center justify-between shrink-0 text-white">
+        <div className="bg-slate-900 p-4 border-t border-slate-800 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 shrink-0 text-white">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl transition"
+            className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl transition text-center"
           >
             Cancelar
           </button>
 
           <button
             onClick={handleConfirmReception}
-            className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs rounded-xl shadow-lg transition"
+            className="flex items-center justify-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs rounded-xl shadow-lg transition"
           >
             <CheckCircle2 className="w-4 h-4" />
             <span>Confirmar Ingreso a Stock y Finalizar</span>
