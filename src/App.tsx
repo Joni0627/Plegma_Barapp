@@ -21,6 +21,7 @@ import { PayrunsView } from './components/PayrunsView';
 import { MobileHomeView } from './components/MobileHomeView';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { Toast } from './components/ui/Toast';
+import { CurrentAccountView } from './components/CurrentAccountView';
 import { useIsMobile } from './hooks/useIsMobile';
 import { Provider, Order, StockCount } from './types';
 
@@ -183,6 +184,8 @@ function MainLayout() {
         )}
 
         {currentTab === 'items' && <ItemMasterView />}
+
+        {currentTab === 'ventas_cc' && <CurrentAccountView />}
 
         {currentTab === 'dashboard' && <PurchasingDashboard />}
 

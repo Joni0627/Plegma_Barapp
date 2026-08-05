@@ -594,3 +594,20 @@ export interface ToastNotification {
   message: string;
   type: ToastType;
 }
+
+// ----------------------------------------------------
+// VENTAS — CUENTA CORRIENTE
+// ----------------------------------------------------
+
+export type ReceiptStatus = 'Pendiente' | 'Facturado';
+
+export interface Receipt {
+  id: string;
+  receiptNumber: string; // REC-XXXXX
+  clientId: string;
+  dateTime: string; // YYYY-MM-DD HH:mm
+  totalAmount: number;
+  status: ReceiptStatus;
+  userName: string; // Usuario que generó el recibo
+  movementIds: string[]; // IDs de CurrentAccountMovement incluidos en este recibo
+}
