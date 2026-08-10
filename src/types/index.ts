@@ -233,6 +233,7 @@ export interface CurrentAccountMovement {
   type: MovementType;
   total: number;
   ticketDetail?: string;
+  ticketNumber?: string;
   lineState: LineState;
 }
 
@@ -605,9 +606,227 @@ export interface Receipt {
   id: string;
   receiptNumber: string; // REC-XXXXX
   clientId: string;
-  dateTime: string; // YYYY-MM-DD HH:mm
+  dateTime: string; // YYYY-MM-DD HH:mm:ss
   totalAmount: number;
   status: ReceiptStatus;
   userName: string; // Usuario que generó el recibo
   movementIds: string[]; // IDs de CurrentAccountMovement incluidos en este recibo
+  paymentMethod?: string;
+  cashRegister?: string;
+  appliedToPayroll?: boolean;
+  billedAt?: string;
 }
+
+// ----------------------------------------------------
+// VENTAS — CONTROL DE CAJA
+// ----------------------------------------------------
+
+export type TurnoType = 'Mañana' | 'Tarde';
+export type CashShiftStatus = 'Abierta' | 'Cerrada' | 'Conciliada' | 'Anulada';
+export type CashLineStatus = 'Abierta' | 'Cerrada' | 'Conciliada';
+export type CashMovementType = 'Ticket' | 'Gasto' | 'Consumo' | 'Retiro' | 'Ajuste' | 'Apertura';
+
+export interface CashShift {
+  id: string;
+  shift: TurnoType;               // 'Mañana' | 'Tarde'
+  createdAt: string;             // [SYS] YYYY-MM-DD HH:mm:ss
+  name: string;                  // String autogenerado "MAÑANA 14/08/2026"
+  status: CashShiftStatus;       // 'Abierta' | 'Cerrada' | 'Conciliada' | 'Anulada'
+  openedByUserId: string;
+  openedByUserName: string;
+  notes?: string;
+  closedAt?: string;
+  reconciledAt?: string;
+  reconciledByUserName?: string;
+  totalDifference?: number;
+  voidReason?: string;
+}
+
+export interface CashLine {
+  id: string;
+  shiftId: string;
+  boxType: string;               // Efectivo, Mercado Pago 1, Mercado Pago 2, Mercado Pago 3, Cuenta Corriente, Cortesía
+  initialAmount: number;         // Monto Inicio Caja
+  ticketsTotal: number;          // Total Tickets Facturados (+) [AUTO]
+  expensesTotal: number;         // Total Gastos / Consumos (-) [AUTO]
+  withdrawalsTotal: number;      // Total Retiros (-) [AUTO]
+  theoreticalAmount: number;     // Inicio + Tickets - Gastos - Retiros [AUTO]
+  realAmount?: number;           // Monto Real Cierre (declarado por el cajero)
+  difference?: number;           // Real - Teórico [AUTO]
+  status: CashLineStatus;        // 'Abierta' | 'Cerrada' | 'Conciliada'
+  closedAt?: string;
+}
+
+export interface CashMovement {
+  id: string;
+  lineId: string;
+  shiftId: string;
+  dateTime: string;              // [SYS] YYYY-MM-DD HH:mm:ss
+  type: CashMovementType;        // 'Ticket' | 'Gasto' | 'Consumo' | 'Retiro' | 'Ajuste' | 'Apertura'
+  origin: string;                // ej: N° Ticket, N° Gasto, Retiro A Caja Maestra
+  voucherNumber?: string;
+  amount: number;                // Importe numérico (Positivo o negativo según tipo)
+  userId: string;
+  userName: string;
+  notes?: string;
+}
+
+export interface MasterCashBox {
+  id: string;
+  name: string;                  // ej: "Caja Fuerte Principal", "Cuenta Mercado Pago Empresa", "Banco Galicia"
+  boxType: string;               // Medio asociado
+  status: 'Siempre Abierta';     // No se cierran jamás
+  currentBalance: number;        // Saldo positivo acumulado por retiros
+}
+
+export interface CashWithdrawalPayload {
+  lineId: string;
+  amount: number;
+  masterBoxId: string;
+  notes?: string;
+}
+
+// ----------------------------------------------------
+// VENTAS — RESERVAS DE MESAS
+// ----------------------------------------------------
+
+export type ReservationStatus = 'Confirmada' | 'Cancelada' | 'Histórica';
+
+export interface RestaurantTable {
+  id: string;
+  code: string;         // ej: TBL-01, TBL-04
+  name: string;         // ej: Mesa 01 - Salón Principal
+  capacity: number;     // comensales recomendados
+  sector: 'Salón Principal' | 'Terraza' | 'Barra' | 'VIP';
+  active: boolean;
+}
+
+export interface Reservation {
+  id: string;
+  dateTime: string;              // [SYS / Req] YYYY-MM-DD HH:mm:ss
+  clientId: string;              // [EXT] Clientes
+  clientName: string;
+  clientPhone?: string;
+  guestsCount: number;           // [Req] Cantidad de personas esperadas (>= 1)
+  tableId: string;               // [CFG] Mesas
+  tableName: string;
+  status: ReservationStatus;     // 'Confirmada' | 'Cancelada' | 'Histórica'
+  createdByUserId: string;       // [EXT] Usuario que registró la reserva
+  createdByUserName: string;
+  createdAt: string;             // [SYS] Fecha/Hora Carga
+  notes?: string;                // Observaciones
+  cancelReason?: string;         // Motivo de cancelación
+}
+
+// ----------------------------------------------------
+// VENTAS — CONFIGURACIÓN DE MESAS, TIPOS DE VENTA Y SITIOS
+// ----------------------------------------------------
+
+export interface SiteConfig {
+  id: string;
+  name: string;                  // [Req, R-S01] Nombre único del sector (ej: Salón Medio, Salón Fondo)
+  description?: string;          // Detalle opcional
+  active: boolean;               // [Req] Estado de habilitación
+  order: number;                 // [Req, R-S03] Orden visual (>= 0)
+}
+
+export interface RestaurantTableConfig {
+  id: string;
+  number: string;                // [Req, R-M01] Identificador o código único de la mesa (ej: "Mesa 01", "TBL-01")
+  capacity: number;              // [Req, R-M02] Cantidad de personas máxima (> 0)
+  siteId: string;                // [Req, R-M03] Selección desde Sitios activos
+  siteName: string;
+  name?: string;                 // [Opcional] Nombre descriptivo (ej: "Mesa VIP Ventana")
+  isFree: boolean;               // [Req, A-M02] Estado de habilitación operativa (true = Sí / false = No, default true)
+  active: boolean;               // Habilitación general de la mesa
+}
+
+export interface SaleTypeConfig {
+  id: string;
+  name: string;                  // [Req, R-TV01] Nombre del canal único (ej: Salón, Delivery, Takeaway)
+  isSalonSale: boolean;          // [Req] Venta en el Salón (Sí / No)
+  requiresTable: boolean;        // [Req, R-TV03] Requiere Mesa (Sí / No)
+  requiresClient: boolean;       // [Req] Requiere Cliente (Sí / No)
+  initialOrderStatus: string;    // [Req, R-TV02] Estado Inicial del Pedido desde Estados de Pedido
+  finalOrderStatus: string;      // [Req, R-TV02] Estado Final del Pedido al cerrar
+  autoPrintTicket: boolean;      // [Req] Imprime Ticket Automático
+  kitchenPrinter?: string;       // [Opcional] Comanda en Impresora
+  active: boolean;               // [Req, A-TV01] Estado de disponibilidad
+}
+
+// ----------------------------------------------------
+// VENTAS — PEDIDOS / VENTAS
+// ----------------------------------------------------
+
+export type OrderStatus =
+  | 'Pendiente'
+  | 'Comandado'
+  | 'En Cocina'
+  | 'Listo'
+  | 'Entregado'
+  | 'Cerrado'
+  | 'Facturado'
+  | 'Cancelado';
+
+export interface SaleOrderItem {
+  id: string;
+  productId: string;
+  productName: string;
+  category: string;              // ej: Comidas, Bebidas, Postres
+  unitPrice: number;
+  costPrice?: number;            // [CP03] Precio de costo para cobro diferenciado
+  quantity: number;              // > 0
+  sideOption?: string;           // Acompañamiento seleccionado
+  requiresSideOption?: boolean;  // R09 obligatoriedad
+  subtotal: number;              // quantity * price
+  lineComment?: string;          // ej: "Sin sal", "Bien cocido"
+}
+
+export interface OrderBillingInfo {
+  clientId: string;
+  clientName: string;
+  paymentCondition: 'Contado' | 'Cuenta Corriente' | 'Consumo Empleado';
+  paymentMethod: string;         // Efectivo, Tarjeta Posnet, Mercado Pago, etc.
+  cashRegisterId?: string;       // Caja Abierta seleccionada
+  discountPercentage?: number;
+  discountAmount?: number;
+  subtotalAmount: number;
+  finalTotal: number;
+  notes?: string;
+  billedAt: string;
+  ticketNumber: string;          // ej: TKT-00101
+}
+
+export interface SaleOrder {
+  id: string;
+  orderNumber: number;           // [AUTO] Correlativo #1001
+  createdAt: string;             // [SYS T1] Fecha/Hora Creación
+  saleTypeId: string;            // [CFG] Salón, Delivery, Takeaway
+  saleTypeName: string;
+  clientId: string;              // [EXT] Clientes
+  clientName: string;
+  clientPhone?: string;
+  tableId?: string;              // [CFG] Mesas (obligatorio si requiere mesa R03)
+  tableName?: string;
+  totalAmount: number;           // [AUTO] Recalculado
+  status: OrderStatus;
+  createdByUserId: string;       // [AUTO]
+  createdByUserName: string;
+  generalNotes?: string;
+  
+  // Trazabilidad temporal (T1 - T4)
+  t1CreatedAt: string;           // T1: Inicio
+  t2ComandaAt?: string;          // T2: Envío a cocina
+  t3KitchenOutputAt?: string;    // T3: Salida de cocina
+  t4DeliveredAt?: string;        // T4: Entrega al cliente
+
+  comandaPdfUrl?: string;        // Documento Comanda PDF
+  ticketPdfUrl?: string;         // Documento Ticket PDF
+
+  items: SaleOrderItem[];
+  billingDetails?: OrderBillingInfo;
+}
+
+
+
+

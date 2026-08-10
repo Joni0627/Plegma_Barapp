@@ -22,6 +22,10 @@ import { MobileHomeView } from './components/MobileHomeView';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { Toast } from './components/ui/Toast';
 import { CurrentAccountView } from './components/CurrentAccountView';
+import { CashControlView } from './components/CashControlView';
+import { ReservationsView } from './components/ReservationsView';
+import { SalesConfigView } from './components/SalesConfigView';
+import { OrdersView } from './components/OrdersView';
 import { useIsMobile } from './hooks/useIsMobile';
 import { Provider, Order, StockCount } from './types';
 
@@ -186,6 +190,14 @@ function MainLayout() {
         {currentTab === 'items' && <ItemMasterView />}
 
         {currentTab === 'ventas_cc' && <CurrentAccountView />}
+
+        {currentTab === 'ventas_caja' && <CashControlView />}
+
+        {currentTab === 'ventas_reservas' && <ReservationsView />}
+
+        {currentTab === 'sales_config' && <SalesConfigView />}
+
+        {currentTab === 'ventas_pedidos' && <OrdersView />}
 
         {currentTab === 'dashboard' && <PurchasingDashboard />}
 

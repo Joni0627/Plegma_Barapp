@@ -25,6 +25,22 @@ import {
   PayrunDeduction,
   ToastType,
   ToastNotification,
+  CashShift,
+  CashLine,
+  CashMovement,
+  MasterCashBox,
+  TurnoType,
+  CashWithdrawalPayload,
+  ReservationStatus,
+  RestaurantTable,
+  Reservation,
+  SiteConfig,
+  RestaurantTableConfig,
+  SaleTypeConfig,
+  OrderStatus,
+  SaleOrderItem,
+  OrderBillingInfo,
+  SaleOrder,
 } from '../types';
 import {
   INITIAL_PROVIDERS,
@@ -42,6 +58,28 @@ import {
   DEFAULT_POSITIONS,
   DEFAULT_PROFILES,
 } from '../data/initialData';
+import {
+  INITIAL_MASTER_CASH_BOXES,
+  INITIAL_CASH_SHIFTS,
+  INITIAL_CASH_LINES,
+  INITIAL_CASH_MOVEMENTS,
+} from '../data/cashData';
+import {
+  INITIAL_RESTAURANT_TABLES,
+  INITIAL_RESERVATIONS,
+} from '../data/reservationData';
+import {
+  INITIAL_SITE_CONFIGS,
+  INITIAL_TABLE_CONFIGS,
+  INITIAL_SALE_TYPE_CONFIGS,
+} from '../data/salesConfigData';
+import {
+  INITIAL_SALE_ORDERS,
+  SALE_PRODUCT_CATALOG,
+} from '../data/ordersData';
+import {
+  INITIAL_CC_CLIENTS,
+} from '../data/currentAccountData';
 
 const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, UserPermissions> = {
   admin: {
@@ -115,6 +153,7 @@ interface AppContextType {
   correctClockRecord: (id: string, checkIn: string, checkOut: string, reason: string) => void;
   voidClockRecord: (id: string, reason: string) => void;
   employeeConsumptions: EmployeeConsumption[];
+  addEmployeeConsumptionFromReceipt: (consumption: EmployeeConsumption) => void;
   employeeAdvances: EmployeeAdvance[];
   addOrUpdateAdvance: (adv: EmployeeAdvance) => void;
   voidAdvance: (advanceId: string) => void;
@@ -123,6 +162,55 @@ interface AppContextType {
   markEmployeePaid: (payrunId: string, employeeId: string, paymentMethod: string, cashRegister: string) => void;
   unmarkEmployeePaid: (payrunId: string, employeeId: string) => void;
   voidPayrun: (payrunId: string) => void;
+
+  // Cash Control
+  cashShifts: CashShift[];
+  cashLines: CashLine[];
+  cashMovements: CashMovement[];
+  masterCashBoxes: MasterCashBox[];
+  openCashShift: (shift: TurnoType, notes?: string) => { success: boolean; message: string; shift?: CashShift };
+  addCashLine: (shiftId: string, boxType: string, initialAmount: number) => { success: boolean; message: string; line?: CashLine };
+  recordCashMovement: (movement: Omit<CashMovement, 'id' | 'dateTime' | 'userId' | 'userName'>) => void;
+  withdrawCashToMaster: (payload: CashWithdrawalPayload) => { success: boolean; message: string };
+  closeCashLine: (lineId: string, realAmount: number) => { success: boolean; message: string };
+  closeCashShift: (shiftId: string) => { success: boolean; message: string };
+  reconcileCashShift: (shiftId: string) => { success: boolean; message: string };
+  voidCashShift: (shiftId: string, reason: string) => { success: boolean; message: string };
+
+  // Reservations Control
+  restaurantTables: RestaurantTable[];
+  reservations: Reservation[];
+  addReservation: (data: Omit<Reservation, 'id' | 'createdAt' | 'createdByUserId' | 'createdByUserName' | 'status'>) => { success: boolean; message: string; reservation?: Reservation };
+  updateReservation: (reservation: Reservation) => { success: boolean; message: string };
+  cancelReservation: (reservationId: string, cancelReason: string) => { success: boolean; message: string };
+  checkOverbooking: (tableId: string, dateTime: string, excludeReservationId?: string) => boolean;
+
+  // Sales Configuration (Mesas, Tipos de Venta, Sitios)
+  siteConfigs: SiteConfig[];
+  tableConfigs: RestaurantTableConfig[];
+  saleTypeConfigs: SaleTypeConfig[];
+  addSiteConfig: (site: Omit<SiteConfig, 'id'>) => { success: boolean; message: string };
+  updateSiteConfig: (site: SiteConfig) => { success: boolean; message: string };
+  toggleSiteStatus: (siteId: string) => { success: boolean; message: string };
+  deleteSiteConfig: (siteId: string) => { success: boolean; message: string };
+  addTableConfig: (table: Omit<RestaurantTableConfig, 'id' | 'isFree'>) => { success: boolean; message: string };
+  updateTableConfig: (table: RestaurantTableConfig) => { success: boolean; message: string };
+  toggleTableStatus: (tableId: string) => { success: boolean; message: string };
+  toggleTableFree: (tableId: string) => { success: boolean; message: string };
+  deleteTableConfig: (tableId: string) => { success: boolean; message: string };
+  addSaleTypeConfig: (st: Omit<SaleTypeConfig, 'id'>) => { success: boolean; message: string };
+  updateSaleTypeConfig: (st: SaleTypeConfig) => { success: boolean; message: string };
+  toggleSaleTypeStatus: (stId: string) => { success: boolean; message: string };
+  deleteSaleTypeConfig: (stId: string) => { success: boolean; message: string };
+
+  // Sale Orders (Pedidos y Ventas)
+  saleOrders: SaleOrder[];
+  createSaleOrder: (data: Omit<SaleOrder, 'id' | 'orderNumber' | 'createdAt' | 'status' | 'createdByUserId' | 'createdByUserName' | 't1CreatedAt'>) => { success: boolean; message: string; order?: SaleOrder };
+  updateSaleOrder: (order: SaleOrder) => { success: boolean; message: string };
+  generateComandaPDF: (orderId: string) => { success: boolean; message: string; pdfUrl?: string };
+  updateSaleOrderStatus: (orderId: string, status: OrderStatus) => { success: boolean; message: string };
+  processOrderBilling: (orderId: string, billing: Omit<OrderBillingInfo, 'billedAt' | 'ticketNumber'>) => { success: boolean; message: string; ticketNumber?: string };
+  cancelSaleOrder: (orderId: string, reason?: string) => { success: boolean; message: string };
 
   toast: ToastNotification | null;
   showToast: (message: string, type?: ToastType) => void;
@@ -471,6 +559,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     } catch (e) {}
   }, [employeeConsumptions]);
 
+  const addEmployeeConsumptionFromReceipt = (consumption: EmployeeConsumption) => {
+    setEmployeeConsumptions((prev) => [consumption, ...prev]);
+  };
+
   const [employeeAdvances, setEmployeeAdvances] = useState<EmployeeAdvance[]>(() => {
     try {
       const saved = localStorage.getItem('plegma_employee_advances');
@@ -699,6 +791,1022 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setPayruns((prev) =>
       prev.map((pr) => (pr.id === payrunId ? { ...pr, status: 'Anulada' } : pr))
     );
+  };
+
+  // ----------------------------------------------------
+  // CONTROL DE CAJA
+  // ----------------------------------------------------
+  const [masterCashBoxes, setMasterCashBoxes] = useState<MasterCashBox[]>(() => {
+    try {
+      const saved = localStorage.getItem('plegma_master_cash_boxes');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return INITIAL_MASTER_CASH_BOXES;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('plegma_master_cash_boxes', JSON.stringify(masterCashBoxes));
+    } catch (e) {}
+  }, [masterCashBoxes]);
+
+  const [cashShifts, setCashShifts] = useState<CashShift[]>(() => {
+    try {
+      const saved = localStorage.getItem('plegma_cash_shifts');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return INITIAL_CASH_SHIFTS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('plegma_cash_shifts', JSON.stringify(cashShifts));
+    } catch (e) {}
+  }, [cashShifts]);
+
+  const [cashLines, setCashLines] = useState<CashLine[]>(() => {
+    try {
+      const saved = localStorage.getItem('plegma_cash_lines');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return INITIAL_CASH_LINES;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('plegma_cash_lines', JSON.stringify(cashLines));
+    } catch (e) {}
+  }, [cashLines]);
+
+  const [cashMovements, setCashMovements] = useState<CashMovement[]>(() => {
+    try {
+      const saved = localStorage.getItem('plegma_cash_movements');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return INITIAL_CASH_MOVEMENTS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('plegma_cash_movements', JSON.stringify(cashMovements));
+    } catch (e) {}
+  }, [cashMovements]);
+
+  // Helper date string with seconds
+  const getNowStr = () => {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  };
+
+  const openCashShift = (shift: TurnoType, notes?: string) => {
+    const activeShift = cashShifts.find((s) => s.status === 'Abierta');
+    if (activeShift) {
+      return { success: false, message: `Ya existe una caja de turno abierta (${activeShift.name}). Debe cerrarla primero.` };
+    }
+
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const dateStr = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+    const shiftName = `${shift.toUpperCase()} ${dateStr}`;
+
+    const activeUser = users.find((u) => u.id === activeUserId);
+
+    const newShift: CashShift = {
+      id: 'shift-' + Date.now(),
+      shift,
+      createdAt: getNowStr(),
+      name: shiftName,
+      status: 'Abierta',
+      openedByUserId: activeUserId,
+      openedByUserName: activeUser?.name || 'Usuario Autenticado',
+      notes,
+    };
+
+    setCashShifts((prev) => [newShift, ...prev]);
+    return { success: true, message: `Caja de turno "${shiftName}" abierta correctamente.`, shift: newShift };
+  };
+
+  const addCashLine = (shiftId: string, boxType: string, initialAmount: number) => {
+    const targetShift = cashShifts.find((s) => s.id === shiftId);
+    if (!targetShift) return { success: false, message: 'No se encontró la caja de turno.' };
+    if (targetShift.status !== 'Abierta') return { success: false, message: 'La caja de turno no está abierta.' };
+
+    const existingLine = cashLines.find((l) => l.shiftId === shiftId && l.boxType.toLowerCase() === boxType.toLowerCase() && l.status !== 'Conciliada');
+    if (existingLine && existingLine.status === 'Abierta') {
+      return { success: false, message: `Ya existe una línea abierta para "${boxType}" en esta caja.` };
+    }
+
+    const lineId = 'line-' + Date.now();
+    const activeUser = users.find((u) => u.id === activeUserId);
+
+    const newLine: CashLine = {
+      id: lineId,
+      shiftId,
+      boxType,
+      initialAmount,
+      ticketsTotal: 0,
+      expensesTotal: 0,
+      withdrawalsTotal: 0,
+      theoreticalAmount: initialAmount,
+      status: 'Abierta',
+    };
+
+    setCashLines((prev) => [...prev, newLine]);
+
+    // Create initial balance movement if > 0
+    if (initialAmount > 0) {
+      const initMov: CashMovement = {
+        id: 'cm-' + Date.now(),
+        lineId,
+        shiftId,
+        dateTime: getNowStr(),
+        type: 'Apertura',
+        origin: 'Saldo Inicial',
+        amount: initialAmount,
+        userId: activeUserId,
+        userName: activeUser?.name || 'Usuario Autenticado',
+        notes: `Monto inicial de apertura para ${boxType}`,
+      };
+      setCashMovements((prev) => [initMov, ...prev]);
+    }
+
+    return { success: true, message: `Línea "${boxType}" agregada a la caja correctamente.`, line: newLine };
+  };
+
+  const recordCashMovement = (movement: Omit<CashMovement, 'id' | 'dateTime' | 'userId' | 'userName'>) => {
+    const targetLine = cashLines.find((l) => l.id === movement.lineId);
+    // [R01] Bloqueo de Líneas Cerradas
+    if (!targetLine || targetLine.status !== 'Abierta') {
+      console.warn('No se puede imputar movimientos a una línea de caja cerrada o inexistente.');
+      return;
+    }
+
+    const activeUser = users.find((u) => u.id === activeUserId);
+    const nowStr = getNowStr();
+    const movId = 'cm-' + Date.now();
+
+    const newMov: CashMovement = {
+      ...movement,
+      id: movId,
+      dateTime: nowStr,
+      userId: activeUserId,
+      userName: activeUser?.name || 'Usuario Autenticado',
+    };
+
+    setCashMovements((prev) => [newMov, ...prev]);
+
+    // Recalculate CashLine totals automatically
+    setCashLines((prev) =>
+      prev.map((l) => {
+        if (l.id !== movement.lineId) return l;
+
+        let ticketsTotal = l.ticketsTotal;
+        let expensesTotal = l.expensesTotal;
+        let withdrawalsTotal = l.withdrawalsTotal;
+
+        if (movement.type === 'Ticket') {
+          ticketsTotal += Math.abs(movement.amount);
+        } else if (movement.type === 'Gasto' || movement.type === 'Consumo') {
+          expensesTotal += Math.abs(movement.amount);
+        } else if (movement.type === 'Retiro') {
+          withdrawalsTotal += Math.abs(movement.amount);
+        } else if (movement.type === 'Ajuste') {
+          if (movement.amount >= 0) ticketsTotal += movement.amount;
+          else expensesTotal += Math.abs(movement.amount);
+        }
+
+        const theoreticalAmount = l.initialAmount + ticketsTotal - expensesTotal - withdrawalsTotal;
+
+        return {
+          ...l,
+          ticketsTotal,
+          expensesTotal,
+          withdrawalsTotal,
+          theoreticalAmount,
+        };
+      })
+    );
+  };
+
+  const withdrawCashToMaster = ({ lineId, amount, masterBoxId, notes }: CashWithdrawalPayload) => {
+    const targetLine = cashLines.find((l) => l.id === lineId);
+    // [R02] Restricción de Retiros
+    if (!targetLine || targetLine.status !== 'Abierta') {
+      return { success: false, message: 'No se pueden efectuar retiros desde una línea de caja cerrada.' };
+    }
+
+    // [R05] Destino de Retiros: Cajas Maestras
+    const targetMaster = masterCashBoxes.find((mb) => mb.id === masterBoxId);
+    if (!targetMaster) {
+      return { success: false, message: 'Debe seleccionar una Caja Maestra de destino válida.' };
+    }
+
+    if (amount <= 0) {
+      return { success: false, message: 'Ingrese un monto de retiro superior a cero.' };
+    }
+
+    const activeUser = users.find((u) => u.id === activeUserId);
+    const nowStr = getNowStr();
+
+    // 1. Create withdrawal movement in CashLine
+    const withdrawMov: CashMovement = {
+      id: 'cm-' + Date.now(),
+      lineId: targetLine.id,
+      shiftId: targetLine.shiftId,
+      dateTime: nowStr,
+      type: 'Retiro',
+      origin: `Retiro A ${targetMaster.name}`,
+      voucherNumber: `RET-${Date.now().toString().slice(-5)}`,
+      amount: -Math.abs(amount),
+      userId: activeUserId,
+      userName: activeUser?.name || 'Usuario Autenticado',
+      notes,
+    };
+
+    setCashMovements((prev) => [withdrawMov, ...prev]);
+
+    // 2. Update CashLine totals
+    setCashLines((prev) =>
+      prev.map((l) => {
+        if (l.id !== lineId) return l;
+        const withdrawalsTotal = l.withdrawalsTotal + Math.abs(amount);
+        const theoreticalAmount = l.initialAmount + l.ticketsTotal - l.expensesTotal - withdrawalsTotal;
+        return {
+          ...l,
+          withdrawalsTotal,
+          theoreticalAmount,
+        };
+      })
+    );
+
+    // 3. Update MasterCashBox balance
+    setMasterCashBoxes((prev) =>
+      prev.map((mb) => (mb.id === masterBoxId ? { ...mb, currentBalance: mb.currentBalance + Math.abs(amount) } : mb))
+    );
+
+    return { success: true, message: `Retiro de $${amount.toLocaleString('es-AR')} a ${targetMaster.name} registrado con éxito.` };
+  };
+
+  const closeCashLine = (lineId: string, realAmount: number) => {
+    const targetLine = cashLines.find((l) => l.id === lineId);
+    if (!targetLine) return { success: false, message: 'Línea de caja no encontrada.' };
+
+    // [R03] Precondición de Cierre de Línea
+    if (realAmount === undefined || realAmount === null || isNaN(realAmount)) {
+      return { success: false, message: 'Debe ingresar el Monto Real Cierre previamente.' };
+    }
+
+    const theoreticalAmount = targetLine.initialAmount + targetLine.ticketsTotal - targetLine.expensesTotal - targetLine.withdrawalsTotal;
+    const difference = realAmount - theoreticalAmount;
+    const nowStr = getNowStr();
+    const activeUser = users.find((u) => u.id === activeUserId);
+
+    setCashLines((prev) =>
+      prev.map((l) =>
+        l.id === lineId
+          ? {
+              ...l,
+              theoreticalAmount,
+              realAmount,
+              difference,
+              status: 'Cerrada' as const,
+              closedAt: nowStr,
+            }
+          : l
+      )
+    );
+
+    // [R07] Trazabilidad: Log audit log if difference != 0
+    if (difference !== 0) {
+      const auditLog: AuditLog = {
+        id: 'aud-' + Date.now(),
+        timestamp: nowStr,
+        userId: activeUserId,
+        userName: activeUser?.name || 'Usuario Autenticado',
+        action: 'Cierre de Línea con Diferencia',
+        entityType: 'pago',
+        entityId: lineId,
+        oldValue: `Teórico: $${theoreticalAmount}`,
+        newValue: `Real: $${realAmount}`,
+        details: `Diferencia detectada en línea ${targetLine.boxType}: $${difference} (${difference > 0 ? 'Sobrante' : 'Faltante'}).`,
+      };
+      setAuditLogs((prev) => [auditLog, ...prev]);
+    }
+
+    return { success: true, message: `Línea de caja "${targetLine.boxType}" cerrada correctamente.` };
+  };
+
+  const closeCashShift = (shiftId: string) => {
+    const targetShift = cashShifts.find((s) => s.id === shiftId);
+    if (!targetShift) return { success: false, message: 'Caja de turno no encontrada.' };
+
+    const shiftLines = cashLines.filter((l) => l.shiftId === shiftId);
+    if (shiftLines.length === 0) {
+      return { success: false, message: 'La caja de turno no posee líneas registradas.' };
+    }
+
+    // [R04] Precondición de Cierre de Turno: todas las líneas deben estar Cerrada o Conciliada
+    const openLines = shiftLines.filter((l) => l.status === 'Abierta');
+    if (openLines.length > 0) {
+      return {
+        success: false,
+        message: `No se puede cerrar la Caja de Turno. Existen ${openLines.length} línea(s) en estado "Abierta" (${openLines.map((l) => l.boxType).join(', ')}). Debe cerrarlas primero.`,
+      };
+    }
+
+    const totalDiff = shiftLines.reduce((acc, l) => acc + (l.difference || 0), 0);
+    const nowStr = getNowStr();
+
+    setCashShifts((prev) =>
+      prev.map((s) =>
+        s.id === shiftId
+          ? {
+              ...s,
+              status: 'Cerrada' as const,
+              closedAt: nowStr,
+              totalDifference: totalDiff,
+            }
+          : s
+      )
+    );
+
+    return { success: true, message: `Caja de turno "${targetShift.name}" cerrada correctamente.` };
+  };
+
+  const reconcileCashShift = (shiftId: string) => {
+    const targetShift = cashShifts.find((s) => s.id === shiftId);
+    if (!targetShift) return { success: false, message: 'Caja de turno no encontrada.' };
+
+    const activeUser = users.find((u) => u.id === activeUserId);
+    const nowStr = getNowStr();
+
+    // Reconcile shift and lines
+    setCashShifts((prev) =>
+      prev.map((s) =>
+        s.id === shiftId
+          ? {
+              ...s,
+              status: 'Conciliada' as const,
+              reconciledAt: nowStr,
+              reconciledByUserName: activeUser?.name || 'Usuario Autenticado',
+            }
+          : s
+      )
+    );
+
+    setCashLines((prev) =>
+      prev.map((l) => (l.shiftId === shiftId ? { ...l, status: 'Conciliada' as const } : l))
+    );
+
+    return { success: true, message: `Caja de turno "${targetShift.name}" conciliada exitosamente.` };
+  };
+
+  const voidCashShift = (shiftId: string, reason: string) => {
+    const targetShift = cashShifts.find((s) => s.id === shiftId);
+    if (!targetShift) return { success: false, message: 'Caja de turno no encontrada.' };
+
+    setCashShifts((prev) =>
+      prev.map((s) => (s.id === shiftId ? { ...s, status: 'Anulada' as const, voidReason: reason } : s))
+    );
+
+    return { success: true, message: `Caja de turno "${targetShift.name}" anulada.` };
+  };
+
+  // ----------------------------------------------------
+  // RESERVAS DE MESAS
+  // ----------------------------------------------------
+  const [restaurantTables, setRestaurantTables] = useState<RestaurantTable[]>(() => {
+    try {
+      const saved = localStorage.getItem('plegma_restaurant_tables');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return INITIAL_RESTAURANT_TABLES;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('plegma_restaurant_tables', JSON.stringify(restaurantTables));
+    } catch (e) {}
+  }, [restaurantTables]);
+
+  const [reservations, setReservations] = useState<Reservation[]>(() => {
+    try {
+      const saved = localStorage.getItem('plegma_reservations');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return INITIAL_RESERVATIONS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('plegma_reservations', JSON.stringify(reservations));
+    } catch (e) {}
+  }, [reservations]);
+
+  // [A04] Transición a Histórica: cron/effect que cambia 'Confirmada' pasadas a 'Histórica'
+  useEffect(() => {
+    const checkPastReservations = () => {
+      const now = new Date();
+      setReservations((prev) => {
+        let changed = false;
+        const updated = prev.map((res) => {
+          if (res.status === 'Confirmada') {
+            const resTime = new Date(res.dateTime.replace(' ', 'T'));
+            if (!isNaN(resTime.getTime()) && resTime < now) {
+              changed = true;
+              return { ...res, status: 'Histórica' as const };
+            }
+          }
+          return res;
+        });
+        return changed ? updated : prev;
+      });
+    };
+
+    checkPastReservations();
+    const interval = setInterval(checkPastReservations, 60000); // Re-check every minute
+    return () => clearInterval(interval);
+  }, []);
+
+  // [A06] Control de Overbooking (Doble Reserva en misma mesa +/- 2 horas)
+  const checkOverbooking = (tableId: string, dateTimeStr: string, excludeReservationId?: string): boolean => {
+    const targetTime = new Date(dateTimeStr.replace(' ', 'T')).getTime();
+    if (isNaN(targetTime)) return false;
+
+    const TWO_HOURS_MS = 2 * 60 * 60 * 1000;
+
+    return reservations.some((r) => {
+      if (r.id === excludeReservationId) return false;
+      if (r.tableId !== tableId) return false;
+      if (r.status !== 'Confirmada') return false;
+
+      const existingTime = new Date(r.dateTime.replace(' ', 'T')).getTime();
+      if (isNaN(existingTime)) return false;
+
+      const diff = Math.abs(targetTime - existingTime);
+      return diff < TWO_HOURS_MS;
+    });
+  };
+
+  const addReservation = (data: Omit<Reservation, 'id' | 'createdAt' | 'createdByUserId' | 'createdByUserName' | 'status'>) => {
+    // [R01] Obligatoriedad de Fecha/Hora
+    if (!data.dateTime || !data.dateTime.trim()) {
+      return { success: false, message: 'Debe ingresar la Fecha y Hora de la reserva (R01).' };
+    }
+
+    // [R02] Obligatoriedad de Mesa
+    if (!data.tableId) {
+      return { success: false, message: 'Debe asignar una mesa válida de la lista (R02).' };
+    }
+
+    // [R03] Obligatoriedad de Comensales
+    if (!data.guestsCount || data.guestsCount < 1) {
+      return { success: false, message: 'La cantidad de comensales debe ser de al menos 1 persona (R03).' };
+    }
+
+    // [A06] Control de Overbooking
+    if (checkOverbooking(data.tableId, data.dateTime)) {
+      const table = restaurantTables.find((t) => t.id === data.tableId);
+      return {
+        success: false,
+        message: `Overbooking bloqueado (A06): La mesa "${table?.name || data.tableName}" ya posee una reserva confirmada en un rango cercano a la hora solicitada.`,
+      };
+    }
+
+    const activeUser = users.find((u) => u.id === activeUserId);
+    const nowStr = getNowStr();
+
+    const newRes: Reservation = {
+      ...data,
+      id: 'res-' + Date.now(),
+      status: 'Confirmada', // [A01] Estado inicial Confirmada
+      createdByUserId: activeUserId, // [A02] Auditoría de Carga
+      createdByUserName: activeUser?.name || 'Usuario Autenticado',
+      createdAt: nowStr, // [A03] Timestamp SYS
+    };
+
+    setReservations((prev) => [newRes, ...prev]);
+    return { success: true, message: `Reserva para "${data.clientName}" registrada exitosamente.`, reservation: newRes };
+  };
+
+  const updateReservation = (updatedRes: Reservation) => {
+    const target = reservations.find((r) => r.id === updatedRes.id);
+    if (!target) return { success: false, message: 'Reserva no encontrada.' };
+
+    // [R05] Inmutabilidad de Históricas (Salvo admin)
+    if (target.status === 'Histórica' && userRole !== 'admin') {
+      return { success: false, message: 'Las reservas históricas están bloqueadas para edición (R05).' };
+    }
+
+    // [A06] Control de Overbooking al editar
+    if (updatedRes.status === 'Confirmada' && checkOverbooking(updatedRes.tableId, updatedRes.dateTime, updatedRes.id)) {
+      return {
+        success: false,
+        message: `Overbooking bloqueado (A06): La mesa "${updatedRes.tableName}" ya posee otra reserva confirmada en ese rango horario.`,
+      };
+    }
+
+    setReservations((prev) => prev.map((r) => (r.id === updatedRes.id ? updatedRes : r)));
+    return { success: true, message: `Reserva para "${updatedRes.clientName}" actualizada correctamente.` };
+  };
+
+  const cancelReservation = (reservationId: string, cancelReason: string) => {
+    const target = reservations.find((r) => r.id === reservationId);
+    if (!target) return { success: false, message: 'Reserva no encontrada.' };
+
+    setReservations((prev) =>
+      prev.map((r) => (r.id === reservationId ? { ...r, status: 'Cancelada' as const, cancelReason } : r))
+    );
+
+    return { success: true, message: `Reserva de "${target.clientName}" fue cancelada.` };
+  };
+
+  // ----------------------------------------------------
+  // CONFIGURACIÓN DE MESAS, TIPOS DE VENTA Y SITIOS
+  // ----------------------------------------------------
+  const [siteConfigs, setSiteConfigs] = useState<SiteConfig[]>(() => {
+    try {
+      const saved = localStorage.getItem('plegma_site_configs');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return INITIAL_SITE_CONFIGS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('plegma_site_configs', JSON.stringify(siteConfigs));
+    } catch (e) {}
+  }, [siteConfigs]);
+
+  const [tableConfigs, setTableConfigs] = useState<RestaurantTableConfig[]>(() => {
+    try {
+      const saved = localStorage.getItem('plegma_table_configs');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return INITIAL_TABLE_CONFIGS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('plegma_table_configs', JSON.stringify(tableConfigs));
+    } catch (e) {}
+  }, [tableConfigs]);
+
+  const [saleTypeConfigs, setSaleTypeConfigs] = useState<SaleTypeConfig[]>(() => {
+    try {
+      const saved = localStorage.getItem('plegma_sale_type_configs');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return INITIAL_SALE_TYPE_CONFIGS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('plegma_sale_type_configs', JSON.stringify(saleTypeConfigs));
+    } catch (e) {}
+  }, [saleTypeConfigs]);
+
+  // SITIOS METHODS
+  const addSiteConfig = (data: Omit<SiteConfig, 'id'>) => {
+    if (!data.name || !data.name.trim()) {
+      return { success: false, message: 'El nombre del sitio es obligatorio (R-S01).' };
+    }
+    const exists = siteConfigs.some((s) => s.name.toLowerCase() === data.name.trim().toLowerCase());
+    if (exists) {
+      return { success: false, message: `Ya existe un sitio registrado con el nombre "${data.name}" (R-S01).` };
+    }
+    if (data.order < 0) {
+      return { success: false, message: 'El orden debe ser mayor o igual a 0 (R-S03).' };
+    }
+
+    const newSite: SiteConfig = {
+      ...data,
+      id: 'site-' + Date.now(),
+      name: data.name.trim(),
+    };
+
+    setSiteConfigs((prev) => [...prev, newSite].sort((a, b) => a.order - b.order));
+    return { success: true, message: `Sitio "${newSite.name}" creado exitosamente.` };
+  };
+
+  const updateSiteConfig = (updatedSite: SiteConfig) => {
+    if (!updatedSite.name || !updatedSite.name.trim()) {
+      return { success: false, message: 'El nombre del sitio es obligatorio.' };
+    }
+    const exists = siteConfigs.some((s) => s.id !== updatedSite.id && s.name.toLowerCase() === updatedSite.name.trim().toLowerCase());
+    if (exists) {
+      return { success: false, message: `Ya existe otro sitio con el nombre "${updatedSite.name}" (R-S01).` };
+    }
+    if (updatedSite.order < 0) {
+      return { success: false, message: 'El orden debe ser mayor o igual a 0 (R-S03).' };
+    }
+
+    setSiteConfigs((prev) =>
+      prev.map((s) => (s.id === updatedSite.id ? { ...updatedSite, name: updatedSite.name.trim() } : s)).sort((a, b) => a.order - b.order)
+    );
+
+    // Propagate site name changes to tableConfigs (A-S03)
+    setTableConfigs((prev) =>
+      prev.map((t) => (t.siteId === updatedSite.id ? { ...t, siteName: updatedSite.name.trim() } : t))
+    );
+
+    return { success: true, message: `Sitio "${updatedSite.name}" actualizado correctamente.` };
+  };
+
+  const toggleSiteStatus = (siteId: string) => {
+    const target = siteConfigs.find((s) => s.id === siteId);
+    if (!target) return { success: false, message: 'Sitio no encontrado.' };
+
+    const newStatus = !target.active;
+    setSiteConfigs((prev) => prev.map((s) => (s.id === siteId ? { ...s, active: newStatus } : s)));
+
+    return { success: true, message: `Sitio "${target.name}" ${newStatus ? 'activado' : 'desactivado'}.` };
+  };
+
+  const deleteSiteConfig = (siteId: string) => {
+    const target = siteConfigs.find((s) => s.id === siteId);
+    if (!target) return { success: false, message: 'Sitio no encontrado.' };
+
+    // [R-S02] Bloqueo de Borrado si tiene mesas asociadas
+    const hasTables = tableConfigs.some((t) => t.siteId === siteId);
+    if (hasTables) {
+      return { success: false, message: `No se permite eliminar el sitio "${target.name}" porque posee mesas asociadas (R-S02).` };
+    }
+
+    setSiteConfigs((prev) => prev.filter((s) => s.id !== siteId));
+    return { success: true, message: `Sitio "${target.name}" eliminado.` };
+  };
+
+  // MESAS METHODS
+  const addTableConfig = (data: Omit<RestaurantTableConfig, 'id' | 'isFree'>) => {
+    if (!data.number || !data.number.trim()) {
+      return { success: false, message: 'El número o código de mesa es obligatorio (R-M01).' };
+    }
+    const exists = tableConfigs.some((t) => t.number.toLowerCase() === data.number.trim().toLowerCase());
+    if (exists) {
+      return { success: false, message: `El número de mesa "${data.number}" ya existe (R-M01).` };
+    }
+    if (!data.capacity || data.capacity <= 0) {
+      return { success: false, message: 'La capacidad debe ser un número entero mayor a 0 (R-M02).' };
+    }
+    const targetSite = siteConfigs.find((s) => s.id === data.siteId && s.active);
+    if (!targetSite) {
+      return { success: false, message: 'El sitio seleccionado no existe o está inactivo (R-M03 / A-S01).' };
+    }
+
+    const newTable: RestaurantTableConfig = {
+      ...data,
+      id: 'tbl-cfg-' + Date.now(),
+      number: data.number.trim(),
+      siteName: targetSite.name,
+      isFree: true, // [A-M02] Estado por defecto 'Sí'
+      active: true,
+    };
+
+    setTableConfigs((prev) => [...prev, newTable]);
+    return { success: true, message: `Mesa "${newTable.number}" creada exitosamente.` };
+  };
+
+  const updateTableConfig = (updatedTable: RestaurantTableConfig) => {
+    if (!updatedTable.number || !updatedTable.number.trim()) {
+      return { success: false, message: 'El número de mesa es obligatorio.' };
+    }
+    const exists = tableConfigs.some((t) => t.id !== updatedTable.id && t.number.toLowerCase() === updatedTable.number.trim().toLowerCase());
+    if (exists) {
+      return { success: false, message: `Ya existe otra mesa con el número "${updatedTable.number}" (R-M01).` };
+    }
+    if (!updatedTable.capacity || updatedTable.capacity <= 0) {
+      return { success: false, message: 'La capacidad debe ser mayor a 0 (R-M02).' };
+    }
+    const targetSite = siteConfigs.find((s) => s.id === updatedTable.siteId);
+    if (!targetSite) {
+      return { success: false, message: 'El sitio asignado no es válido (R-M03).' };
+    }
+
+    const finalTable = { ...updatedTable, number: updatedTable.number.trim(), siteName: targetSite.name };
+    setTableConfigs((prev) => prev.map((t) => (t.id === updatedTable.id ? finalTable : t)));
+    return { success: true, message: `Mesa "${updatedTable.number}" actualizada correctamente.` };
+  };
+
+  const toggleTableStatus = (tableId: string) => {
+    const target = tableConfigs.find((t) => t.id === tableId);
+    if (!target) return { success: false, message: 'Mesa no encontrada.' };
+
+    const newActive = !target.active;
+    setTableConfigs((prev) => prev.map((t) => (t.id === tableId ? { ...t, active: newActive } : t)));
+    return { success: true, message: `Mesa "${target.number}" ${newActive ? 'activada' : 'desactivada'}.` };
+  };
+
+  const toggleTableFree = (tableId: string) => {
+    const target = tableConfigs.find((t) => t.id === tableId);
+    if (!target) return { success: false, message: 'Mesa no encontrada.' };
+
+    const newFree = !target.isFree;
+    setTableConfigs((prev) => prev.map((t) => (t.id === tableId ? { ...t, isFree: newFree } : t)));
+    return { success: true, message: `Mesa "${target.number}" marcada como ${newFree ? 'Libre' : 'Ocupada/No Libre'}.` };
+  };
+
+  const deleteTableConfig = (tableId: string) => {
+    const target = tableConfigs.find((t) => t.id === tableId);
+    if (!target) return { success: false, message: 'Mesa no encontrada.' };
+
+    // [R-M04] Proteccion de Integridad Referencial (si tiene reservas asociadas)
+    const hasReservations = reservations.some((r) => r.tableId === tableId);
+    if (hasReservations) {
+      return { success: false, message: `No se permite eliminar la mesa "${target.number}" porque registra historial de reservas asociadas (R-M04).` };
+    }
+
+    setTableConfigs((prev) => prev.filter((t) => t.id !== tableId));
+    return { success: true, message: `Mesa "${target.number}" eliminada.` };
+  };
+
+  // TIPOS DE VENTA METHODS
+  const addSaleTypeConfig = (data: Omit<SaleTypeConfig, 'id'>) => {
+    if (!data.name || !data.name.trim()) {
+      return { success: false, message: 'El nombre del tipo de venta es obligatorio (R-TV01).' };
+    }
+    const exists = saleTypeConfigs.some((st) => st.name.toLowerCase() === data.name.trim().toLowerCase());
+    if (exists) {
+      return { success: false, message: `El tipo de venta "${data.name}" ya existe (R-TV01).` };
+    }
+
+    const newSt: SaleTypeConfig = {
+      ...data,
+      id: 'st-' + Date.now(),
+      name: data.name.trim(),
+    };
+
+    setSaleTypeConfigs((prev) => [...prev, newSt]);
+    return { success: true, message: `Tipo de Venta "${newSt.name}" registrado exitosamente.` };
+  };
+
+  const updateSaleTypeConfig = (updatedSt: SaleTypeConfig) => {
+    if (!updatedSt.name || !updatedSt.name.trim()) {
+      return { success: false, message: 'El nombre del tipo de venta es obligatorio.' };
+    }
+    const exists = saleTypeConfigs.some((st) => st.id !== updatedSt.id && st.name.toLowerCase() === updatedSt.name.trim().toLowerCase());
+    if (exists) {
+      return { success: false, message: `Ya existe otro tipo de venta con el nombre "${updatedSt.name}" (R-TV01).` };
+    }
+
+    setSaleTypeConfigs((prev) => prev.map((st) => (st.id === updatedSt.id ? { ...updatedSt, name: updatedSt.name.trim() } : st)));
+    return { success: true, message: `Tipo de Venta "${updatedSt.name}" actualizado correctamente.` };
+  };
+
+  const toggleSaleTypeStatus = (stId: string) => {
+    const target = saleTypeConfigs.find((st) => st.id === stId);
+    if (!target) return { success: false, message: 'Tipo de Venta no encontrado.' };
+
+    const newActive = !target.active;
+    setSaleTypeConfigs((prev) => prev.map((st) => (st.id === stId ? { ...st, active: newActive } : st)));
+    return { success: true, message: `Tipo de Venta "${target.name}" ${newActive ? 'activado' : 'desactivado'}.` };
+  };
+
+  const deleteSaleTypeConfig = (stId: string) => {
+    const target = saleTypeConfigs.find((st) => st.id === stId);
+    if (!target) return { success: false, message: 'Tipo de Venta no encontrado.' };
+
+    setSaleTypeConfigs((prev) => prev.filter((st) => st.id !== stId));
+    return { success: true, message: `Tipo de Venta "${target.name}" eliminado.` };
+  };
+
+  // ----------------------------------------------------
+  // PEDIDOS Y VENTAS (COMMERCIAL ENGINE)
+  // ----------------------------------------------------
+  const [saleOrders, setSaleOrders] = useState<SaleOrder[]>(() => {
+    try {
+      const saved = localStorage.getItem('plegma_sale_orders');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return INITIAL_SALE_ORDERS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('plegma_sale_orders', JSON.stringify(saleOrders));
+    } catch (e) {}
+  }, [saleOrders]);
+
+  const createSaleOrder = (data: Omit<SaleOrder, 'id' | 'orderNumber' | 'createdAt' | 'status' | 'createdByUserId' | 'createdByUserName' | 't1CreatedAt'>) => {
+    const saleType = saleTypeConfigs.find((st) => st.id === data.saleTypeId);
+    
+    // [R03] Requerimiento de Mesa si Tipo de Venta exige mesa
+    if (saleType?.requiresTable && (!data.tableId || !data.tableId.trim())) {
+      return { success: false, message: `El canal "${saleType.name}" requiere la asignación obligatoria de una mesa (R03).` };
+    }
+
+    // [R04] Requerimiento de Cliente si Tipo de Venta exige cliente
+    if (saleType?.requiresClient && (!data.clientId || !data.clientId.trim())) {
+      return { success: false, message: `El canal "${saleType.name}" requiere asociar un cliente obligatoriamente (R04).` };
+    }
+
+    // [R09] Validación de acompañamiento obligatorio
+    for (const item of data.items) {
+      if (item.requiresSideOption && (!item.sideOption || !item.sideOption.trim())) {
+        return { success: false, message: `El producto "${item.productName}" requiere seleccionar un acompañamiento obligatorio (R09).` };
+      }
+    }
+
+    const maxNum = saleOrders.reduce((max, o) => Math.max(max, o.orderNumber || 1000), 1000);
+    const nextNum = maxNum + 1; // [A01] Correlativo autogenerado
+    const nowStr = getNowStr(); // [A02] Timestamp SYS
+    const activeUser = users.find((u) => u.id === activeUserId);
+
+    // Dynamic Recalculation (A04)
+    const recalculatedTotal = data.items.reduce((acc, i) => acc + i.subtotal, 0);
+
+    const newOrder: SaleOrder = {
+      ...data,
+      id: 'ord-' + Date.now(),
+      orderNumber: nextNum,
+      createdAt: nowStr,
+      t1CreatedAt: nowStr, // T1: Inicio
+      totalAmount: recalculatedTotal,
+      status: (saleType?.initialOrderStatus as any) || 'Pendiente',
+      createdByUserId: activeUserId,
+      createdByUserName: activeUser?.name || 'Usuario Autenticado',
+    };
+
+    setSaleOrders((prev) => [newOrder, ...prev]);
+    return { success: true, message: `Pedido #${nextNum} registrado exitosamente.`, order: newOrder };
+  };
+
+  const updateSaleOrder = (updatedOrder: SaleOrder) => {
+    const target = saleOrders.find((o) => o.id === updatedOrder.id);
+    if (!target) return { success: false, message: 'Pedido no encontrado.' };
+
+    // [R08] Inmutabilidad de Pedido Facturado (salvo admin)
+    if (target.status === 'Facturado' && userRole !== 'admin') {
+      return { success: false, message: 'Los pedidos facturados están bloqueados para modificaciones (R08).' };
+    }
+
+    // Dynamic Recalculation (A04)
+    const recalculatedTotal = updatedOrder.items.reduce((acc, i) => acc + i.subtotal, 0);
+    const finalOrder = { ...updatedOrder, totalAmount: recalculatedTotal };
+
+    setSaleOrders((prev) => prev.map((o) => (o.id === updatedOrder.id ? finalOrder : o)));
+    return { success: true, message: `Pedido #${updatedOrder.orderNumber} actualizado correctamente.` };
+  };
+
+  const generateComandaPDF = (orderId: string) => {
+    const target = saleOrders.find((o) => o.id === orderId);
+    if (!target) return { success: false, message: 'Pedido no encontrado.' };
+
+    // [R02] Validación de ítems en comanda
+    if (!target.items || target.items.length === 0) {
+      return { success: false, message: 'No se puede emitir comanda a cocina sin artículos cargados (R02).' };
+    }
+
+    const nowStr = getNowStr();
+    const pdfUrl = `comanda_${target.orderNumber}.pdf`;
+
+    setSaleOrders((prev) =>
+      prev.map((o) =>
+        o.id === orderId
+          ? {
+              ...o,
+              status: o.status === 'Pendiente' ? ('Comandado' as const) : o.status,
+              t2ComandaAt: nowStr, // [A05] Timestamp T2
+              comandaPdfUrl: pdfUrl,
+            }
+          : o
+      )
+    );
+
+    return { success: true, message: `Comanda emitida y enviada a cocina/barra para Pedido #${target.orderNumber}.`, pdfUrl };
+  };
+
+  const updateSaleOrderStatus = (orderId: string, status: OrderStatus) => {
+    const target = saleOrders.find((o) => o.id === orderId);
+    if (!target) return { success: false, message: 'Pedido no encontrado.' };
+
+    const nowStr = getNowStr();
+
+    setSaleOrders((prev) =>
+      prev.map((o) => {
+        if (o.id !== orderId) return o;
+        const updated: SaleOrder = { ...o, status };
+        if (status === 'Listo' && !o.t3KitchenOutputAt) {
+          updated.t3KitchenOutputAt = nowStr; // [A06] T3 Salida Cocina
+        }
+        if (status === 'Entregado' && !o.t4DeliveredAt) {
+          updated.t4DeliveredAt = nowStr; // [A06] T4 Entrega
+        }
+        return updated;
+      })
+    );
+
+    return { success: true, message: `Estado del Pedido #${target.orderNumber} actualizado a "${status}".` };
+  };
+
+  const processOrderBilling = (orderId: string, billing: Omit<OrderBillingInfo, 'billedAt' | 'ticketNumber'>) => {
+    const target = saleOrders.find((o) => o.id === orderId);
+    if (!target) return { success: false, message: 'Pedido no encontrado.' };
+
+    // [R01] Validación de ítems en facturación
+    if (!target.items || target.items.length === 0) {
+      return { success: false, message: 'No se permite facturar un pedido que no posea al menos 1 artículo (R01).' };
+    }
+
+    // [R07] Validación de Caja Abierta activa
+    const activeShift = cashShifts.find((s) => s.status === 'Abierta');
+    if (!activeShift && billing.paymentCondition !== 'Cuenta Corriente') {
+      return { success: false, message: 'No se puede procesar facturación sin una Caja de Turno abierta (R07).' };
+    }
+
+    // Find Client
+    const client = INITIAL_CC_CLIENTS.find((c) => c.id === billing.clientId);
+
+    // [R05] Restricción Cta Cte
+    if (billing.paymentCondition === 'Cuenta Corriente') {
+      if (!client || !client.hasCurrentAccount) {
+        return { success: false, message: `El cliente "${billing.clientName}" no está habilitado para Cuenta Corriente (R05).` };
+      }
+    }
+
+    // [R06] Restricción Consumo Empleado
+    if (billing.paymentCondition === 'Consumo Empleado') {
+      const isEmployee = employees.some((e) => e.name.toLowerCase() === billing.clientName.toLowerCase() || e.id === billing.clientId);
+      if (!isEmployee) {
+        return { success: false, message: `La persona "${billing.clientName}" no está registrada como empleado habilitado (R06).` };
+      }
+    }
+
+    const nowStr = getNowStr();
+    const ticketNum = 'TKT-' + String(target.orderNumber).padStart(5, '0');
+    const ticketPdf = `ticket_${target.orderNumber}.pdf`;
+
+    const fullBilling: OrderBillingInfo = {
+      ...billing,
+      billedAt: nowStr,
+      ticketNumber: ticketNum,
+    };
+
+    // [A07] Financial Impact:
+    // If Cash / Contado: record cash movement on active shift line
+    if (billing.paymentCondition === 'Contado' && activeShift) {
+      const activeLine = cashLines.find((l) => l.shiftId === activeShift.id && l.status === 'Abierta');
+      if (activeLine) {
+        recordCashMovement({
+          lineId: activeLine.id,
+          shiftId: activeShift.id,
+          type: 'Ticket',
+          origin: `Facturación Pedido #${target.orderNumber} - ${target.clientName}`,
+          voucherNumber: ticketNum,
+          amount: billing.finalTotal,
+          notes: `Cobro en ${billing.paymentMethod}`,
+        });
+      }
+    }
+
+    // If Employee Consumption: record employee consumption
+    if (billing.paymentCondition === 'Consumo Empleado') {
+      const emp = employees.find((e) => e.name.toLowerCase() === billing.clientName.toLowerCase() || e.id === billing.clientId);
+      if (emp) {
+        addEmployeeConsumptionFromReceipt({
+          id: 'ec-' + Date.now(),
+          employeeId: emp.id,
+          employeeName: emp.name,
+          dni: emp.dni || 'N/A',
+          date: nowStr,
+          orderNumber: String(target.orderNumber),
+          amount: billing.finalTotal,
+          detail: `Consumo Pedido #${target.orderNumber}`,
+          status: 'Pendiente',
+        });
+      }
+    }
+
+    setSaleOrders((prev) =>
+      prev.map((o) =>
+        o.id === orderId
+          ? {
+              ...o,
+              status: 'Facturado' as const, // [A07] Estado Facturado
+              ticketPdfUrl: ticketPdf,
+              billingDetails: fullBilling,
+            }
+          : o
+      )
+    );
+
+    return { success: true, message: `Pedido #${target.orderNumber} facturado exitosamente. Ticket ${ticketNum} emitido.`, ticketNumber: ticketNum };
+  };
+
+  const cancelSaleOrder = (orderId: string, reason?: string) => {
+    const target = saleOrders.find((o) => o.id === orderId);
+    if (!target) return { success: false, message: 'Pedido no encontrado.' };
+
+    if (target.status === 'Facturado' && userRole !== 'admin') {
+      return { success: false, message: 'No se puede anular un pedido que ya ha sido facturado (R08).' };
+    }
+
+    setSaleOrders((prev) =>
+      prev.map((o) => (o.id === orderId ? { ...o, status: 'Cancelado' as const, generalNotes: reason ? `[CANCELADO]: ${reason}` : o.generalNotes } : o))
+    );
+
+    return { success: true, message: `Pedido #${target.orderNumber} anulado.` };
   };
 
   const [toast, setToast] = useState<ToastNotification | null>(null);
@@ -1426,6 +2534,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         correctClockRecord,
         voidClockRecord,
         employeeConsumptions,
+        addEmployeeConsumptionFromReceipt,
         employeeAdvances,
         addOrUpdateAdvance,
         voidAdvance,
@@ -1434,6 +2543,46 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         markEmployeePaid,
         unmarkEmployeePaid,
         voidPayrun,
+        cashShifts,
+        cashLines,
+        cashMovements,
+        masterCashBoxes,
+        openCashShift,
+        addCashLine,
+        recordCashMovement,
+        withdrawCashToMaster,
+        closeCashLine,
+        closeCashShift,
+        reconcileCashShift,
+        voidCashShift,
+        restaurantTables,
+        reservations,
+        addReservation,
+        updateReservation,
+        checkOverbooking,
+        siteConfigs,
+        tableConfigs,
+        saleTypeConfigs,
+        addSiteConfig,
+        updateSiteConfig,
+        toggleSiteStatus,
+        deleteSiteConfig,
+        addTableConfig,
+        updateTableConfig,
+        toggleTableStatus,
+        toggleTableFree,
+        deleteTableConfig,
+        addSaleTypeConfig,
+        updateSaleTypeConfig,
+        toggleSaleTypeStatus,
+        deleteSaleTypeConfig,
+        saleOrders,
+        createSaleOrder,
+        updateSaleOrder,
+        generateComandaPDF,
+        updateSaleOrderStatus,
+        processOrderBilling,
+        cancelSaleOrder,
         toast,
         showToast,
         hideToast,

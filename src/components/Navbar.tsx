@@ -23,6 +23,7 @@ import {
   CreditCard,
   Palette,
   Receipt,
+  Calendar,
 } from 'lucide-react';
 
 interface NavbarProps {
@@ -58,6 +59,10 @@ const NAV_SECTIONS: NavSection[] = [
       { id: 'kanban', label: 'Tablero Semanal', description: 'Kanban semanal de proveedores & conteos', icon: Kanban },
       { id: 'items', label: 'Maestro Insumos & Stock', description: 'Catálogo de insumos, límites & precios', icon: Package },
       { id: 'ventas_cc', label: 'Ventas — Cuenta Corriente', description: 'Cuentas corrientes de clientes, consumos & recibos', icon: Receipt },
+      { id: 'ventas_caja', label: 'Ventas — Control de Caja', description: 'Apertura, cierres de turno, retiros & conciliación', icon: CreditCard },
+      { id: 'ventas_reservas', label: 'Ventas — Reservas de Mesas', description: 'Gestión de comensales, mesas & reservas', icon: Calendar },
+      { id: 'sales_config', label: 'Ventas — Configuración Comercial', description: 'Mesas físicas, capacidad, tipos de venta & sectores', icon: SlidersHorizontal },
+      { id: 'ventas_pedidos', label: 'Ventas — Pedidos & Facturación', description: 'Carga dinámica, comandas a cocina & cobro de tickets', icon: ShoppingBag },
     ],
   },
   {
