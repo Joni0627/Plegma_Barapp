@@ -16,7 +16,13 @@ import {
 } from 'lucide-react';
 
 export const ItemMasterView: React.FC = () => {
-  const { items, providers, providerItems, addOrUpdateItem, userRole } = useApp();
+  const { 
+    items, providers, providerItems, addOrUpdateItem, userRole,
+    itemCategories, setItemCategories,
+    itemSubcategories, setItemSubcategories,
+    itemUnits, setItemUnits,
+    priceHistory
+  } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('todas');
@@ -26,7 +32,8 @@ export const ItemMasterView: React.FC = () => {
   // New Item Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formName, setFormName] = useState('');
-  const [formCategory, setFormCategory] = useState('Almacén');
+  const [formCategory, setFormCategory] = useState(itemCategories[0] || 'Almacén');
+  const [formSubcategory, setFormSubcategory] = useState(itemSubcategories[0] || '');
   const [formBrand, setFormBrand] = useState('');
   const [formStorageUnit, setFormStorageUnit] = useState('kg');
   const [formPurchaseUnit, setFormPurchaseUnit] = useState('Bolsa 20kg');
@@ -36,6 +43,22 @@ export const ItemMasterView: React.FC = () => {
   const [formPrice, setFormPrice] = useState('1500');
   const [formLocation, setFormLocation] = useState('Depósito Seco');
   const [formProviderId, setFormProviderId] = useState(providers[0]?.id || '');
+
+  const handleOpenNewItemModal = () => {
+    setFormName('');
+    setFormCategory(itemCategories[0] || 'Almacén');
+    setFormSubcategory(itemSubcategories[0] || '');
+    setFormBrand('');
+    setFormStorageUnit(itemUnits[0] || 'kg');
+    setFormPurchaseUnit(itemUnits[0] || 'kg');
+    setFormPackQty('1');
+    setFormMinStock('');
+    setFormMaxStock('');
+    setFormPrice('');
+    setFormLocation('');
+    setFormProviderId(providers[0]?.id || '');
+    setIsModalOpen(true);
+  };
 
   const categories = Array.from(new Set(items.map((i) => i.category)));
 
@@ -61,7 +84,7 @@ export const ItemMasterView: React.FC = () => {
       name: formName,
       description: formName,
       category: formCategory,
-      subcategory: formCategory,
+      subcategory: formSubcategory,
       brand: formBrand || 'Genérica',
       storageUnit: formStorageUnit,
       purchaseUnit: formPurchaseUnit,
@@ -141,7 +164,7 @@ export const ItemMasterView: React.FC = () => {
 
           {(userRole === 'admin' || userRole === 'compras') && (
             <button
-              onClick={() => setIsModalOpen(true)}
+              onClick={handleOpenNewItemModal}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-600 text-white font-semibold text-xs hover:bg-orange-700 shadow-sm transition"
             >
               <Plus className="w-4 h-4" />
@@ -241,6 +264,10 @@ export const ItemMasterView: React.FC = () => {
                 <span className="font-bold text-slate-900">{selectedItemDetail.category}</span>
               </div>
               <div className="bg-slate-50 p-3 rounded-xl">
+                <span className="text-slate-400 block font-medium">Subrubro:</span>
+                <span className="font-bold text-slate-900">{selectedItemDetail.subcategory || '-'}</span>
+              </div>
+              <div className="bg-slate-50 p-3 rounded-xl">
                 <span className="text-slate-400 block font-medium">Marca:</span>
                 <span className="font-bold text-slate-900">{selectedItemDetail.brand}</span>
               </div>
@@ -251,6 +278,12 @@ export const ItemMasterView: React.FC = () => {
               <div className="bg-slate-50 p-3 rounded-xl">
                 <span className="text-slate-400 block font-medium">Unidad de Compra:</span>
                 <span className="font-bold text-slate-900">{selectedItemDetail.purchaseUnit}</span>
+              </div>
+              <div className="bg-slate-50 p-3 rounded-xl">
+                <span className="text-slate-400 block font-medium">Cantidad Disponible:</span>
+                <span className={`font-black ${selectedItemDetail.currentStock <= selectedItemDetail.minStock ? 'text-rose-600' : 'text-emerald-600'}`}>
+                  {selectedItemDetail.currentStock} {selectedItemDetail.storageUnit}
+                </span>
               </div>
             </div>
 
@@ -274,6 +307,32 @@ export const ItemMasterView: React.FC = () => {
                       </div>
                     );
                   })}
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-slate-100">
+              <h4 className="font-bold text-xs text-slate-700 mb-2">Historial de Precios / Ingresos:</h4>
+              <div className="max-h-32 overflow-y-auto space-y-1.5 text-xs pr-1">
+                {priceHistory.filter(ph => ph.itemId === selectedItemDetail.id).length === 0 ? (
+                  <p className="text-slate-400 italic">No hay registros de cambios de precio para este insumo.</p>
+                ) : (
+                  priceHistory.filter(ph => ph.itemId === selectedItemDetail.id).map(ph => {
+                    const p = providers.find((prov) => prov.id === ph.providerId);
+                    const providerName = p?.name || (ph.providerId === 'manual' ? 'Edición Manual' : 'Desconocido');
+                    return (
+                      <div key={ph.id} className="p-2 bg-slate-50 rounded-xl flex items-center justify-between border border-slate-200">
+                        <div>
+                          <span className="font-bold text-slate-900 block">{new Date(ph.date).toLocaleDateString('es-AR')}</span>
+                          <span className="text-[10px] text-slate-500">{providerName}</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[10px] text-slate-400 block line-through">${ph.oldPrice.toLocaleString('es-AR')}</span>
+                          <span className="font-black text-emerald-600">${ph.newPrice.toLocaleString('es-AR')}</span>
+                        </div>
+                      </div>
+                    )
+                  })
+                )}
               </div>
             </div>
 
@@ -319,19 +378,31 @@ export const ItemMasterView: React.FC = () => {
               <div>
                 <label className="font-bold text-slate-700 block mb-1">Categoría / Rubro:</label>
                 <SelectWithInlineAdd
-                  options={[
-                    { value: 'Lácteos', label: 'Lácteos' },
-                    { value: 'Almacén', label: 'Almacén' },
-                    { value: 'Carnicería', label: 'Carnicería' },
-                    { value: 'Verdulería', label: 'Verdulería' },
-                    { value: 'Bebidas', label: 'Bebidas' },
-                    { value: 'Avícola', label: 'Avícola' },
-                  ]}
+                  options={itemCategories.map(c => ({ value: c, label: c }))}
                   value={formCategory}
                   onChange={(e) => setFormCategory(e.target.value)}
-                  onInlineAdd={(newCat) => setFormCategory(newCat)}
+                  onInlineAdd={(newCat) => {
+                    setItemCategories(prev => [...prev, newCat]);
+                    setFormCategory(newCat);
+                  }}
                   inlineAddTitle="Agregar Rubro"
                   inlineAddPlaceholder="Ej. Pescadería"
+                  requiredPermission="canInlineCreate"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Subrubro:</label>
+                <SelectWithInlineAdd
+                  options={itemSubcategories.map(c => ({ value: c, label: c }))}
+                  value={formSubcategory}
+                  onChange={(e) => setFormSubcategory(e.target.value)}
+                  onInlineAdd={(newSub) => {
+                    setItemSubcategories(prev => [...prev, newSub]);
+                    setFormSubcategory(newSub);
+                  }}
+                  inlineAddTitle="Agregar Subrubro"
+                  inlineAddPlaceholder="Ej. Lomo"
                   requiredPermission="canInlineCreate"
                 />
               </div>
@@ -343,6 +414,48 @@ export const ItemMasterView: React.FC = () => {
                   value={formBrand}
                   onChange={(e) => setFormBrand(e.target.value)}
                   placeholder="Ej.: La Serenísima"
+                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Unidad de Medida (Almacenamiento):</label>
+                <SelectWithInlineAdd
+                  options={itemUnits.map(u => ({ value: u, label: u }))}
+                  value={formStorageUnit}
+                  onChange={(e) => setFormStorageUnit(e.target.value)}
+                  onInlineAdd={(newUnit) => {
+                    setItemUnits(prev => [...prev, newUnit]);
+                    setFormStorageUnit(newUnit);
+                  }}
+                  inlineAddTitle="Agregar Unidad"
+                  inlineAddPlaceholder="Ej. mg"
+                  requiredPermission="canInlineCreate"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Unidad de Compra:</label>
+                <SelectWithInlineAdd
+                  options={itemUnits.map(u => ({ value: u, label: u }))}
+                  value={formPurchaseUnit}
+                  onChange={(e) => setFormPurchaseUnit(e.target.value)}
+                  onInlineAdd={(newUnit) => {
+                    setItemUnits(prev => [...prev, newUnit]);
+                    setFormPurchaseUnit(newUnit);
+                  }}
+                  inlineAddTitle="Agregar Unidad"
+                  inlineAddPlaceholder="Ej. Caja 5kg"
+                  requiredPermission="canInlineCreate"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-700 block mb-1">Cantidad por Unidad de Compra (Empaque):</label>
+                <input
+                  type="number"
+                  value={formPackQty}
+                  onChange={(e) => setFormPackQty(e.target.value)}
                   className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl"
                 />
               </div>
