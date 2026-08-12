@@ -30,6 +30,16 @@ export const DEFAULT_RUBROS: string[] = [
   'Varios',
 ];
 
+export const INITIAL_ITEM_CATEGORIES: string[] = [
+  'Carnes', 'Lácteos', 'Bebidas', 'Almacén', 'Verduras', 'Limpieza', 'Varios'
+];
+export const INITIAL_ITEM_SUBCATEGORIES: string[] = [
+  'Vacuna', 'Pollo', 'Cerdo', 'Quesos', 'Leche', 'Gaseosas', 'Cervezas', 'Vinos', 'Secos', 'Encurtidos'
+];
+export const INITIAL_ITEM_UNITS: string[] = [
+  'kg', 'L', 'un', 'caja', 'bulto', 'botella', 'lata', 'paquete', 'bolsa'
+];
+
 export const INITIAL_RECEPTION_HOURS: ReceptionHoursConfig = {
   morningStart: '08:00',
   morningEnd: '12:00',

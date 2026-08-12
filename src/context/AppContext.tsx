@@ -52,11 +52,13 @@ import {
   INITIAL_AUDIT_LOGS,
   INITIAL_EMPLOYEES,
   INITIAL_CLOCK_RECORDS,
-  INITIAL_EMPLOYEE_CONSUMPTIONS,
   INITIAL_EMPLOYEE_ADVANCES,
   INITIAL_PAYRUNS,
   DEFAULT_POSITIONS,
   DEFAULT_PROFILES,
+  INITIAL_ITEM_CATEGORIES,
+  INITIAL_ITEM_SUBCATEGORIES,
+  INITIAL_ITEM_UNITS,
 } from '../data/initialData';
 import {
   INITIAL_MASTER_CASH_BOXES,
@@ -143,6 +145,12 @@ interface AppContextType {
   auditLogs: AuditLog[];
   branding: BrandingConfig;
   updateBranding: (newConfig: Partial<BrandingConfig>) => void;
+  itemCategories: string[];
+  itemSubcategories: string[];
+  itemUnits: string[];
+  setItemCategories: React.Dispatch<React.SetStateAction<string[]>>;
+  setItemSubcategories: React.Dispatch<React.SetStateAction<string[]>>;
+  setItemUnits: React.Dispatch<React.SetStateAction<string[]>>;
   employees: Employee[];
   addOrUpdateEmployee: (emp: Employee) => void;
   toggleEmployeeStatus: (employeeId: string) => void;
@@ -348,11 +356,47 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return INITIAL_EMPLOYEES;
   });
 
+  const [itemCategories, setItemCategories] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('plegma_item_categories');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return INITIAL_ITEM_CATEGORIES;
+  });
+
+  const [itemSubcategories, setItemSubcategories] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('plegma_item_subcategories');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return INITIAL_ITEM_SUBCATEGORIES;
+  });
+
+  const [itemUnits, setItemUnits] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('plegma_item_units');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return INITIAL_ITEM_UNITS;
+  });
+
   useEffect(() => {
     try {
       localStorage.setItem('plegma_employees', JSON.stringify(employees));
     } catch (e) {}
   }, [employees]);
+
+  useEffect(() => {
+    localStorage.setItem('plegma_item_categories', JSON.stringify(itemCategories));
+  }, [itemCategories]);
+
+  useEffect(() => {
+    localStorage.setItem('plegma_item_subcategories', JSON.stringify(itemSubcategories));
+  }, [itemSubcategories]);
+
+  useEffect(() => {
+    localStorage.setItem('plegma_item_units', JSON.stringify(itemUnits));
+  }, [itemUnits]);
 
   const addOrUpdateEmployee = (emp: Employee) => {
     setEmployees((prev) => {
@@ -2439,6 +2483,24 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const addOrUpdateItem = (item: Item, providerRelations?: Partial<ProviderItemRelation>[]) => {
+    const existingItem = items.find((i) => i.id === item.id);
+    if (existingItem && existingItem.currentPrice !== item.currentPrice) {
+      const oldPrice = existingItem.currentPrice;
+      const varPct = Number((((item.currentPrice - oldPrice) / oldPrice) * 100).toFixed(2));
+      const priceEntry: PriceHistoryEntry = {
+        id: 'ph-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+        itemId: item.id,
+        providerId: 'manual',
+        date: new Date().toISOString().split('T')[0],
+        oldPrice: oldPrice,
+        newPrice: item.currentPrice,
+        variationPercentage: varPct,
+        userId: `usr-${userRole}`,
+      };
+      setPriceHistory((ph) => [priceEntry, ...ph]);
+      logAudit('Actualización de Precio Manual', 'precio', item.id, `${item.name}: de $${oldPrice} a $${item.currentPrice} (${varPct}%)`);
+    }
+
     setItems((prev) => {
       const idx = prev.findIndex((i) => i.id === item.id);
       if (idx >= 0) {
@@ -2601,6 +2663,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         addOrUpdateProvider,
         addOrUpdateItem,
         resetToDefaults,
+        itemCategories,
+        itemSubcategories,
+        itemUnits,
+        setItemCategories,
+        setItemSubcategories,
+        setItemUnits,
       }}
     >
       {children}

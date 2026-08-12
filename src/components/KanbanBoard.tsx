@@ -14,6 +14,8 @@ import {
   ArrowRight,
   SlidersHorizontal,
   Clock,
+  Plus,
+  X,
 } from 'lucide-react';
 
 interface KanbanBoardProps {
@@ -49,6 +51,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     getProviderState,
     getProviderActiveOrder,
     moveProviderToPosition,
+    updateProviderDays,
     userRole,
     receptionHours,
     branding,
@@ -61,6 +64,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   // Drag and drop state
   const [draggedCard, setDraggedCard] = useState<{ providerId: string; sourceDay: DayOfWeek } | null>(null);
   const [dragOverTarget, setDragOverTarget] = useState<string | null>(null);
+  const [addProviderDay, setAddProviderDay] = useState<DayOfWeek | null>(null);
+  const [providerToAdd, setProviderToAdd] = useState<string>('');
 
   const currentDay = getCurrentDayName();
 
@@ -334,9 +339,20 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                     </span>
                   )}
                 </div>
-                <span className="text-xs font-bold text-slate-500 bg-slate-200/80 px-2 py-0.5 rounded-full">
-                  {dayProviders.length}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  {(userRole === 'admin' || userRole === 'compras') && (
+                    <button
+                      onClick={() => setAddProviderDay(day)}
+                      className="w-5 h-5 flex items-center justify-center rounded-md bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 transition"
+                      title={`Agregar proveedor al día ${day}`}
+                    >
+                      <Plus className="w-3 h-3" />
+                    </button>
+                  )}
+                  <span className="text-xs font-bold text-slate-500 bg-slate-200/80 px-2 py-0.5 rounded-full">
+                    {dayProviders.length}
+                  </span>
+                </div>
               </div>
 
               {/* Provider Cards Container */}
@@ -430,12 +446,25 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
                             {/* Drag Handle Icon (Admin/Compras) */}
                             {(userRole === 'admin' || userRole === 'compras') && (
-                              <div
-                                className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-grab active:cursor-grabbing transition shrink-0"
-                                title="Mantén presionado para arrastrar y reordenar la tarjeta"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <GripVertical className="w-4 h-4" />
+                              <div className="flex items-center gap-0.5">
+                                <div
+                                  className="p-1 rounded text-rose-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer transition shrink-0"
+                                  title="Quitar de este día"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const newOrderDays = (provider.orderDays || []).filter(d => d !== day);
+                                    updateProviderDays(provider.id, newOrderDays, provider.deliveryDays || []);
+                                  }}
+                                >
+                                  <X className="w-4 h-4" />
+                                </div>
+                                <div
+                                  className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-grab active:cursor-grabbing transition shrink-0"
+                                  title="Mantén presionado para arrastrar y reordenar la tarjeta"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <GripVertical className="w-4 h-4" />
+                                </div>
                               </div>
                             )}
                           </div>
@@ -540,6 +569,64 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
           );
         })}
       </div>
+
+      {/* Add Provider to Day Modal Overlay */}
+      {addProviderDay && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl">
+            <h3 className="text-lg font-bold text-slate-900 mb-4">
+              Agregar Proveedor a {addProviderDay}
+            </h3>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-bold text-slate-700 mb-1">
+                Seleccionar Proveedor
+              </label>
+              <select
+                className="w-full bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                value={providerToAdd}
+                onChange={(e) => setProviderToAdd(e.target.value)}
+              >
+                <option value="">-- Seleccionar --</option>
+                {providers
+                  .filter(p => p.active && !(p.orderDays || []).includes(addProviderDay))
+                  .map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))
+                }
+              </select>
+            </div>
+
+            <div className="flex items-center gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setAddProviderDay(null);
+                  setProviderToAdd('');
+                }}
+                className="px-4 py-2 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition"
+              >
+                Cancelar
+              </button>
+              <button
+                disabled={!providerToAdd}
+                onClick={() => {
+                  const p = providers.find(p => p.id === providerToAdd);
+                  if (p) {
+                    const newOrderDays = Array.from(new Set([...(p.orderDays || []), addProviderDay]));
+                    updateProviderDays(p.id, newOrderDays, p.deliveryDays || []);
+                  }
+                  setAddProviderDay(null);
+                  setProviderToAdd('');
+                }}
+                className="px-4 py-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition"
+                style={{ backgroundColor: branding?.primaryHex || undefined }}
+              >
+                Agregar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

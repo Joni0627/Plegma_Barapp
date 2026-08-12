@@ -57,6 +57,8 @@ export const ClockView: React.FC = () => {
     const result = clockIn(cleanDni);
     if (result.success) {
       setFeedbackMessage({ type: 'success', text: result.message });
+      setDniInput('');
+      setTimeout(() => setFeedbackMessage(null), 4000);
     } else {
       setFeedbackMessage({ type: 'error', text: result.message });
     }
@@ -71,6 +73,8 @@ export const ClockView: React.FC = () => {
     const result = clockOut(cleanDni);
     if (result.success) {
       setFeedbackMessage({ type: 'success', text: result.message });
+      setDniInput('');
+      setTimeout(() => setFeedbackMessage(null), 4000);
     } else {
       setFeedbackMessage({ type: 'error', text: result.message });
     }

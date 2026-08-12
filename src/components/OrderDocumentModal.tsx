@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Order } from '../types';
 import {
@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   FileText,
   Store,
+  Edit2,
 } from 'lucide-react';
 
 interface OrderDocumentModalProps {
@@ -19,8 +20,22 @@ interface OrderDocumentModalProps {
 }
 
 export const OrderDocumentModal: React.FC<OrderDocumentModalProps> = ({ order, onClose }) => {
-  const { providers } = useApp();
+  const { providers, branding, updateBranding } = useApp();
   const provider = providers.find((p) => p.id === order.providerId);
+
+  const [isEditingHeader, setIsEditingHeader] = useState(false);
+  const [headerData, setHeaderData] = useState({
+    companyName: branding.companyName || 'RESTAURANTE SANTA FÉ',
+    companySubtitle: branding.companySubtitle || 'Gastronomía & Abastecimiento Central',
+    address: branding.address || 'Av. Corrientes 1450, CABA',
+    phone: branding.phone || '(011) 4300-9988',
+    cuit: branding.cuit || '30-71998877-4',
+  });
+
+  const handleSaveHeader = () => {
+    updateBranding(headerData);
+    setIsEditingHeader(false);
+  };
 
   const handlePrint = () => {
     window.print();
@@ -41,8 +56,8 @@ export const OrderDocumentModal: React.FC<OrderDocumentModalProps> = ({ order, o
   );
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[92vh] border border-slate-200">
+    <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto print:static print:bg-transparent print:p-0 print:block">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[92vh] border border-slate-200 print:shadow-none print:border-none print:max-h-none print:w-full print:block print:rounded-none">
         {/* Top Actions Bar (Non-printable) */}
         <div className="bg-slate-900 text-white p-4 flex items-center justify-between border-b border-slate-800 print:hidden shrink-0">
           <div className="flex items-center gap-2">
@@ -81,24 +96,44 @@ export const OrderDocumentModal: React.FC<OrderDocumentModalProps> = ({ order, o
         </div>
 
         {/* PRINTABLE DOCUMENT BODY */}
-        <div className="flex-1 overflow-y-auto p-8 bg-white text-slate-900 space-y-6 print:p-0">
+        <div className="flex-1 overflow-y-auto p-8 bg-white text-slate-900 space-y-6 print:p-0 print:overflow-visible print:block">
           {/* Company Membered Header */}
           <div className="border-b-2 border-slate-900 pb-6 flex items-start justify-between">
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-2xl bg-slate-900 text-white flex items-center justify-center font-black text-xl shadow-md">
                 <Store className="w-8 h-8 text-orange-500" />
               </div>
-              <div>
-                <h1 className="text-xl font-black tracking-tight text-slate-900">
-                  RESTAURANTE SANTA FÉ
-                </h1>
-                <p className="text-xs text-slate-600 font-medium">
-                  Gastronomía & Abastecimiento Central
-                </p>
-                <p className="text-[11px] text-slate-500 mt-0.5">
-                  Av. Corrientes 1450, CABA • Tel: (011) 4300-9988 • CUIT: 30-71998877-4
-                </p>
-              </div>
+              {isEditingHeader ? (
+                <div className="flex flex-col gap-1.5 w-72 print:hidden bg-slate-50 p-3 rounded-xl border border-slate-200 shadow-sm">
+                  <input className="border border-slate-300 rounded px-2 py-1 text-xs font-bold text-slate-900 focus:outline-orange-500" value={headerData.companyName} onChange={e => setHeaderData({...headerData, companyName: e.target.value})} placeholder="Razón Social" />
+                  <input className="border border-slate-300 rounded px-2 py-1 text-xs text-slate-800 focus:outline-orange-500" value={headerData.companySubtitle} onChange={e => setHeaderData({...headerData, companySubtitle: e.target.value})} placeholder="Actividad / Subtítulo" />
+                  <input className="border border-slate-300 rounded px-2 py-1 text-[11px] text-slate-700 focus:outline-orange-500" value={headerData.address} onChange={e => setHeaderData({...headerData, address: e.target.value})} placeholder="Dirección" />
+                  <div className="flex gap-2">
+                    <input className="border border-slate-300 rounded px-2 py-1 text-[11px] text-slate-700 w-1/2 focus:outline-orange-500" value={headerData.phone} onChange={e => setHeaderData({...headerData, phone: e.target.value})} placeholder="Teléfono" />
+                    <input className="border border-slate-300 rounded px-2 py-1 text-[11px] text-slate-700 w-1/2 focus:outline-orange-500" value={headerData.cuit} onChange={e => setHeaderData({...headerData, cuit: e.target.value})} placeholder="CUIT" />
+                  </div>
+                  <button onClick={handleSaveHeader} className="mt-1 bg-orange-600 hover:bg-orange-500 transition text-white text-xs font-bold py-1.5 rounded-lg">Guardar Membrete</button>
+                </div>
+              ) : (
+                <div className="relative group">
+                  <h1 className="text-xl font-black tracking-tight text-slate-900">
+                    {branding.companyName || 'RESTAURANTE SANTA FÉ'}
+                  </h1>
+                  <p className="text-xs text-slate-600 font-medium">
+                    {branding.companySubtitle || 'Gastronomía & Abastecimiento Central'}
+                  </p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    {branding.address || 'Av. Corrientes 1450, CABA'} • Tel: {branding.phone || '(011) 4300-9988'} • CUIT: {branding.cuit || '30-71998877-4'}
+                  </p>
+                  <button 
+                    onClick={() => setIsEditingHeader(true)}
+                    className="absolute -right-8 top-1 p-1.5 bg-slate-100 text-slate-500 hover:text-orange-600 hover:bg-orange-50 rounded-lg hidden group-hover:block print:hidden shadow-xs border border-slate-200 transition"
+                    title="Editar Membrete Comercial"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="text-right">

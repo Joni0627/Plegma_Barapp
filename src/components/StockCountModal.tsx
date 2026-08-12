@@ -261,6 +261,8 @@ export const StockCountModal: React.FC<StockCountModalProps> = ({
                   <thead>
                     <tr className="bg-slate-100 text-slate-600 font-bold border-b border-slate-200">
                       <th className="p-3">Insumo</th>
+                      <th className="p-3 text-center">Stock Mín.</th>
+                      <th className="p-3 text-center">Stock Máx.</th>
                       <th className="p-3 text-center">Stock Ant.</th>
                       <th className="p-3 text-center">Stock Contado</th>
                       <th className="p-3 text-center">Consumo Est.</th>
@@ -283,11 +285,14 @@ export const StockCountModal: React.FC<StockCountModalProps> = ({
 
                       return (
                         <tr key={ci.itemId} className="hover:bg-slate-50">
-                          <td className="p-3">
-                            <span className="font-bold text-slate-900 block">{itemObj.name}</span>
-                            <span className="text-[10px] text-slate-400">
-                              Mín: {itemObj.minStock} | Máx: {itemObj.maxStock} {itemObj.storageUnit}
-                            </span>
+                          <td className="p-3 font-bold text-slate-900">
+                            {itemObj.name}
+                          </td>
+                          <td className="p-3 text-center text-slate-500">
+                            {itemObj.minStock} {itemObj.storageUnit}
+                          </td>
+                          <td className="p-3 text-center text-slate-500">
+                            {itemObj.maxStock} {itemObj.storageUnit}
                           </td>
                           <td className="p-3 text-center text-slate-500 font-medium">
                             {ci.previousStock} {itemObj.storageUnit}
