@@ -4,6 +4,8 @@ import { Payrun, PayrunEmployeeDetail, PayrunStatus, EmployeePayrunStatus } from
 import { PayrunModal } from './PayrunModal';
 import { PayrunReceiptModal } from './PayrunReceiptModal';
 import { StandardDataTable, Column } from './ui/DataTable';
+import { ModuleHelpModal } from './ui/ModuleHelpModal';
+import { ConfirmModal } from './ui/ConfirmModal';
 import {
   FileText,
   Plus,
@@ -20,6 +22,7 @@ import {
   Ban,
   Clock,
   UserCheck,
+  HelpCircle,
 } from 'lucide-react';
 
 export const PayrunsView: React.FC = () => {
@@ -29,9 +32,11 @@ export const PayrunsView: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
   const [selectedPayrun, setSelectedPayrun] = useState<Payrun | null>(null);
+  const [payrunToVoid, setPayrunToVoid] = useState<Payrun | null>(null);
 
   // Modals state
   const [isPayrunModalOpen, setIsPayrunModalOpen] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [viewingEmployeeReceipt, setViewingEmployeeReceipt] = useState<{
     payrun: Payrun;
     detail: PayrunEmployeeDetail;
@@ -60,9 +65,14 @@ export const PayrunsView: React.FC = () => {
   const grandTotalPending = payruns.reduce((sum, p) => sum + (p.status !== 'Anulada' ? p.totalPending : 0), 0);
 
   const handleVoidPayrun = (payrun: Payrun) => {
-    if (confirm(`¿Está seguro de anular la liquidación ${payrun.periodName}?`)) {
-      voidPayrun(payrun.id);
+    setPayrunToVoid(payrun);
+  };
+
+  const confirmVoidPayrun = () => {
+    if (payrunToVoid) {
+      voidPayrun(payrunToVoid.id);
       showToast('Liquidación anulada exitosamente.', 'error');
+      setPayrunToVoid(null);
     }
   };
 
@@ -182,6 +192,13 @@ export const PayrunsView: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsHelpOpen(true)}
+            className="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl transition"
+            title="Ayuda del módulo"
+          >
+            <HelpCircle className="w-5 h-5" />
+          </button>
           <button
             onClick={handleExportExcel}
             className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-extrabold text-xs rounded-xl transition"
@@ -439,6 +456,26 @@ export const PayrunsView: React.FC = () => {
           onClose={() => setViewingEmployeeReceipt(null)}
         />
       )}
+
+      {/* Modal Ayuda */}
+      {isHelpOpen && (
+        <ModuleHelpModal
+          module="payruns"
+          onClose={() => setIsHelpOpen(false)}
+        />
+      )}
+
+      {/* ConfirmModal para Anular Liquidación */}
+      <ConfirmModal
+        isOpen={!!payrunToVoid}
+        title="Anular Liquidación"
+        message={`¿Estás seguro que deseas anular la liquidación "${payrunToVoid?.periodName}"? Esta acción no se puede deshacer y las marcaciones volverán a estar disponibles.`}
+        confirmText="Sí, Anular"
+        cancelText="Cancelar"
+        type="danger"
+        onConfirm={confirmVoidPayrun}
+        onCancel={() => setPayrunToVoid(null)}
+      />
     </div>
   );
 };

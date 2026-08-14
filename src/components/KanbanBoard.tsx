@@ -14,9 +14,11 @@ import {
   ArrowRight,
   SlidersHorizontal,
   Clock,
-  Plus,
   X,
+  HelpCircle,
+  Plus,
 } from 'lucide-react';
+import { ModuleHelpModal } from './ui/ModuleHelpModal';
 
 interface KanbanBoardProps {
   onSelectProvider: (provider: Provider) => void;
@@ -58,6 +60,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   } = useApp();
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [selectedRubro, setSelectedRubro] = useState<string>('todos');
   const [selectedDayMobile, setSelectedDayMobile] = useState<DayOfWeek>(getCurrentDayName());
 
@@ -204,6 +207,16 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
         {/* Filters */}
         <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 w-full md:w-auto">
+          {/* Action: Guía de uso */}
+          <button
+            onClick={() => setIsHelpOpen(true)}
+            className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 text-slate-600 font-semibold text-xs hover:bg-slate-50 transition w-full sm:w-auto"
+            title="Ver guía de uso de este módulo"
+          >
+            <HelpCircle className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Guía de Uso</span>
+          </button>
+
           {/* Search Input */}
           <div className="relative w-full sm:w-56">
             <input
@@ -626,6 +639,13 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {isHelpOpen && (
+        <ModuleHelpModal
+          module="kanban"
+          onClose={() => setIsHelpOpen(false)}
+        />
       )}
     </div>
   );

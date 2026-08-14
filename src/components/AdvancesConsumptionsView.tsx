@@ -9,6 +9,7 @@ import {
 } from '../types';
 import { AdvanceModal } from './AdvanceModal';
 import { StandardDataTable, Column } from './ui/DataTable';
+import { ConfirmModal } from './ui/ConfirmModal';
 import {
   CreditCard,
   Plus,
@@ -49,6 +50,7 @@ export const AdvancesConsumptionsView: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [activeTab, setActiveTab] = useState<'adelantos' | 'consumos'>('adelantos');
+  const [advanceToVoid, setAdvanceToVoid] = useState<EmployeeAdvance | null>(null);
 
   // Modals state
   const [isAdvanceModalOpen, setIsAdvanceModalOpen] = useState(false);
@@ -110,9 +112,14 @@ export const AdvancesConsumptionsView: React.FC = () => {
       showToast('No se pueden anular adelantos que ya fueron totalmente descontados en liquidación.', 'warning');
       return;
     }
-    if (confirm(`¿Está seguro de anular el adelanto de $${adv.amount.toLocaleString('es-AR')}?`)) {
-      voidAdvance(adv.id);
+    setAdvanceToVoid(adv);
+  };
+
+  const confirmVoidAdvance = () => {
+    if (advanceToVoid) {
+      voidAdvance(advanceToVoid.id);
       showToast('Adelanto anulado exitosamente.', 'error');
+      setAdvanceToVoid(null);
     }
   };
 
@@ -509,9 +516,24 @@ export const AdvancesConsumptionsView: React.FC = () => {
         <AdvanceModal
           advanceToEdit={editingAdvance}
           initialEmployee={selectedEmployee}
-          onClose={() => setIsAdvanceModalOpen(false)}
+          onClose={() => {
+            setIsAdvanceModalOpen(false);
+            setEditingAdvance(null);
+          }}
         />
       )}
+
+      {/* ConfirmModal para Anular Adelanto */}
+      <ConfirmModal
+        isOpen={!!advanceToVoid}
+        title="Anular Adelanto"
+        message={`¿Estás seguro que deseas anular el adelanto de $${advanceToVoid?.amount.toLocaleString('es-AR')} asignado a ${selectedEmployee?.name || 'este empleado'}? Esta acción no se puede deshacer.`}
+        confirmText="Sí, Anular"
+        cancelText="Cancelar"
+        type="danger"
+        onConfirm={confirmVoidAdvance}
+        onCancel={() => setAdvanceToVoid(null)}
+      />
 
       {/* Modal Ver Cuotas de Adelanto */}
       {viewingInstallmentsAdvance && (

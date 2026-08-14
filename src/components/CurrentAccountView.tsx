@@ -14,9 +14,11 @@ import {
   UserCheck,
   Edit,
   Eye,
+  HelpCircle,
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { StandardDataTable } from './ui/DataTable';
+import { ModuleHelpModal } from './ui/ModuleHelpModal';
 import { useApp } from '../context/AppContext';
 import { Client, CurrentAccountMovement, Receipt as ReceiptType, EmployeeConsumption } from '../types';
 import {
@@ -678,6 +680,7 @@ export function CurrentAccountView() {
   const [movements, setMovements] = useState<CurrentAccountMovement[]>(INITIAL_CC_MOVEMENTS);
   const [receipts, setReceipts] = useState<ReceiptType[]>(INITIAL_RECEIPTS);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   const handleDataChange = (
     newMovements: CurrentAccountMovement[],
@@ -810,6 +813,16 @@ export function CurrentAccountView() {
             Gestión de cuentas corrientes de clientes, consumos y recibos
           </p>
         </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            leftIcon={<HelpCircle className="w-4 h-4" />}
+            onClick={() => setIsHelpOpen(true)}
+            className="hidden sm:flex"
+          >
+            Guía de Uso
+          </Button>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -850,9 +863,14 @@ export function CurrentAccountView() {
         searchFilterKey={(c) => `${c.name} ${c.code} ${c.phone}`}
         searchPlaceholder="Buscar cliente..."
         emptyMessage="No hay clientes con cuenta corriente habilitada."
-        emptyIcon={<Users className="w-8 h-8 text-slate-300" />}
-        onRowClick={(c) => setSelectedClient(c)}
       />
+
+      {isHelpOpen && (
+        <ModuleHelpModal
+          module="currentAccount"
+          onClose={() => setIsHelpOpen(false)}
+        />
+      )}
     </div>
   );
 }

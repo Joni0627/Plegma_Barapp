@@ -57,7 +57,7 @@ export const OrderDocumentModal: React.FC<OrderDocumentModalProps> = ({ order, o
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto print:static print:bg-transparent print:p-0 print:block">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[92vh] border border-slate-200 print:shadow-none print:border-none print:max-h-none print:w-full print:block print:rounded-none">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[92vh] border border-slate-200 print:shadow-none print:border-none print:max-h-none print:max-w-none print:w-full print:block print:rounded-none">
         {/* Top Actions Bar (Non-printable) */}
         <div className="bg-slate-900 text-white p-4 flex items-center justify-between border-b border-slate-800 print:hidden shrink-0">
           <div className="flex items-center gap-2">
@@ -96,7 +96,7 @@ export const OrderDocumentModal: React.FC<OrderDocumentModalProps> = ({ order, o
         </div>
 
         {/* PRINTABLE DOCUMENT BODY */}
-        <div className="flex-1 overflow-y-auto p-8 bg-white text-slate-900 space-y-6 print:p-0 print:overflow-visible print:block">
+        <div className="flex-1 overflow-y-auto p-8 bg-white text-slate-900 space-y-6 print:p-8 print:overflow-visible print:block">
           {/* Company Membered Header */}
           <div className="border-b-2 border-slate-900 pb-6 flex items-start justify-between">
             <div className="flex items-center gap-4">
@@ -116,13 +116,13 @@ export const OrderDocumentModal: React.FC<OrderDocumentModalProps> = ({ order, o
                 </div>
               ) : (
                 <div className="relative group">
-                  <h1 className="text-xl font-black tracking-tight text-slate-900">
+                  <h1 className="text-xl print:text-3xl font-black tracking-tight text-slate-900">
                     {branding.companyName || 'RESTAURANTE SANTA FÉ'}
                   </h1>
-                  <p className="text-xs text-slate-600 font-medium">
+                  <p className="text-xs print:text-sm text-slate-600 font-medium">
                     {branding.companySubtitle || 'Gastronomía & Abastecimiento Central'}
                   </p>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
+                  <p className="text-[11px] print:text-xs text-slate-500 mt-0.5">
                     {branding.address || 'Av. Corrientes 1450, CABA'} • Tel: {branding.phone || '(011) 4300-9988'} • CUIT: {branding.cuit || '30-71998877-4'}
                   </p>
                   <button 
@@ -137,25 +137,25 @@ export const OrderDocumentModal: React.FC<OrderDocumentModalProps> = ({ order, o
             </div>
 
             <div className="text-right">
-              <span className="bg-slate-900 text-white text-xs font-black px-3 py-1 rounded-lg uppercase tracking-wider inline-block">
+              <span className="bg-slate-900 text-white text-xs print:text-sm font-black px-3 py-1 rounded-lg uppercase tracking-wider inline-block">
                 ORDEN DE COMPRA
               </span>
-              <h2 className="text-lg font-black text-orange-600 font-mono mt-1">
+              <h2 className="text-lg print:text-xl font-black text-orange-600 font-mono mt-1">
                 #{order.orderNumber}
               </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <p className="text-xs print:text-sm text-slate-500 mt-0.5">
                 Fecha Emisión: {new Date(order.date).toLocaleDateString('es-AR')}
               </p>
             </div>
           </div>
 
           {/* Provider & Delivery Info */}
-          <div className="grid grid-cols-2 gap-6 bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs">
+          <div className="grid grid-cols-2 gap-6 bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs print:text-sm">
             <div>
               <span className="text-slate-400 font-extrabold uppercase tracking-wider block mb-1">
                 PROVEEDOR:
               </span>
-              <p className="font-extrabold text-slate-900 text-sm">{provider?.name}</p>
+              <p className="font-extrabold text-slate-900 text-sm print:text-base">{provider?.name}</p>
               <p className="text-slate-600">{provider?.commercialName}</p>
               <p className="text-slate-600">Contacto: {provider?.contactName}</p>
               <p className="text-slate-600">Tel / WA: {provider?.phone}</p>
@@ -166,7 +166,7 @@ export const OrderDocumentModal: React.FC<OrderDocumentModalProps> = ({ order, o
               <span className="text-slate-400 font-extrabold uppercase tracking-wider block mb-1">
                 DETALLES DE ENTREGA:
               </span>
-              <p className="font-bold text-slate-900 text-sm">
+              <p className="font-bold text-slate-900 text-sm print:text-base">
                 Fecha Esperada:{' '}
                 <span className="text-orange-600">
                   {new Date(order.expectedDeliveryDate).toLocaleDateString('es-AR')}
@@ -179,22 +179,22 @@ export const OrderDocumentModal: React.FC<OrderDocumentModalProps> = ({ order, o
 
           {/* Items Table */}
           <div className="border border-slate-300 rounded-2xl overflow-hidden">
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full text-left border-collapse text-xs print:text-sm">
               <thead>
                 <tr className="bg-slate-900 text-white font-bold">
-                  <th className="p-3 w-12 text-center">#</th>
-                  <th className="p-3">Descripción de Insumo / Producto</th>
-                  <th className="p-3 text-center">Unidad de Presentación</th>
-                  <th className="p-3 text-center font-extrabold">Cantidad Solicitada</th>
+                  <th className="p-3 print:py-4 w-12 text-center">#</th>
+                  <th className="p-3 print:py-4">Descripción de Insumo / Producto</th>
+                  <th className="p-3 print:py-4 text-center">Unidad de Presentación</th>
+                  <th className="p-3 print:py-4 text-center font-extrabold">Cantidad Solicitada</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {order.items.map((it, idx) => (
                   <tr key={it.itemId} className="even:bg-slate-50">
-                    <td className="p-3 text-center font-mono text-slate-400">{idx + 1}</td>
-                    <td className="p-3 font-bold text-slate-900">{it.itemName}</td>
-                    <td className="p-3 text-center font-semibold text-slate-700">{it.unit}</td>
-                    <td className="p-3 text-center font-black text-base text-slate-900">
+                    <td className="p-3 print:py-4 text-center font-mono text-slate-400">{idx + 1}</td>
+                    <td className="p-3 print:py-4 font-bold text-slate-900">{it.itemName}</td>
+                    <td className="p-3 print:py-4 text-center font-semibold text-slate-700">{it.unit}</td>
+                    <td className="p-3 print:py-4 text-center font-black text-base print:text-xl text-slate-900">
                       {it.finalQty}
                     </td>
                   </tr>
@@ -204,19 +204,19 @@ export const OrderDocumentModal: React.FC<OrderDocumentModalProps> = ({ order, o
           </div>
 
           {/* RECEPTION HOURS BOX (COMPLIANCE RULE 24) */}
-          <div className="bg-amber-50/80 border-2 border-amber-300 p-4 rounded-2xl space-y-2">
-            <div className="flex items-center gap-2 text-amber-900 font-black text-xs uppercase tracking-wider">
-              <Clock className="w-4 h-4 text-amber-600" />
+          <div className="bg-amber-50/80 border-2 border-amber-300 p-4 print:p-6 rounded-2xl space-y-2">
+            <div className="flex items-center gap-2 text-amber-900 font-black text-xs print:text-sm uppercase tracking-wider">
+              <Clock className="w-4 h-4 print:w-5 print:h-5 text-amber-600" />
               <span>HORARIOS DE RECEPCIÓN DE MERCADERÍA EN DEPÓSITO</span>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 text-xs font-bold text-amber-950 pt-1">
+            <div className="grid grid-cols-2 gap-4 text-xs print:text-sm font-bold text-amber-950 pt-1">
               {order.receptionHoursSnapshot.morningActive && (
-                <div className="bg-white p-2.5 rounded-xl border border-amber-200">
-                  <span className="text-amber-700 block text-[10px] uppercase font-bold">
+                <div className="bg-white p-2.5 print:p-4 rounded-xl border border-amber-200">
+                  <span className="text-amber-700 block text-[10px] print:text-xs uppercase font-bold">
                     Turno Mañana:
                   </span>
-                  <p className="text-sm font-extrabold mt-0.5">
+                  <p className="text-sm print:text-base font-extrabold mt-0.5">
                     {order.receptionHoursSnapshot.morningStart} a{' '}
                     {order.receptionHoursSnapshot.morningEnd} hs
                   </p>
@@ -224,11 +224,11 @@ export const OrderDocumentModal: React.FC<OrderDocumentModalProps> = ({ order, o
               )}
 
               {order.receptionHoursSnapshot.afternoonActive && (
-                <div className="bg-white p-2.5 rounded-xl border border-amber-200">
-                  <span className="text-amber-700 block text-[10px] uppercase font-bold">
+                <div className="bg-white p-2.5 print:p-4 rounded-xl border border-amber-200">
+                  <span className="text-amber-700 block text-[10px] print:text-xs uppercase font-bold">
                     Turno Tarde:
                   </span>
-                  <p className="text-sm font-extrabold mt-0.5">
+                  <p className="text-sm print:text-base font-extrabold mt-0.5">
                     {order.receptionHoursSnapshot.afternoonStart} a{' '}
                     {order.receptionHoursSnapshot.afternoonEnd} hs
                   </p>
@@ -237,7 +237,7 @@ export const OrderDocumentModal: React.FC<OrderDocumentModalProps> = ({ order, o
             </div>
 
             {order.receptionHoursSnapshot.additionalNotes && (
-              <p className="text-[11px] text-amber-800 font-medium italic pt-1">
+              <p className="text-[11px] print:text-xs text-amber-800 font-medium italic pt-1">
                 {order.receptionHoursSnapshot.additionalNotes}
               </p>
             )}
@@ -245,7 +245,7 @@ export const OrderDocumentModal: React.FC<OrderDocumentModalProps> = ({ order, o
 
           {/* General Notes */}
           {order.generalNotes && (
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs">
+            <div className="bg-slate-50 p-4 print:p-6 rounded-2xl border border-slate-200 text-xs print:text-sm">
               <span className="font-extrabold text-slate-700 block mb-1">
                 Observaciones Adicionales:
               </span>

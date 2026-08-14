@@ -41,6 +41,8 @@ import {
   SaleOrderItem,
   OrderBillingInfo,
   SaleOrder,
+  ConfigOption,
+  CurrentAccountMovement,
 } from '../types';
 import {
   INITIAL_PROVIDERS,
@@ -82,6 +84,7 @@ import {
 } from '../data/ordersData';
 import {
   INITIAL_CC_CLIENTS,
+  INITIAL_CC_MOVEMENTS,
 } from '../data/currentAccountData';
 
 const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, UserPermissions> = {
@@ -137,6 +140,7 @@ interface AppContextType {
   updateProvider: (provider: Provider) => void;
   deleteProvider: (providerId: string) => void;
   items: Item[];
+  deleteItem: (itemId: string) => void;
   providerItems: ProviderItemRelation[];
   orders: Order[];
   stockCounts: StockCount[];
@@ -146,12 +150,12 @@ interface AppContextType {
   auditLogs: AuditLog[];
   branding: BrandingConfig;
   updateBranding: (newConfig: Partial<BrandingConfig>) => void;
-  itemCategories: string[];
-  itemSubcategories: string[];
-  itemUnits: string[];
-  setItemCategories: React.Dispatch<React.SetStateAction<string[]>>;
-  setItemSubcategories: React.Dispatch<React.SetStateAction<string[]>>;
-  setItemUnits: React.Dispatch<React.SetStateAction<string[]>>;
+  itemCategories: ConfigOption[];
+  itemSubcategories: ConfigOption[];
+  itemUnits: ConfigOption[];
+  setItemCategories: React.Dispatch<React.SetStateAction<ConfigOption[]>>;
+  setItemSubcategories: React.Dispatch<React.SetStateAction<ConfigOption[]>>;
+  setItemUnits: React.Dispatch<React.SetStateAction<ConfigOption[]>>;
   employees: Employee[];
   addOrUpdateEmployee: (emp: Employee) => void;
   toggleEmployeeStatus: (employeeId: string) => void;
@@ -283,6 +287,20 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 const LOCAL_STORAGE_KEY = 'gastronomic_erp_state_clean_v1';
 
+// Helper para obtener el timestamp local en formato YYYY-MM-DD HH:mm
+const getLocalDatetimeString = () => {
+  const d = new Date();
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+// Helper para obtener fecha local YYYY-MM-DD
+const getLocalDateString = () => {
+  const d = new Date();
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [userRole, setUserRole] = useState<UserRole>('admin');
   const [activeUserId, setActiveUserId] = useState<string>('usr-1');
@@ -357,26 +375,44 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return INITIAL_EMPLOYEES;
   });
 
-  const [itemCategories, setItemCategories] = useState<string[]>(() => {
+  const [itemCategories, setItemCategories] = useState<ConfigOption[]>(() => {
     try {
       const saved = localStorage.getItem('plegma_item_categories');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.length > 0 && typeof parsed[0] === 'string') {
+          return parsed.map((c: string, i: number) => ({ id: `cat-leg-${i}`, name: c, active: true }));
+        }
+        return parsed;
+      }
     } catch (e) {}
     return INITIAL_ITEM_CATEGORIES;
   });
 
-  const [itemSubcategories, setItemSubcategories] = useState<string[]>(() => {
+  const [itemSubcategories, setItemSubcategories] = useState<ConfigOption[]>(() => {
     try {
       const saved = localStorage.getItem('plegma_item_subcategories');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.length > 0 && typeof parsed[0] === 'string') {
+          return parsed.map((c: string, i: number) => ({ id: `scat-leg-${i}`, name: c, active: true }));
+        }
+        return parsed;
+      }
     } catch (e) {}
     return INITIAL_ITEM_SUBCATEGORIES;
   });
 
-  const [itemUnits, setItemUnits] = useState<string[]>(() => {
+  const [itemUnits, setItemUnits] = useState<ConfigOption[]>(() => {
     try {
       const saved = localStorage.getItem('plegma_item_units');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.length > 0 && typeof parsed[0] === 'string') {
+          return parsed.map((c: string, i: number) => ({ id: `unit-leg-${i}`, name: c, active: true }));
+        }
+        return parsed;
+      }
     } catch (e) {}
     return INITIAL_ITEM_UNITS;
   });
@@ -426,7 +462,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const newLog: HourlyRateLog = {
           id: 'log-' + Date.now(),
           employeeId,
-          timestamp: new Date().toISOString().replace('T', ' ').substring(0, 16),
+          timestamp: getLocalDatetimeString(),
           oldPrice: oldRate,
           newPrice: newRate,
           percentageIncrease: Number(pct.toFixed(2)),
@@ -480,7 +516,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       };
     }
 
-    const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
+    const nowStr = getLocalDatetimeString();
     const newRecord: ClockRecord = {
       id: 'clk-' + Date.now(),
       employeeId: emp.id,
@@ -516,7 +552,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       };
     }
 
-    const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
+    const nowStr = getLocalDatetimeString();
     
     const tIn = new Date(openRecord.checkIn.replace(' ', 'T')).getTime();
     const tOut = new Date(nowStr.replace(' ', 'T')).getTime();
@@ -568,7 +604,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           state: 'Corregida',
           modifiedBy: 'ADMINISTRADOR',
           modificationReason: reason,
-          modifiedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+          modifiedAt: getLocalDatetimeString(),
         };
       })
     );
@@ -583,7 +619,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               state: 'Anulada',
               modifiedBy: 'ADMINISTRADOR',
               modificationReason: reason,
-              modifiedAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+              modifiedAt: getLocalDatetimeString(),
             }
           : r
       )
@@ -740,7 +776,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
 
     const totalToPay = Number(details.reduce((sum, d) => sum + d.netAmount, 0).toFixed(2));
-    const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
+    const nowStr = getLocalDatetimeString();
 
     const newPayrunRecord: Payrun = {
       id: 'payrun-' + Date.now(),
@@ -766,7 +802,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     paymentMethod: string,
     cashRegister: string
   ) => {
-    const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 16);
+    const nowStr = getLocalDatetimeString();
     setPayruns((prev) =>
       prev.map((pr) => {
         if (pr.id !== payrunId) return pr;
@@ -1805,6 +1841,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     }
 
+    // [A07] If Cuenta Corriente: record current account movement
+    if (billing.paymentCondition === 'Cuenta Corriente' && client) {
+      const ccMovement: CurrentAccountMovement = {
+        id: 'mov-' + Date.now(),
+        clientId: client.id,
+        dateTime: nowStr,
+        voucherType: 'Ticket',
+        type: 'Venta',
+        total: billing.finalTotal,
+        ticketDetail: `Consumo Pedido #${target.orderNumber}`,
+        ticketNumber: ticketNum,
+        lineState: 'Pendiente',
+      };
+      INITIAL_CC_MOVEMENTS.unshift(ccMovement);
+    }
+
     // If Employee Consumption: record employee consumption
     if (billing.paymentCondition === 'Consumo Empleado') {
       const emp = employees.find((e) => e.name.toLowerCase() === billing.clientName.toLowerCase() || e.id === billing.clientId);
@@ -2078,7 +2130,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const logAudit = (action: string, entityType: AuditLog['entityType'], entityId: string, details?: string) => {
     const newLog: AuditLog = {
       id: 'aud-' + Date.now(),
-      timestamp: new Date().toISOString(),
+      timestamp: getLocalDatetimeString(),
       userId: `usr-${userRole}`,
       userName: `Usuario (${userRole.toUpperCase()})`,
       action,
@@ -2279,6 +2331,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   // Create Order
+  const deleteItem = (itemId: string) => {
+    setItems((prevItems) => prevItems.filter(item => item.id !== itemId));
+    setProviderItems((prev) => {
+      const itemToDelete = items.find(i => i.id === itemId);
+      if (!itemToDelete) return prev;
+      return prev.filter(pi => pi.supplierProductCode !== itemToDelete.code);
+    });
+  };
+
   const createOrder = (order: Order) => {
     setOrders((prev) => [order, ...prev]);
     logAudit('Crear Pedido', 'pedido', order.id, `Pedido #${order.orderNumber} por $${order.estimatedTotal.toLocaleString('es-AR')}`);
@@ -2330,12 +2391,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             id: 'ph-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
             itemId: item.id,
             providerId: targetOrder.providerId,
-            date: new Date().toISOString().split('T')[0],
+            date: getLocalDateString(),
             oldPrice: oldP,
             newPrice: rec.price,
             variationPercentage: varPct,
             userId: `usr-${userRole}`,
             orderId,
+            quantity: rec.receivedQty,
           };
           setPriceHistory((ph) => [priceEntry, ...ph]);
           logAudit('Actualización de Precio en Recepción', 'precio', item.id, `${item.name}: de $${oldP} a $${rec.price} (${varPct}%)`);
@@ -2373,7 +2435,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return {
           ...o,
           status: finalStatus,
-          receptionDate: new Date().toISOString(),
+          receptionDate: getLocalDatetimeString(),
           receptionNotes: notes,
           invoiceOrReceiptNumber: invoiceNumber,
           deliveryType,
@@ -2385,7 +2447,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           paymentMethod: paymentDetails?.method,
           paymentAccount: paymentDetails?.account,
           paymentReceiptNumber: paymentDetails?.receiptNumber,
-          paymentDate: isPaid ? new Date().toISOString() : undefined,
+          paymentDate: isPaid ? getLocalDatetimeString() : undefined,
         };
       })
     );
@@ -2394,7 +2456,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (paymentDetails && paymentDetails.amount > 0) {
       const exp: ExpenseRecord = {
         id: 'exp-' + Date.now(),
-        date: new Date().toISOString(),
+        date: getLocalDatetimeString(),
         providerId: targetOrder.providerId,
         orderId,
         amount: paymentDetails.amount,
@@ -2441,7 +2503,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           paymentMethod: method,
           paymentAccount: account,
           paymentReceiptNumber: receiptNumber || o.paymentReceiptNumber,
-          paymentDate: new Date().toISOString(),
+          paymentDate: getLocalDatetimeString(),
         };
       })
     );
@@ -2450,7 +2512,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (targetOrder) {
       const exp: ExpenseRecord = {
         id: 'exp-' + Date.now(),
-        date: new Date().toISOString(),
+        date: getLocalDatetimeString(),
         providerId: targetOrder.providerId,
         orderId,
         amount,
@@ -2492,7 +2554,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         id: 'ph-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
         itemId: item.id,
         providerId: 'manual',
-        date: new Date().toISOString().split('T')[0],
+        date: getLocalDateString(),
         oldPrice: oldPrice,
         newPrice: item.currentPrice,
         variationPercentage: varPct,
@@ -2578,6 +2640,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         updateProvider,
         deleteProvider,
         items,
+        deleteItem,
         providerItems,
         orders,
         stockCounts,

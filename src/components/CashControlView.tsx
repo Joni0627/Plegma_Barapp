@@ -19,6 +19,7 @@ import {
   Calendar,
   CheckSquare,
   CreditCard,
+  HelpCircle,
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { StandardDataTable } from './ui/DataTable';
@@ -30,6 +31,7 @@ import { WithdrawalModal } from './cash/WithdrawalModal';
 import { CloseLineModal } from './cash/CloseLineModal';
 import { LineMovementsModal } from './cash/LineMovementsModal';
 import { PrintSummaryModal } from './cash/PrintSummaryModal';
+import { ModuleHelpModal } from './ui/ModuleHelpModal';
 
 const fmt = (n: number) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(n);
@@ -98,6 +100,7 @@ export function CashControlView() {
   const [closingLine, setClosingLine] = useState<CashLine | null>(null);
   const [viewingMovementsLine, setViewingMovementsLine] = useState<CashLine | null>(null);
   const [isPrintSummaryOpen, setIsPrintSummaryOpen] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   // Active shift resolution
   const activeShift = useMemo(() => {
@@ -350,6 +353,14 @@ export function CashControlView() {
         {/* Action 1: [ + ] Crear caja de turno */}
         <div className="flex items-center gap-2 flex-wrap">
           <Button
+            variant="outline"
+            leftIcon={<HelpCircle className="w-4 h-4" />}
+            onClick={() => setIsHelpOpen(true)}
+            className="hidden sm:flex"
+          >
+            Guía de Uso
+          </Button>
+          <Button
             variant="primary"
             leftIcon={<Plus className="w-4 h-4" />}
             onClick={() => setIsNewShiftOpen(true)}
@@ -565,6 +576,13 @@ export function CashControlView() {
           lines={activeLines}
           masterBoxes={masterCashBoxes}
           onClose={() => setIsPrintSummaryOpen(false)}
+        />
+      )}
+
+      {isHelpOpen && (
+        <ModuleHelpModal
+          module="cash"
+          onClose={() => setIsHelpOpen(false)}
         />
       )}
     </div>

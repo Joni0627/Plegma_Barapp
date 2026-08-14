@@ -11,13 +11,14 @@ interface SaleTypeModalProps {
 }
 
 const ORDER_STATUS_OPTIONS = [
-  { value: 'Pendiente de conteo', label: 'Pendiente de conteo' },
-  { value: 'Pedido confirmado', label: 'Pedido confirmado' },
-  { value: 'En Proceso', label: 'En Proceso' },
-  { value: 'Pendiente de entrega', label: 'Pendiente de entrega' },
-  { value: 'Entregado / Ingresado', label: 'Entregado / Ingresado' },
-  { value: 'Pagado', label: 'Pagado' },
-  { value: 'Finalizado', label: 'Finalizado' },
+  { value: 'Pendiente', label: 'Pendiente' },
+  { value: 'Comandado', label: 'Comandado' },
+  { value: 'En Cocina', label: 'En Cocina' },
+  { value: 'Listo', label: 'Listo' },
+  { value: 'Entregado', label: 'Entregado' },
+  { value: 'Cerrado', label: 'Cerrado' },
+  { value: 'Facturado', label: 'Facturado' },
+  { value: 'Cancelado', label: 'Cancelado' },
 ];
 
 const PRINTER_OPTIONS = [
@@ -38,10 +39,10 @@ export const SaleTypeModal: React.FC<SaleTypeModalProps> = ({
   const [requiresTable, setRequiresTable] = useState(saleTypeToEdit ? saleTypeToEdit.requiresTable : true);
   const [requiresClient, setRequiresClient] = useState(saleTypeToEdit ? saleTypeToEdit.requiresClient : false);
   const [initialOrderStatus, setInitialOrderStatus] = useState(
-    saleTypeToEdit?.initialOrderStatus || 'Pendiente de conteo'
+    saleTypeToEdit?.initialOrderStatus || 'Pendiente'
   );
   const [finalOrderStatus, setFinalOrderStatus] = useState(
-    saleTypeToEdit?.finalOrderStatus || 'Pagado'
+    saleTypeToEdit?.finalOrderStatus || 'Facturado'
   );
   const [autoPrintTicket, setAutoPrintTicket] = useState(
     saleTypeToEdit ? saleTypeToEdit.autoPrintTicket : true

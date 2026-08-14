@@ -81,7 +81,8 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
       hasCurrentAccount: true,
       differentiatedBilling: false,
       isDefault: true,
-      isGeneric: false,
+      isEmployee: false,
+      geolocation: '',
       debt: 145000,
       active: true,
       notes: 'Cliente preferencial para eventos de salón principal',
@@ -98,7 +99,8 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
       hasCurrentAccount: true,
       differentiatedBilling: true, // Cobro al costo
       isDefault: false,
-      isGeneric: false,
+      isEmployee: false,
+      geolocation: '',
       debt: 68000,
       active: true,
       notes: 'Habilitado cobro al costo operativo en insumos de coctelería',
@@ -115,7 +117,8 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
       hasCurrentAccount: false,
       differentiatedBilling: false,
       isDefault: false,
-      isGeneric: true,
+      isEmployee: false,
+      geolocation: '',
       debt: 0,
       active: true,
       notes: 'Cliente genérico por defecto para comprobantes de mostrador',
@@ -381,7 +384,8 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
           hasCurrentAccount: client.hasCurrentAccount ?? true,
           differentiatedBilling: client.hasCurrentAccount ? (client.differentiatedBilling ?? false) : false,
           isDefault: client.isDefault ?? false,
-          isGeneric: client.isGeneric ?? false,
+          isEmployee: client.isEmployee ?? false,
+          geolocation: client.geolocation || '',
           debt: client.debt ?? getClientDebt(client.id),
           active: client.active ?? true,
           notes: client.notes || '',
@@ -403,7 +407,8 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
           hasCurrentAccount: true,
           differentiatedBilling: false, // Default = false
           isDefault: false,
-          isGeneric: false,
+          isEmployee: false,
+          geolocation: '',
           debt: 0,
           active: true,
           notes: '',
@@ -435,7 +440,8 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
       hasCurrentAccount: finalHasCC,
       differentiatedBilling: finalDiffBilling,
       isDefault: Boolean(clientData.isDefault),
-      isGeneric: Boolean(clientData.isGeneric),
+      isEmployee: Boolean(clientData.isEmployee),
+      geolocation: clientData.geolocation || '',
       debt: isNew ? 0 : (clientData.debt ?? getClientDebt(clientData.id)),
       active: Boolean(clientData.active),
       notes: clientData.notes || '',
@@ -457,11 +463,7 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
             updated = updated.map((c) => ({ ...c, isDefault: false }));
           }
 
-          // Regla 3.5: No debe permitirse más de un cliente marcado como Genérico = Sí
-          if (formattedClient.isGeneric) {
-            updated = updated.map((c) => ({ ...c, isGeneric: false }));
-          }
-
+          // Removida regla de Cliente Genérico
           if (isNew) {
             return [formattedClient, ...updated];
           } else {
@@ -976,9 +978,9 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
                 Por Defecto
               </span>
             )}
-            {c?.isGeneric && (
+            {c?.isEmployee && (
               <span className="px-2 py-0.5 bg-cyan-100 text-cyan-900 font-extrabold text-[10px] rounded-full border border-cyan-300">
-                Genérico
+                Empleado
               </span>
             )}
           </div>
@@ -3105,6 +3107,15 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
                     />
                   </FormField>
 
+                  <FormField label="Geolocalización (URL o Coordenadas)">
+                    <TextInput
+                      type="text"
+                      placeholder="Ej. https://maps.google.com/..."
+                      value={formModal.data.geolocation || ''}
+                      onChange={(e) => setFormModal({ ...formModal, data: { ...formModal.data, geolocation: e.target.value } })}
+                    />
+                  </FormField>
+
                   <FormField label="CUIT / Identificación Fiscal">
                     <TextInput
                       type="text"
@@ -3189,19 +3200,19 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
                       />
                     </label>
 
-                    {/* Genérico */}
-                    <label className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition ${formModal.data.isGeneric ? 'bg-cyan-50 border-cyan-300' : 'bg-white border-slate-200'}`}>
+                    {/* Empleado */}
+                    <label className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition ${formModal.data.isEmployee ? 'bg-cyan-50 border-cyan-300' : 'bg-white border-slate-200'}`}>
                       <div>
-                        <span className="font-bold text-slate-900 block">Cliente Genérico</span>
-                        <span className="text-[10px] text-slate-500 block">Para ventas sin identificación específica</span>
+                        <span className="font-bold text-slate-900 block">Cliente Empleado</span>
+                        <span className="text-[10px] text-slate-500 block">Identifica a este cliente como empleado del local</span>
                       </div>
                       <input
                         type="checkbox"
-                        checked={Boolean(formModal.data.isGeneric)}
+                        checked={Boolean(formModal.data.isEmployee)}
                         onChange={(e) =>
                           setFormModal({
                             ...formModal,
-                            data: { ...formModal.data, isGeneric: e.target.checked },
+                            data: { ...formModal.data, isEmployee: e.target.checked },
                           })
                         }
                         className="w-4 h-4 text-cyan-600 rounded focus:ring-cyan-500"
@@ -3925,16 +3936,17 @@ export const MaestrosView: React.FC<MaestrosViewProps> = ({
                         Por Defecto
                       </span>
                     )}
-                    {viewingCurrentAccountClient.isGeneric && (
+                    {viewingCurrentAccountClient.isEmployee && (
                       <span className="px-2 py-0.5 bg-cyan-100 text-cyan-900 font-extrabold text-[10px] rounded-full border border-cyan-300">
-                        Genérico
+                        Empleado
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-slate-500 mt-1 flex items-center gap-3">
+                  <p className="text-xs text-slate-500 mt-1 flex flex-wrap items-center gap-3">
                     <span>📞 {viewingCurrentAccountClient.phone}</span>
                     <span>📍 {viewingCurrentAccountClient.address}</span>
                     {viewingCurrentAccountClient.cuit && <span>📄 CUIT: {viewingCurrentAccountClient.cuit}</span>}
+                    {viewingCurrentAccountClient.geolocation && <span>🌍 Mapa: {viewingCurrentAccountClient.geolocation}</span>}
                   </p>
                 </div>
               </div>
