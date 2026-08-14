@@ -16,9 +16,11 @@ import {
   ShieldCheck,
   Building2,
   Users,
+  HelpCircle,
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { StandardDataTable } from './ui/DataTable';
+import { ModuleHelpModal } from './ui/ModuleHelpModal';
 import { useApp } from '../context/AppContext';
 import { RestaurantTableConfig, SaleTypeConfig, SiteConfig } from '../types';
 import { TableModal } from './salesConfig/TableModal';
@@ -62,6 +64,7 @@ export function SalesConfigView() {
 
   const [activeTab, setActiveTab] = useState<'mesas' | 'tiposVenta' | 'sitios'>('mesas');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   // Modals state
   const [isTableModalOpen, setIsTableModalOpen] = useState(false);
@@ -537,7 +540,16 @@ export function SalesConfigView() {
         </div>
 
         {/* Create Action Button for Active Tab (Action 1) */}
-        <div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            leftIcon={<HelpCircle className="w-4 h-4" />}
+            onClick={() => setIsHelpOpen(true)}
+            className="hidden sm:flex"
+          >
+            Guía de Uso
+          </Button>
+
           {activeTab === 'mesas' && (
             <Button
               variant="primary"
@@ -701,6 +713,13 @@ export function SalesConfigView() {
           item={detailModalItem.item}
           type={detailModalItem.type}
           onClose={() => setDetailModalItem(null)}
+        />
+      )}
+      
+      {isHelpOpen && (
+        <ModuleHelpModal
+          module="config"
+          onClose={() => setIsHelpOpen(false)}
         />
       )}
     </div>
