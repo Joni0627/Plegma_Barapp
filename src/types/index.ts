@@ -195,6 +195,7 @@ export interface PriceHistoryEntry {
   variationPercentage: number;
   userId: string;
   orderId?: string;
+  quantity?: number; // Cantidad ingresada en la compra
 }
 
 export interface ExpenseRecord {
@@ -246,10 +247,11 @@ export interface Client {
   hasCurrentAccount: boolean; // Cuenta Corriente (Sí/No, Obligatorio)
   differentiatedBilling: boolean; // Cobro Diferenciado (Sí/No, Obligatorio, por defecto No)
   isDefault: boolean; // Por Defecto (Sí/No, Obligatorio)
-  isGeneric: boolean; // Genérico (Sí/No, Obligatorio)
+  isEmployee: boolean; // Es Empleado (Sí/No, Obligatorio)
   debt: number; // Deuda Moneda [AUTO]
   active: boolean; // Activo (Sí/No, Obligatorio)
   notes?: string; // Observaciones (Texto largo, opcional)
+  geolocation?: string; // Geolocalización
 
   clientType?: 'Salon' | 'Barra' | 'Eventos' | 'Delivery' | 'Corporativo';
   contactName?: string;
@@ -320,6 +322,12 @@ export interface Category {
   name: string;
   description: string;
   itemCount: number;
+}
+
+export interface ConfigOption {
+  id: string;
+  name: string;
+  active: boolean;
 }
 
 export interface Warehouse {

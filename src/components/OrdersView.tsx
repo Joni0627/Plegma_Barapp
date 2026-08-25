@@ -21,9 +21,11 @@ import {
   Kanban,
   LayoutGrid,
   List,
+  HelpCircle,
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { StandardDataTable } from './ui/DataTable';
+import { ConfirmModal } from './ui/ConfirmModal';
 import { useApp } from '../context/AppContext';
 import { SaleOrder, OrderStatus, RestaurantTableConfig } from '../types';
 import { INITIAL_CC_CLIENTS } from '../data/currentAccountData';
@@ -31,6 +33,8 @@ import { OrderEditorModal } from './orders/OrderEditorModal';
 import { ComandaModal } from './orders/ComandaModal';
 import { OrderBillingModal } from './orders/OrderBillingModal';
 import { OrderTimeAuditModal } from './orders/OrderTimeAuditModal';
+import { SaleTicketModal } from './orders/SaleTicketModal';
+import { OrdersHelpModal } from './orders/OrdersHelpModal';
 
 const fmt = (n: number) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0 }).format(n);
@@ -89,6 +93,9 @@ export function OrdersView() {
   const [comandaOrder, setComandaOrder] = useState<SaleOrder | null>(null);
   const [billingOrder, setBillingOrder] = useState<SaleOrder | null>(null);
   const [timeAuditOrder, setTimeAuditOrder] = useState<SaleOrder | null>(null);
+  const [ticketOrder, setTicketOrder] = useState<SaleOrder | null>(null);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [orderToCancel, setOrderToCancel] = useState<SaleOrder | null>(null);
 
   // Active Cash Shift
   const activeShift = useMemo(() => cashShifts.find((s) => s.status === 'Abierta'), [cashShifts]);
@@ -155,20 +162,34 @@ export function OrdersView() {
     const res = processOrderBilling(billingOrder.id, billingPayload);
     if (res.success) {
       showToast(res.message, 'success');
+      
+      // Update order data with billing info to show accurate ticket
+      const billedOrder = {
+        ...billingOrder,
+        status: 'Facturado',
+        paymentCondition: billingPayload.paymentCondition,
+        paymentMethod: billingPayload.paymentMethod,
+        discountAmount: billingPayload.discountAmount,
+        subtotalAmount: billingPayload.subtotalAmount,
+        finalTotal: billingPayload.finalTotal
+      };
+      
       setBillingOrder(null);
+      // Auto-open ticket modal so user can print immediately
+      setTicketOrder(billedOrder as any);
     }
     return res;
   };
 
-  const handleCancelOrder = (order: SaleOrder) => {
-    const reason = prompt(`Motivo de anulación para Pedido #${order.orderNumber}:`);
-    if (reason === null) return;
-    const res = cancelSaleOrder(order.id, reason.trim());
+  const handleConfirmCancelOrder = (reason: string = '') => {
+    if (!orderToCancel) return;
+    const res = cancelSaleOrder(orderToCancel.id, reason.trim());
     if (res.success) {
       showToast(res.message, 'warning');
     } else {
       showToast(res.message, 'error');
     }
+    setOrderToCancel(null);
   };
 
   // Columns for Admin Table
@@ -247,6 +268,18 @@ export function OrdersView() {
             </button>
           )}
 
+          {/* Reimprimir Ticket */}
+          {(o.status === 'Facturado' || o.status === 'Cerrado') && (
+            <button
+              type="button"
+              onClick={() => setTicketOrder(o)}
+              className="p-1 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
+              title="Ver / Reimprimir Ticket"
+            >
+              <Receipt className="w-4 h-4" />
+            </button>
+          )}
+
           {/* Cambiar Estado a Listo */}
           {o.status === 'En Cocina' && (
             <button
@@ -308,7 +341,7 @@ export function OrdersView() {
           {o.status !== 'Facturado' && o.status !== 'Cancelado' && (
             <button
               type="button"
-              onClick={() => handleCancelOrder(o)}
+              onClick={() => setOrderToCancel(o)}
               className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
               title="Cancelar Pedido"
             >
@@ -341,17 +374,27 @@ export function OrdersView() {
           </p>
         </div>
 
-        {/* Action: Crear Pedido */}
-        <Button
-          variant="primary"
-          leftIcon={<Plus className="w-4 h-4" />}
-          onClick={() => {
-            setEditingOrder(null);
-            setIsEditorOpen(true);
-          }}
-        >
-          Crear Pedido
-        </Button>
+        {/* Actions */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            leftIcon={<HelpCircle className="w-4 h-4" />}
+            onClick={() => setIsHelpOpen(true)}
+            className="hidden sm:flex"
+          >
+            Guía de Uso
+          </Button>
+          <Button
+            variant="primary"
+            leftIcon={<Plus className="w-4 h-4" />}
+            onClick={() => {
+              setEditingOrder(null);
+              setIsEditorOpen(true);
+            }}
+          >
+            Crear Pedido
+          </Button>
+        </div>
       </div>
 
       {/* Profile Selector & Filters Bar */}
@@ -732,6 +775,34 @@ export function OrdersView() {
           onClose={() => setTimeAuditOrder(null)}
         />
       )}
+
+      {ticketOrder && (
+        <SaleTicketModal
+          order={ticketOrder}
+          onClose={() => setTicketOrder(null)}
+        />
+      )}
+
+      {isHelpOpen && (
+        <OrdersHelpModal onClose={() => setIsHelpOpen(false)} />
+      )}
+
+      <ConfirmModal
+        isOpen={!!orderToCancel}
+        title="Anular Pedido"
+        message={`¿Estás seguro que deseas anular el pedido #${orderToCancel?.orderNumber}? Esta acción no se puede deshacer y el pedido pasará a estado Cancelado.`}
+        confirmText="Anular Pedido"
+        cancelText="Volver"
+        type="danger"
+        requiresInput={true}
+        inputLabel="Motivo de Anulación"
+        inputPlaceholder="Ej: Cliente se arrepintió, error de carga..."
+        onConfirm={(reason) => {
+          handleConfirmCancelOrder(reason);
+          setOrderToCancel(null);
+        }}
+        onCancel={() => setOrderToCancel(null)}
+      />
     </div>
   );
 }

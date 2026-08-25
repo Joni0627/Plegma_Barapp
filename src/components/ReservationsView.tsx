@@ -15,9 +15,11 @@ import {
   History,
   FileText,
   UserCheck,
+  HelpCircle,
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { StandardDataTable } from './ui/DataTable';
+import { ModuleHelpModal } from './ui/ModuleHelpModal';
 import { useApp } from '../context/AppContext';
 import { Reservation, RestaurantTable } from '../types';
 import { INITIAL_CC_CLIENTS } from '../data/currentAccountData';
@@ -62,6 +64,7 @@ export function ReservationsView() {
 
   // Modals
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [editingReservation, setEditingReservation] = useState<Reservation | null>(null);
   const [viewingReservation, setViewingReservation] = useState<Reservation | null>(null);
 
@@ -267,13 +270,23 @@ export function ReservationsView() {
         </div>
 
         {/* Action 1: Crear reserva */}
-        <Button
-          variant="primary"
-          leftIcon={<Plus className="w-4 h-4" />}
-          onClick={handleCreateNew}
-        >
-          Crear Reserva [1]
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            leftIcon={<HelpCircle className="w-4 h-4" />}
+            onClick={() => setIsHelpOpen(true)}
+            className="hidden sm:flex"
+          >
+            Guía de Uso
+          </Button>
+          <Button
+            variant="primary"
+            leftIcon={<Plus className="w-4 h-4" />}
+            onClick={handleCreateNew}
+          >
+            Crear Reserva [1]
+          </Button>
+        </div>
       </div>
 
       {/* Summary KPI Cards */}
@@ -433,6 +446,14 @@ export function ReservationsView() {
           onClose={() => setIsModalOpen(false)}
           onSave={handleSaveModal}
           checkOverbooking={checkOverbooking}
+        />
+      )}
+
+      {/* Modal: Ayuda */}
+      {isHelpOpen && (
+        <ModuleHelpModal
+          module="reservations"
+          onClose={() => setIsHelpOpen(false)}
         />
       )}
 

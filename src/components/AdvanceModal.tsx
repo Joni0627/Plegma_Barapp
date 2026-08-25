@@ -62,7 +62,7 @@ export const AdvanceModal: React.FC<AdvanceModalProps> = ({
     advanceToEdit?.employeeId || initialEmployee?.id || activeEmployees[0]?.id || ''
   );
 
-  const [amount, setAmount] = useState<number>(advanceToEdit?.amount || 42500);
+  const [amount, setAmount] = useState<number>(advanceToEdit?.amount || 0);
   const [detail, setDetail] = useState<string>(advanceToEdit?.detail || '');
   const [paymentMethod, setPaymentMethod] = useState<string>(advanceToEdit?.paymentMethod || 'Mercado Pago');
   const [cashRegister, setCashRegister] = useState<string>(advanceToEdit?.cashRegister || 'MERCADO PAGO');
@@ -215,7 +215,7 @@ export const AdvanceModal: React.FC<AdvanceModalProps> = ({
                 <input
                   type="number"
                   min="1"
-                  step="500"
+                  step="1"
                   required
                   value={amount}
                   onChange={(e) => setAmount(Number(e.target.value))}

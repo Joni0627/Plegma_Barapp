@@ -9,3 +9,15 @@
     scrollbar-width: none;
   }
 }
+
+@media print {
+  @page {
+    margin: 0;
+  }
+  body, html, #root, #app-root {
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    background: transparent !important;
+  }
+}

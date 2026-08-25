@@ -1,4 +1,4 @@
-import { Provider, Item, ProviderItemRelation, Order, ReceptionHoursConfig, PriceHistoryEntry, AuditLog, Employee, ClockRecord, EmployeeConsumption, EmployeeAdvance, Payrun } from '../types';
+import { Provider, Item, ProviderItemRelation, Order, ReceptionHoursConfig, PriceHistoryEntry, AuditLog, Employee, ClockRecord, EmployeeConsumption, EmployeeAdvance, Payrun, ConfigOption } from '../types';
 
 export const DEFAULT_POSITIONS: string[] = [
   'Cajera/o',
@@ -28,6 +28,39 @@ export const DEFAULT_RUBROS: string[] = [
   'Limpieza',
   'Electrónica',
   'Varios',
+];
+
+export const INITIAL_ITEM_CATEGORIES: ConfigOption[] = [
+  { id: 'cat-1', name: 'Carnes', active: true },
+  { id: 'cat-2', name: 'Lácteos', active: true },
+  { id: 'cat-3', name: 'Bebidas', active: true },
+  { id: 'cat-4', name: 'Almacén', active: true },
+  { id: 'cat-5', name: 'Verduras', active: true },
+  { id: 'cat-6', name: 'Limpieza', active: true },
+  { id: 'cat-7', name: 'Varios', active: true }
+];
+export const INITIAL_ITEM_SUBCATEGORIES: ConfigOption[] = [
+  { id: 'scat-1', name: 'Vacuna', active: true },
+  { id: 'scat-2', name: 'Pollo', active: true },
+  { id: 'scat-3', name: 'Cerdo', active: true },
+  { id: 'scat-4', name: 'Quesos', active: true },
+  { id: 'scat-5', name: 'Leche', active: true },
+  { id: 'scat-6', name: 'Gaseosas', active: true },
+  { id: 'scat-7', name: 'Cervezas', active: true },
+  { id: 'scat-8', name: 'Vinos', active: true },
+  { id: 'scat-9', name: 'Secos', active: true },
+  { id: 'scat-10', name: 'Encurtidos', active: true }
+];
+export const INITIAL_ITEM_UNITS: ConfigOption[] = [
+  { id: 'unit-1', name: 'kg', active: true },
+  { id: 'unit-2', name: 'L', active: true },
+  { id: 'unit-3', name: 'un', active: true },
+  { id: 'unit-4', name: 'caja', active: true },
+  { id: 'unit-5', name: 'bulto', active: true },
+  { id: 'unit-6', name: 'botella', active: true },
+  { id: 'unit-7', name: 'lata', active: true },
+  { id: 'unit-8', name: 'paquete', active: true },
+  { id: 'unit-9', name: 'bolsa', active: true }
 ];
 
 export const INITIAL_RECEPTION_HOURS: ReceptionHoursConfig = {

@@ -142,7 +142,7 @@ export const OrderReviewModal: React.FC<OrderReviewModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto print:hidden">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[92vh] border border-slate-200">
         {/* Top Header */}
         <div className="bg-slate-900 text-white p-5 flex items-center justify-between border-b border-slate-800 shrink-0">
@@ -228,24 +228,23 @@ export const OrderReviewModal: React.FC<OrderReviewModalProps> = ({
                 <tbody className="divide-y divide-slate-100">
                   {pItems.map((item) => {
                     const entry = orderItemsMap[item.id];
-                    if (!entry) return null;
+                    if (!entry || !entry.active) return null;
 
                     const subtotal = entry.finalQty * entry.refPrice;
 
                     return (
                       <tr
                         key={item.id}
-                        className={`hover:bg-slate-50/80 transition ${
-                          !entry.active ? 'opacity-40 bg-slate-50' : ''
-                        }`}
+                        className="hover:bg-slate-50/80 transition"
                       >
                         <td className="p-3 text-center">
-                          <input
-                            type="checkbox"
-                            checked={entry.active}
-                            onChange={() => handleToggleItem(item.id)}
-                            className="w-4 h-4 rounded text-orange-600 focus:ring-orange-500 cursor-pointer"
-                          />
+                          <button
+                            onClick={() => handleToggleItem(item.id)}
+                            className="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition"
+                            title="Eliminar línea"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </td>
                         <td className="p-3">
                           <span className="font-bold text-slate-900 block">{item.name}</span>
@@ -268,10 +267,10 @@ export const OrderReviewModal: React.FC<OrderReviewModalProps> = ({
                           />
                         </td>
                         <td className="p-3 text-right text-slate-600">
-                          $ {entry.refPrice.toLocaleString('es-AR')}
+                          $ {entry.refPrice.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
                         <td className="p-3 text-right font-black text-slate-900">
-                          $ {subtotal.toLocaleString('es-AR')}
+                          $ {subtotal.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </td>
                       </tr>
                     );

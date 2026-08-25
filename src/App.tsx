@@ -126,22 +126,25 @@ function MainLayout() {
 
   return (
     <div
+      id="app-root"
       style={{ backgroundColor: branding?.appBgHex || '#f8fafc' }}
       className={`min-h-screen w-full overflow-x-hidden font-sans text-slate-900 flex ${isSidebar ? 'flex-col md:flex-row' : 'flex-col'} antialiased transition-colors`}
     >
       {/* Top Navbar or Sidebar */}
-      <Navbar
-        currentTab={currentTab}
-        setCurrentTab={handleNavigateTab}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        maestrosSubTab={maestrosSubTab}
-        rrhhSubTab={rrhhSubTab}
-      />
+      <div className="print:hidden contents">
+        <Navbar
+          currentTab={currentTab}
+          setCurrentTab={handleNavigateTab}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          maestrosSubTab={maestrosSubTab}
+          rrhhSubTab={rrhhSubTab}
+        />
+      </div>
 
       {/* Main Container View Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 lg:p-8 space-y-6 overflow-x-hidden pb-20 md:pb-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 lg:p-8 space-y-6 overflow-x-hidden pb-20 md:pb-6 print:hidden">
         {/* Mobile Sub-module Back Header Button */}
         {isMobile && currentTab !== 'mobile_home' && (
           <div className="md:hidden flex items-center justify-between pb-2 border-b border-slate-200">

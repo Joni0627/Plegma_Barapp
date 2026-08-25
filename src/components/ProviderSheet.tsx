@@ -94,7 +94,7 @@ export const ProviderSheet: React.FC<ProviderSheetProps> = ({
   const DAYS_LIST: DayOfWeek[] = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex justify-end">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex justify-end print:hidden">
       <div className="w-full max-w-3xl bg-white h-full shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-right duration-200">
         {/* Modal Top Header */}
         <div className="bg-slate-900 text-white p-5 flex items-center justify-between border-b border-slate-800">

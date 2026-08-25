@@ -9,10 +9,13 @@ import {
   TrendingDown,
   BarChart3,
   Calendar,
+  HelpCircle
 } from 'lucide-react';
+import { ModuleHelpModal } from './ui/ModuleHelpModal';
 
 export const PurchasingDashboard: React.FC = () => {
   const { orders, providers, items, priceHistory, expenses } = useApp();
+  const [isHelpOpen, setIsHelpOpen] = React.useState(false);
 
   // Financial aggregates
   const totalPurchases = orders.reduce(
@@ -45,6 +48,15 @@ export const PurchasingDashboard: React.FC = () => {
           <p className="text-xs text-slate-500 mt-0.5">
             Métricas ejecutivas de gastos gastronómicos, variación de precios de proveedores e insumos críticos.
           </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={() => setIsHelpOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 text-slate-600 font-semibold text-xs hover:bg-slate-50 transition"
+          >
+            <HelpCircle className="w-4 h-4" />
+            <span className="hidden sm:inline">Guía de Uso</span>
+          </button>
         </div>
       </div>
 
@@ -175,6 +187,13 @@ export const PurchasingDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {isHelpOpen && (
+        <ModuleHelpModal
+          module="purchasing"
+          onClose={() => setIsHelpOpen(false)}
+        />
+      )}
     </div>
   );
 };

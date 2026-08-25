@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { X, Printer, ShieldCheck, Clock, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { CashShift, CashLine, MasterCashBox } from '../../types';
@@ -31,9 +32,9 @@ export const PrintSummaryModal: React.FC<PrintSummaryModalProps> = ({
   const totalReal = lines.reduce((acc, l) => acc + (l.realAmount || 0), 0);
   const totalDiff = lines.reduce((acc, l) => acc + (l.difference || 0), 0);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl space-y-0 flex flex-col max-h-[90vh]">
+  const modalContent = (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn print:static print:bg-transparent print:p-0 print:block">
+      <div className="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl space-y-0 flex flex-col max-h-[90vh] print:shadow-none print:border-none print:max-h-none print:max-w-none print:w-full print:block print:rounded-none">
         {/* Header */}
         <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between shrink-0 print:hidden">
           <div className="flex items-center gap-3">
@@ -54,8 +55,8 @@ export const PrintSummaryModal: React.FC<PrintSummaryModalProps> = ({
           </button>
         </div>
 
-        {/* Printable Document Body */}
-        <div className="p-6 md:p-8 overflow-y-auto space-y-6 flex-1 text-slate-800 font-sans print:p-0 print:overflow-visible">
+        {/* Printable Area */}
+        <div className="p-6 md:p-8 flex-1 overflow-y-auto space-y-6 text-slate-900 font-sans print:p-0 print:overflow-visible print:block">
           {/* Company Branding */}
           <div className="flex items-center justify-between border-b border-slate-200 pb-4">
             <div>
@@ -191,4 +192,6 @@ export const PrintSummaryModal: React.FC<PrintSummaryModalProps> = ({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
