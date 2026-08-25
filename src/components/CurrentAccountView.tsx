@@ -15,6 +15,7 @@ import {
   Edit,
   Eye,
   HelpCircle,
+  Printer,
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { StandardDataTable } from './ui/DataTable';
@@ -30,6 +31,7 @@ import {
 import { BillReceiptModal } from './BillReceiptModal';
 import { EditReceiptModal } from './EditReceiptModal';
 import { TicketDetailModal } from './TicketDetailModal';
+import { CCReceiptPreviewModal } from './CCReceiptPreviewModal';
 
 // -----------------------------------------------
 // HELPERS
@@ -123,6 +125,7 @@ function ClientDetailView({
   const [billingReceipt, setBillingReceipt] = useState<ReceiptType | null>(null);
   const [editingReceipt, setEditingReceipt] = useState<ReceiptType | null>(null);
   const [viewingMovement, setViewingMovement] = useState<CurrentAccountMovement | null>(null);
+  const [viewingReceipt, setViewingReceipt] = useState<ReceiptType | null>(null);
 
   const clientMovements = useMemo(
     () => movements.filter((m) => m.clientId === client.id),
@@ -165,8 +168,6 @@ function ClientDetailView({
   };
 
   const toggleRecSelection = (id: string) => {
-    const rec = clientReceipts.find((r) => r.id === id);
-    if (!rec || rec.status === 'Facturado') return;
     setSelectedRecIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
 
@@ -525,6 +526,19 @@ function ClientDetailView({
                 {selectedRecIds.length} recibo(s) seleccionado(s)
               </p>
               <div className="flex items-center gap-2">
+                {selectedRecIds.length === 1 && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    leftIcon={<Printer className="w-3.5 h-3.5" />}
+                    onClick={() => {
+                      const rec = clientReceipts.find((r) => r.id === selectedRecIds[0]);
+                      if (rec) setViewingReceipt(rec);
+                    }}
+                  >
+                    Ver / Imprimir
+                  </Button>
+                )}
                 {pendingReceiptsSelected && (
                   <>
                     {selectedRecIds.length === 1 && (
@@ -576,6 +590,7 @@ function ClientDetailView({
                     <th className="py-3 px-4 text-right">Monto Total</th>
                     <th className="py-3 px-4 text-center">Estado</th>
                     <th className="py-3 px-4 text-left">Usuario</th>
+                    <th className="py-3 px-4 text-center w-12">Ver</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-slate-700">
@@ -622,6 +637,19 @@ function ClientDetailView({
                             <StateBadge state={rec.status} />
                           </td>
                           <td className="py-3.5 px-4 text-slate-600">{rec.userName}</td>
+                          <td className="py-3.5 px-4 text-center">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setViewingReceipt(rec);
+                              }}
+                              className="p-1 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
+                              title="Ver / Imprimir recibo"
+                            >
+                              <Printer className="w-4 h-4" />
+                            </button>
+                          </td>
                         </tr>
                       );
                     })
@@ -669,6 +697,16 @@ function ClientDetailView({
           onClose={() => setViewingMovement(null)}
         />
       )}
+
+      {/* MODAL: PREVISUALIZAR / IMPRIMIR RECIBO */}
+      {viewingReceipt && (
+        <CCReceiptPreviewModal
+          receipt={viewingReceipt}
+          client={client}
+          movements={movements}
+          onClose={() => setViewingReceipt(null)}
+        />
+      )}
     </div>
   );
 }
@@ -677,17 +715,19 @@ function ClientDetailView({
 // VISTA PRINCIPAL - LISTADO DE CLIENTES
 // -----------------------------------------------
 export function CurrentAccountView() {
-  const [movements, setMovements] = useState<CurrentAccountMovement[]>(INITIAL_CC_MOVEMENTS);
-  const [receipts, setReceipts] = useState<ReceiptType[]>(INITIAL_RECEIPTS);
+  const { ccMovements, setCcMovements, ccReceipts, setCcReceipts } = useApp();
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+
+  const movements = ccMovements;
+  const receipts = ccReceipts;
 
   const handleDataChange = (
     newMovements: CurrentAccountMovement[],
     newReceipts: ReceiptType[]
   ) => {
-    setMovements(newMovements);
-    setReceipts(newReceipts);
+    setCcMovements(newMovements);
+    setCcReceipts(newReceipts);
   };
 
   // Debt Rule: Movements with lineState === 'Pendiente' contribute to Total Debt
@@ -778,6 +818,24 @@ export function CurrentAccountView() {
           </span>
         ),
     },
+    {
+      key: 'actions',
+      header: 'Acciones',
+      align: 'center' as const,
+      render: (c: Client) => (
+        <Button
+          size="sm"
+          variant="outline"
+          leftIcon={<Eye className="w-3.5 h-3.5" />}
+          onClick={(e) => {
+            e.stopPropagation();
+            setSelectedClient(c);
+          }}
+        >
+          Ver Detalle
+        </Button>
+      ),
+    },
   ];
 
   if (selectedClient) {
@@ -858,8 +916,9 @@ export function CurrentAccountView() {
         data={INITIAL_CC_CLIENTS}
         columns={columns}
         keyExtractor={(c) => c.id}
+        onRowClick={(client) => setSelectedClient(client)}
         title="Clientes con Cuenta Corriente"
-        subtitle="Haga clic en un cliente para ver el detalle de su cuenta corriente"
+        subtitle="Haga clic en un cliente o en 'Ver Detalle' para acceder a su cuenta corriente"
         searchFilterKey={(c) => `${c.name} ${c.code} ${c.phone}`}
         searchPlaceholder="Buscar cliente..."
         emptyMessage="No hay clientes con cuenta corriente habilitada."

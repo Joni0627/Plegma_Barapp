@@ -247,7 +247,8 @@ export interface Client {
   hasCurrentAccount: boolean; // Cuenta Corriente (Sí/No, Obligatorio)
   differentiatedBilling: boolean; // Cobro Diferenciado (Sí/No, Obligatorio, por defecto No)
   isDefault: boolean; // Por Defecto (Sí/No, Obligatorio)
-  isEmployee: boolean; // Es Empleado (Sí/No, Obligatorio)
+  isEmployee?: boolean; // Es Empleado (Sí/No, Obligatorio)
+  isGeneric?: boolean;
   debt: number; // Deuda Moneda [AUTO]
   active: boolean; // Activo (Sí/No, Obligatorio)
   notes?: string; // Observaciones (Texto largo, opcional)
@@ -698,7 +699,16 @@ export interface CashWithdrawalPayload {
 // VENTAS — RESERVAS DE MESAS
 // ----------------------------------------------------
 
-export type ReservationStatus = 'Confirmada' | 'Cancelada' | 'Histórica';
+export type ReservationStatus = 'Confirmada' | 'Cumplida' | 'Cancelada' | 'Histórica';
+
+export interface ReservationLog {
+  id: string;
+  timestamp: string;
+  userId: string;
+  userName: string;
+  action: string;
+  details: string;
+}
 
 export interface RestaurantTable {
   id: string;
@@ -718,12 +728,13 @@ export interface Reservation {
   guestsCount: number;           // [Req] Cantidad de personas esperadas (>= 1)
   tableId: string;               // [CFG] Mesas
   tableName: string;
-  status: ReservationStatus;     // 'Confirmada' | 'Cancelada' | 'Histórica'
+  status: ReservationStatus;     // 'Confirmada' | 'Cumplida' | 'Cancelada' | 'Histórica'
   createdByUserId: string;       // [EXT] Usuario que registró la reserva
   createdByUserName: string;
   createdAt: string;             // [SYS] Fecha/Hora Carga
   notes?: string;                // Observaciones
   cancelReason?: string;         // Motivo de cancelación
+  logs?: ReservationLog[];       // Log de modificaciones inmutable
 }
 
 // ----------------------------------------------------

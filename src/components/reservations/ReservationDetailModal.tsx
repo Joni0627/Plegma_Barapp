@@ -1,39 +1,64 @@
-import React from 'react';
-import { X, Calendar, Users, MapPin, Clock, UserCheck, AlertCircle, ShieldCheck } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  X,
+  Calendar,
+  Users,
+  MapPin,
+  Clock,
+  UserCheck,
+  AlertCircle,
+  ShieldCheck,
+  Printer,
+  History,
+  FileText,
+} from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Reservation } from '../../types';
+import { ReservationReceiptModal } from './ReservationReceiptModal';
 
 interface ReservationDetailModalProps {
   reservation: Reservation;
   onClose: () => void;
+  onMarkFulfilled?: (res: Reservation) => void;
 }
 
 const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   const cfg: Record<string, string> = {
     Confirmada: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+    Cumplida: 'bg-indigo-100 text-indigo-800 border-indigo-300',
     Cancelada: 'bg-rose-100 text-rose-800 border-rose-300',
-    Histórica: 'bg-indigo-100 text-indigo-800 border-indigo-300',
+    Histórica: 'bg-slate-100 text-slate-800 border-slate-300',
   };
   return (
-    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-black border ${cfg[status] || 'bg-slate-100 text-slate-700'}`}>
+    <span
+      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-black border ${
+        cfg[status] || 'bg-slate-100 text-slate-700'
+      }`}
+    >
       {status}
     </span>
   );
 };
 
-export const ReservationDetailModal: React.FC<ReservationDetailModalProps> = ({ reservation, onClose }) => {
+export const ReservationDetailModal: React.FC<ReservationDetailModalProps> = ({
+  reservation,
+  onClose,
+  onMarkFulfilled,
+}) => {
+  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl space-y-0">
+      <div className="bg-white border border-slate-200 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl space-y-0 flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+        <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold">
               <Calendar className="w-5 h-5" />
             </div>
             <div>
               <h3 className="font-extrabold text-base">Detalle de Reserva</h3>
-              <p className="text-xs text-slate-400">Información completa de asignación y comensales</p>
+              <p className="text-xs text-slate-400">Información completa, auditoría e historial de cambios</p>
             </div>
           </div>
           <button
@@ -46,7 +71,7 @@ export const ReservationDetailModal: React.FC<ReservationDetailModalProps> = ({ 
         </div>
 
         {/* Content Body */}
-        <div className="p-6 space-y-4">
+        <div className="p-6 space-y-4 overflow-y-auto flex-1">
           {/* Client & Status Header Pill */}
           <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between">
             <div>
@@ -57,6 +82,33 @@ export const ReservationDetailModal: React.FC<ReservationDetailModalProps> = ({ 
               )}
             </div>
             <StatusBadge status={reservation.status} />
+          </div>
+
+          {/* Action buttons bar inside modal */}
+          <div className="flex items-center gap-2 pt-1">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              leftIcon={<Printer className="w-4 h-4 text-indigo-600" />}
+              onClick={() => setIsReceiptOpen(true)}
+              className="flex-1"
+            >
+              Comprobante PDF / Imprimir
+            </Button>
+
+            {reservation.status === 'Confirmada' && onMarkFulfilled && (
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                leftIcon={<UserCheck className="w-4 h-4" />}
+                onClick={() => onMarkFulfilled(reservation)}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-500"
+              >
+                Marcar Cumplida
+              </Button>
+            )}
           </div>
 
           {/* Core Info Cards */}
@@ -109,14 +161,52 @@ export const ReservationDetailModal: React.FC<ReservationDetailModalProps> = ({ 
             </div>
           )}
 
-          {/* Footer */}
-          <div className="flex justify-end pt-2 border-t border-slate-100">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cerrar
-            </Button>
+          {/* Observacion 3: LOG DE MODIFICACIONES EN RESERVA */}
+          <div className="space-y-2 pt-2 border-t border-slate-200">
+            <h4 className="text-xs font-bold text-slate-800 flex items-center gap-1.5 uppercase">
+              <History className="w-4 h-4 text-indigo-600" />
+              Log de Modificaciones de la Reserva
+            </h4>
+
+            {!reservation.logs || reservation.logs.length === 0 ? (
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-[11px] text-slate-400 italic">
+                Sin modificaciones registradas en esta reserva (reserva original sin editar).
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-48 overflow-y-auto no-scrollbar">
+                {reservation.logs.map((log) => (
+                  <div
+                    key={log.id}
+                    className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1 text-xs"
+                  >
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 font-semibold">
+                      <span className="text-indigo-600 font-bold">{log.action}</span>
+                      <span>{log.timestamp}</span>
+                    </div>
+                    <p className="font-semibold text-slate-800 text-[11px]">{log.details}</p>
+                    <p className="text-[10px] text-slate-400">Por: {log.userName}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
+
+        {/* Footer */}
+        <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end shrink-0">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cerrar
+          </Button>
+        </div>
       </div>
+
+      {/* Render Printable Receipt Modal */}
+      {isReceiptOpen && (
+        <ReservationReceiptModal
+          reservation={reservation}
+          onClose={() => setIsReceiptOpen(false)}
+        />
+      )}
     </div>
   );
 };

@@ -34,6 +34,7 @@ import {
   ReservationStatus,
   RestaurantTable,
   Reservation,
+  ReservationLog,
   SiteConfig,
   RestaurantTableConfig,
   SaleTypeConfig,
@@ -43,6 +44,7 @@ import {
   SaleOrder,
   ConfigOption,
   CurrentAccountMovement,
+  Receipt,
 } from '../types';
 import {
   INITIAL_PROVIDERS,
@@ -85,6 +87,7 @@ import {
 import {
   INITIAL_CC_CLIENTS,
   INITIAL_CC_MOVEMENTS,
+  INITIAL_RECEIPTS,
 } from '../data/currentAccountData';
 
 const DEFAULT_ROLE_PERMISSIONS: Record<UserRole, UserPermissions> = {
@@ -181,11 +184,12 @@ interface AppContextType {
   cashLines: CashLine[];
   cashMovements: CashMovement[];
   masterCashBoxes: MasterCashBox[];
-  openCashShift: (shift: TurnoType, notes?: string) => { success: boolean; message: string; shift?: CashShift };
+  openCashShift: (shift: TurnoType, initialLines?: { boxType: string; initialAmount: number }[], notes?: string) => { success: boolean; message: string; shift?: CashShift };
   addCashLine: (shiftId: string, boxType: string, initialAmount: number) => { success: boolean; message: string; line?: CashLine };
   recordCashMovement: (movement: Omit<CashMovement, 'id' | 'dateTime' | 'userId' | 'userName'>) => void;
   withdrawCashToMaster: (payload: CashWithdrawalPayload) => { success: boolean; message: string };
-  closeCashLine: (lineId: string, realAmount: number) => { success: boolean; message: string };
+  transferCashBetweenLines: (payload: { sourceLineId: string; targetLineId: string; amount: number; notes?: string }) => { success: boolean; message: string };
+  closeCashLine: (lineId: string, realAmount: number, differenceNotes?: string) => { success: boolean; message: string };
   closeCashShift: (shiftId: string) => { success: boolean; message: string };
   reconcileCashShift: (shiftId: string) => { success: boolean; message: string };
   voidCashShift: (shiftId: string, reason: string) => { success: boolean; message: string };
@@ -196,6 +200,7 @@ interface AppContextType {
   addReservation: (data: Omit<Reservation, 'id' | 'createdAt' | 'createdByUserId' | 'createdByUserName' | 'status'>) => { success: boolean; message: string; reservation?: Reservation };
   updateReservation: (reservation: Reservation) => { success: boolean; message: string };
   cancelReservation: (reservationId: string, cancelReason: string) => { success: boolean; message: string };
+  markReservationFulfilled: (reservationId: string) => { success: boolean; message: string };
   checkOverbooking: (tableId: string, dateTime: string, excludeReservationId?: string) => boolean;
 
   // Sales Configuration (Mesas, Tipos de Venta, Sitios)
@@ -224,6 +229,12 @@ interface AppContextType {
   updateSaleOrderStatus: (orderId: string, status: OrderStatus) => { success: boolean; message: string };
   processOrderBilling: (orderId: string, billing: Omit<OrderBillingInfo, 'billedAt' | 'ticketNumber'>) => { success: boolean; message: string; ticketNumber?: string };
   cancelSaleOrder: (orderId: string, reason?: string) => { success: boolean; message: string };
+
+  // Cuentas Corrientes State
+  ccMovements: CurrentAccountMovement[];
+  setCcMovements: React.Dispatch<React.SetStateAction<CurrentAccountMovement[]>>;
+  ccReceipts: Receipt[];
+  setCcReceipts: React.Dispatch<React.SetStateAction<Receipt[]>>;
 
   toast: ToastNotification | null;
   showToast: (message: string, type?: ToastType) => void;
@@ -690,6 +701,35 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     } catch (e) {}
   }, [payruns]);
 
+  // Cuentas Corrientes State & Persistence
+  const [ccMovements, setCcMovements] = useState<CurrentAccountMovement[]>(() => {
+    try {
+      const saved = localStorage.getItem('plegma_cc_movements');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return INITIAL_CC_MOVEMENTS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('plegma_cc_movements', JSON.stringify(ccMovements));
+    } catch (e) {}
+  }, [ccMovements]);
+
+  const [ccReceipts, setCcReceipts] = useState<Receipt[]>(() => {
+    try {
+      const saved = localStorage.getItem('plegma_cc_receipts');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return INITIAL_RECEIPTS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('plegma_cc_receipts', JSON.stringify(ccReceipts));
+    } catch (e) {}
+  }, [ccReceipts]);
+
   const createPayrun = (startDate: string, endDate: string, customPeriodName?: string) => {
     if (!startDate || !endDate) {
       return { success: false, message: 'Debe ingresar fecha y hora de inicio y fin.' };
@@ -940,7 +980,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
   };
 
-  const openCashShift = (shift: TurnoType, notes?: string) => {
+  const openCashShift = (shift: TurnoType, initialLines?: { boxType: string; initialAmount: number }[], notes?: string) => {
     const activeShift = cashShifts.find((s) => s.status === 'Abierta');
     if (activeShift) {
       return { success: false, message: `Ya existe una caja de turno abierta (${activeShift.name}). Debe cerrarla primero.` };
@@ -965,6 +1005,24 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
 
     setCashShifts((prev) => [newShift, ...prev]);
+
+    if (initialLines && initialLines.length > 0) {
+      const newLines: CashLine[] = initialLines.map((l, idx) => ({
+        id: 'line-' + (Date.now() + idx),
+        shiftId: newShift.id,
+        boxType: l.boxType,
+        initialAmount: l.initialAmount,
+        ticketsTotal: 0,
+        expensesTotal: 0,
+        withdrawalsTotal: 0,
+        theoreticalAmount: l.initialAmount,
+        status: 'Abierta',
+        openedByUserId: activeUserId,
+        openedByUserName: activeUser?.name || 'Usuario Autenticado',
+      }));
+      setCashLines((prev) => [...newLines, ...prev]);
+    }
+
     return { success: true, message: `Caja de turno "${shiftName}" abierta correctamente.`, shift: newShift };
   };
 
@@ -1129,11 +1187,81 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return { success: true, message: `Retiro de $${amount.toLocaleString('es-AR')} a ${targetMaster.name} registrado con éxito.` };
   };
 
-  const closeCashLine = (lineId: string, realAmount: number) => {
+  const transferCashBetweenLines = (payload: { sourceLineId: string; targetLineId: string; amount: number; notes?: string }) => {
+    const sourceLine = cashLines.find((l) => l.id === payload.sourceLineId);
+    const targetLine = cashLines.find((l) => l.id === payload.targetLineId);
+    if (!sourceLine || sourceLine.status !== 'Abierta') {
+      return { success: false, message: 'La línea de caja de origen no está abierta.' };
+    }
+    if (!targetLine || targetLine.status !== 'Abierta') {
+      return { success: false, message: 'La línea de caja de destino no está abierta.' };
+    }
+    if (payload.amount <= 0) {
+      return { success: false, message: 'Ingrese un monto a transferir válido superior a cero.' };
+    }
+
+    const activeUser = users.find((u) => u.id === activeUserId);
+    const nowStr = getNowStr();
+
+    const sourceMov: CashMovement = {
+      id: 'cm-' + Date.now(),
+      lineId: sourceLine.id,
+      shiftId: sourceLine.shiftId,
+      dateTime: nowStr,
+      type: 'Retiro',
+      origin: `Traspaso A ${targetLine.boxType}`,
+      voucherNumber: `TRF-${Date.now().toString().slice(-5)}`,
+      amount: -Math.abs(payload.amount),
+      userId: activeUserId,
+      userName: activeUser?.name || 'Usuario Autenticado',
+      notes: payload.notes,
+    };
+
+    const targetMov: CashMovement = {
+      id: 'cm-' + (Date.now() + 1),
+      lineId: targetLine.id,
+      shiftId: targetLine.shiftId,
+      dateTime: nowStr,
+      type: 'Apertura',
+      origin: `Traspaso Desde ${sourceLine.boxType}`,
+      voucherNumber: `TRF-${Date.now().toString().slice(-5)}`,
+      amount: Math.abs(payload.amount),
+      userId: activeUserId,
+      userName: activeUser?.name || 'Usuario Autenticado',
+      notes: payload.notes,
+    };
+
+    setCashMovements((prev) => [sourceMov, targetMov, ...prev]);
+
+    setCashLines((prev) =>
+      prev.map((l) => {
+        if (l.id === sourceLine.id) {
+          const withdrawalsTotal = l.withdrawalsTotal + Math.abs(payload.amount);
+          return {
+            ...l,
+            withdrawalsTotal,
+            theoreticalAmount: l.initialAmount + l.ticketsTotal - l.expensesTotal - withdrawalsTotal,
+          };
+        }
+        if (l.id === targetLine.id) {
+          const initialAmount = l.initialAmount + Math.abs(payload.amount);
+          return {
+            ...l,
+            initialAmount,
+            theoreticalAmount: initialAmount + l.ticketsTotal - l.expensesTotal - l.withdrawalsTotal,
+          };
+        }
+        return l;
+      })
+    );
+
+    return { success: true, message: `Transferencia de $${payload.amount.toLocaleString('es-AR')} de ${sourceLine.boxType} a ${targetLine.boxType} realizada con éxito.` };
+  };
+
+  const closeCashLine = (lineId: string, realAmount: number, differenceNotes?: string) => {
     const targetLine = cashLines.find((l) => l.id === lineId);
     if (!targetLine) return { success: false, message: 'Línea de caja no encontrada.' };
 
-    // [R03] Precondición de Cierre de Línea
     if (realAmount === undefined || realAmount === null || isNaN(realAmount)) {
       return { success: false, message: 'Debe ingresar el Monto Real Cierre previamente.' };
     }
@@ -1143,6 +1271,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const nowStr = getNowStr();
     const activeUser = users.find((u) => u.id === activeUserId);
 
+    if (difference !== 0 && (!differenceNotes || !differenceNotes.trim())) {
+      return { success: false, message: 'Al existir diferencia entre el monto real y el teórico, la observación es OBLIGATORIA.' };
+    }
+
     setCashLines((prev) =>
       prev.map((l) =>
         l.id === lineId
@@ -1151,6 +1283,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               theoreticalAmount,
               realAmount,
               difference,
+              differenceNotes: differenceNotes?.trim(),
               status: 'Cerrada' as const,
               closedAt: nowStr,
             }
@@ -1388,7 +1521,31 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       };
     }
 
-    setReservations((prev) => prev.map((r) => (r.id === updatedRes.id ? updatedRes : r)));
+    const nowStr = getNowStr();
+    const activeUser = users.find((u) => u.id === activeUserId);
+    const changes: string[] = [];
+
+    if (target.dateTime !== updatedRes.dateTime) changes.push(`Fecha/Hora: '${target.dateTime}' ➔ '${updatedRes.dateTime}'`);
+    if (target.tableId !== updatedRes.tableId) changes.push(`Mesa: '${target.tableName}' ➔ '${updatedRes.tableName}'`);
+    if (target.guestsCount !== updatedRes.guestsCount) changes.push(`Comensales: ${target.guestsCount} ➔ ${updatedRes.guestsCount} pax`);
+    if (target.notes !== updatedRes.notes) changes.push(`Notas modificadas`);
+    if (target.status !== updatedRes.status) changes.push(`Estado: '${target.status}' ➔ '${updatedRes.status}'`);
+
+    const newLogItem: ReservationLog = {
+      id: 'log-' + Date.now(),
+      timestamp: nowStr,
+      userId: activeUserId,
+      userName: activeUser?.name || 'Usuario Autenticado',
+      action: 'Edición de Reserva',
+      details: changes.length > 0 ? changes.join(' | ') : 'Edición general de la reserva.',
+    };
+
+    const finalRes = {
+      ...updatedRes,
+      logs: [newLogItem, ...(target.logs || [])],
+    };
+
+    setReservations((prev) => prev.map((r) => (r.id === updatedRes.id ? finalRes : r)));
     return { success: true, message: `Reserva para "${updatedRes.clientName}" actualizada correctamente.` };
   };
 
@@ -1396,11 +1553,55 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const target = reservations.find((r) => r.id === reservationId);
     if (!target) return { success: false, message: 'Reserva no encontrada.' };
 
+    const nowStr = getNowStr();
+    const activeUser = users.find((u) => u.id === activeUserId);
+
+    const logItem: ReservationLog = {
+      id: 'log-' + Date.now(),
+      timestamp: nowStr,
+      userId: activeUserId,
+      userName: activeUser?.name || 'Usuario Autenticado',
+      action: 'Cancelación de Reserva',
+      details: `Reserva cancelada. Motivo: ${cancelReason}`,
+    };
+
     setReservations((prev) =>
-      prev.map((r) => (r.id === reservationId ? { ...r, status: 'Cancelada' as const, cancelReason } : r))
+      prev.map((r) => (r.id === reservationId ? { ...r, status: 'Cancelada' as const, cancelReason, logs: [logItem, ...(r.logs || [])] } : r))
     );
 
     return { success: true, message: `Reserva de "${target.clientName}" fue cancelada.` };
+  };
+
+  const markReservationFulfilled = (reservationId: string) => {
+    const target = reservations.find((r) => r.id === reservationId);
+    if (!target) return { success: false, message: 'Reserva no encontrada.' };
+    if (target.status === 'Cancelada') return { success: false, message: 'No se puede marcar cumplida una reserva cancelada.' };
+
+    const nowStr = getNowStr();
+    const activeUser = users.find((u) => u.id === activeUserId);
+
+    const logItem: ReservationLog = {
+      id: 'log-' + Date.now(),
+      timestamp: nowStr,
+      userId: activeUserId,
+      userName: activeUser?.name || 'Usuario Autenticado',
+      action: 'Cambio de Estado',
+      details: `Estado modificado de '${target.status}' a 'Cumplida'. Cliente presente en mesa.`,
+    };
+
+    setReservations((prev) =>
+      prev.map((r) =>
+        r.id === reservationId
+          ? {
+              ...r,
+              status: 'Cumplida' as const,
+              logs: [logItem, ...(r.logs || [])],
+            }
+          : r
+      )
+    );
+
+    return { success: true, message: `Reserva de "${target.clientName}" marcada como CUMPLIDA con éxito.` };
   };
 
   // ----------------------------------------------------
@@ -1670,6 +1871,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [saleOrders]);
 
   const createSaleOrder = (data: Omit<SaleOrder, 'id' | 'orderNumber' | 'createdAt' | 'status' | 'createdByUserId' | 'createdByUserName' | 't1CreatedAt'>) => {
+    // Validation: Mandatory open cash shift to take orders (Observacion 4)
+    const activeShift = cashShifts.find((s) => s.status === 'Abierta');
+    if (!activeShift) {
+      return { success: false, message: 'No hay una Caja de Turno abierta. Es obligatorio realizar la Apertura de Caja para tomar e ingresar pedidos.' };
+    }
+
     const saleType = saleTypeConfigs.find((st) => st.id === data.saleTypeId);
     
     // [R03] Requerimiento de Mesa si Tipo de Venta exige mesa
@@ -1843,6 +2050,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     // [A07] If Cuenta Corriente: record current account movement
     if (billing.paymentCondition === 'Cuenta Corriente' && client) {
+      const itemDetails = target.items ? target.items.map((i) => `${i.quantity}x ${i.productName}`).join(', ') : '';
       const ccMovement: CurrentAccountMovement = {
         id: 'mov-' + Date.now(),
         clientId: client.id,
@@ -1850,11 +2058,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         voucherType: 'Ticket',
         type: 'Venta',
         total: billing.finalTotal,
-        ticketDetail: `Consumo Pedido #${target.orderNumber}`,
+        ticketDetail: `Pedido #${target.orderNumber}${itemDetails ? ' - ' + itemDetails : ''}`,
         ticketNumber: ticketNum,
         lineState: 'Pendiente',
       };
-      INITIAL_CC_MOVEMENTS.unshift(ccMovement);
+      setCcMovements((prev) => [ccMovement, ...prev]);
     }
 
     // If Employee Consumption: record employee consumption
@@ -2677,6 +2885,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         addCashLine,
         recordCashMovement,
         withdrawCashToMaster,
+        transferCashBetweenLines,
         closeCashLine,
         closeCashShift,
         reconcileCashShift,
@@ -2685,6 +2894,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         reservations,
         addReservation,
         updateReservation,
+        cancelReservation,
+        markReservationFulfilled,
         checkOverbooking,
         siteConfigs,
         tableConfigs,
@@ -2709,6 +2920,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         updateSaleOrderStatus,
         processOrderBilling,
         cancelSaleOrder,
+        ccMovements,
+        setCcMovements,
+        ccReceipts,
+        setCcReceipts,
         toast,
         showToast,
         hideToast,

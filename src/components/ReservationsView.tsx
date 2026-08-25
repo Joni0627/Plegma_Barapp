@@ -16,6 +16,7 @@ import {
   FileText,
   UserCheck,
   HelpCircle,
+  Printer,
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { StandardDataTable } from './ui/DataTable';
@@ -25,12 +26,14 @@ import { Reservation, RestaurantTable } from '../types';
 import { INITIAL_CC_CLIENTS } from '../data/currentAccountData';
 import { ReservationModal } from './reservations/ReservationModal';
 import { ReservationDetailModal } from './reservations/ReservationDetailModal';
+import { ReservationReceiptModal } from './reservations/ReservationReceiptModal';
 
 const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   const cfg: Record<string, string> = {
     Confirmada: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+    Cumplida: 'bg-indigo-100 text-indigo-800 border-indigo-300',
     Cancelada: 'bg-rose-100 text-rose-800 border-rose-300',
-    Histórica: 'bg-indigo-100 text-indigo-800 border-indigo-300',
+    Histórica: 'bg-slate-100 text-slate-800 border-slate-300',
   };
   return (
     <span
@@ -50,12 +53,21 @@ export function ReservationsView() {
     addReservation,
     updateReservation,
     cancelReservation,
+    markReservationFulfilled,
     checkOverbooking,
     userRole,
     showToast,
   } = useApp();
 
   const [activeTab, setActiveTab] = useState<'proximas' | 'historial' | 'canceladas'>('proximas');
+
+  // Today's date string YYYY-MM-DD
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const d = new Date();
+  const todayStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+  // Observación 1: Default Stats Date filter (defaults to TODAY)
+  const [statsDate, setStatsDate] = useState<string>(todayStr);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -67,13 +79,14 @@ export function ReservationsView() {
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [editingReservation, setEditingReservation] = useState<Reservation | null>(null);
   const [viewingReservation, setViewingReservation] = useState<Reservation | null>(null);
+  const [printingReservation, setPrintingReservation] = useState<Reservation | null>(null);
 
-  // Filter reservations according to active tab and filters
+  // Filter reservations according to active tab and search filters
   const filteredReservations = useMemo(() => {
     return reservations.filter((r) => {
       // Tab filter
       if (activeTab === 'proximas' && r.status !== 'Confirmada') return false;
-      if (activeTab === 'historial' && r.status !== 'Histórica') return false;
+      if (activeTab === 'historial' && r.status !== 'Histórica' && r.status !== 'Cumplida') return false;
       if (activeTab === 'canceladas' && r.status !== 'Cancelada') return false;
 
       // Date filter
@@ -96,14 +109,36 @@ export function ReservationsView() {
     });
   }, [reservations, activeTab, filterDate, filterTableId, searchQuery]);
 
-  // Summaries
-  const upcomingCount = useMemo(() => reservations.filter((r) => r.status === 'Confirmada').length, [reservations]);
-  const historyCount = useMemo(() => reservations.filter((r) => r.status === 'Histórica').length, [reservations]);
-  const cancelledCount = useMemo(() => reservations.filter((r) => r.status === 'Cancelada').length, [reservations]);
-  const totalGuestsUpcoming = useMemo(
-    () => reservations.filter((r) => r.status === 'Confirmada').reduce((acc, r) => acc + r.guestsCount, 0),
+  // Observación 1: Summaries calculated BY DEFAULT FOR TODAY (or statsDate if customized)
+  const statsReservations = useMemo(() => {
+    if (!statsDate) return reservations;
+    return reservations.filter((r) => r.dateTime.startsWith(statsDate));
+  }, [reservations, statsDate]);
+
+  const upcomingTodayCount = useMemo(
+    () => statsReservations.filter((r) => r.status === 'Confirmada').length,
+    [statsReservations]
+  );
+  const fulfilledTodayCount = useMemo(
+    () => statsReservations.filter((r) => r.status === 'Cumplida' || r.status === 'Histórica').length,
+    [statsReservations]
+  );
+  const cancelledTodayCount = useMemo(
+    () => statsReservations.filter((r) => r.status === 'Cancelada').length,
+    [statsReservations]
+  );
+  const totalGuestsToday = useMemo(
+    () => statsReservations.filter((r) => r.status === 'Confirmada').reduce((acc, r) => acc + r.guestsCount, 0),
+    [statsReservations]
+  );
+
+  // Tab count badges
+  const totalUpcoming = useMemo(() => reservations.filter((r) => r.status === 'Confirmada').length, [reservations]);
+  const totalHistory = useMemo(
+    () => reservations.filter((r) => r.status === 'Histórica' || r.status === 'Cumplida').length,
     [reservations]
   );
+  const totalCancelled = useMemo(() => reservations.filter((r) => r.status === 'Cancelada').length, [reservations]);
 
   // Handlers
   const handleCreateNew = () => {
@@ -112,7 +147,6 @@ export function ReservationsView() {
   };
 
   const handleEditClick = (res: Reservation) => {
-    // [R05] Inmutabilidad de Históricas
     if (res.status === 'Histórica' && userRole !== 'admin') {
       showToast('Las reservas históricas no se pueden editar (R05).', 'error');
       return;
@@ -124,12 +158,25 @@ export function ReservationsView() {
   const handleCancelClick = (res: Reservation) => {
     if (res.status === 'Cancelada') return;
     const reason = prompt(`Motivo de cancelación para la reserva de ${res.clientName}:`);
-    if (reason === null) return; // User pressed cancel in prompt
+    if (reason === null) return;
     const resCancel = cancelReservation(res.id, reason.trim() || 'Cancelación directa por usuario');
     if (resCancel.success) {
       showToast(resCancel.message, 'warning');
     } else {
       showToast(resCancel.message, 'error');
+    }
+  };
+
+  // Observación 4: Marcar Cumplida
+  const handleMarkFulfilledClick = (res: Reservation) => {
+    const resFulfilled = markReservationFulfilled(res.id);
+    if (resFulfilled.success) {
+      showToast(resFulfilled.message, 'success');
+      if (viewingReservation?.id === res.id) {
+        setViewingReservation(null);
+      }
+    } else {
+      showToast(resFulfilled.message, 'error');
     }
   };
 
@@ -151,7 +198,7 @@ export function ReservationsView() {
     }
   };
 
-  // Required columns: [Fecha Hora], [Cliente], [Personas], [Mesa], [Estado]
+  // Required columns: [Fecha Hora], [Cliente], [Personas], [Mesa], [Estado], [Acciones]
   const columns = [
     {
       key: 'dateTime',
@@ -206,39 +253,63 @@ export function ReservationsView() {
     },
     {
       key: 'actions',
-      header: 'Acciones (8)',
+      header: 'Acciones',
       align: 'center' as const,
       render: (r: Reservation) => (
         <div className="flex items-center justify-center gap-1">
-          {/* Action 4: EYE - Ver detalle */}
+          {/* Action: EYE - Ver detalle */}
           <button
             type="button"
             onClick={() => setViewingReservation(r)}
             className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
-            title="Ver detalle de la reserva [4]"
+            title="Ver detalle de la reserva y log de modificaciones"
           >
             <Eye className="w-4 h-4" />
           </button>
 
-          {/* Action 2: EDIT - Editar reserva (R05) */}
+          {/* Observación 2: PRINTER - PDF / Comprobante */}
+          {r.status === 'Confirmada' && (
+            <button
+              type="button"
+              onClick={() => setPrintingReservation(r)}
+              className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+              title="Generar e imprimir Comprobante PDF de Reserva"
+            >
+              <Printer className="w-4 h-4" />
+            </button>
+          )}
+
+          {/* Observación 4: USERCHECK - Marcar Cumplida */}
+          {r.status === 'Confirmada' && (
+            <button
+              type="button"
+              onClick={() => handleMarkFulfilledClick(r)}
+              className="p-1 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 rounded-lg transition"
+              title="Marcar reserva como Cumplida (Cliente asistió)"
+            >
+              <UserCheck className="w-4 h-4" />
+            </button>
+          )}
+
+          {/* Action: EDIT - Editar reserva */}
           {r.status !== 'Cancelada' && (r.status !== 'Histórica' || userRole === 'admin') && (
             <button
               type="button"
               onClick={() => handleEditClick(r)}
               className="p-1 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition"
-              title="Editar reserva [2]"
+              title="Editar reserva"
             >
               <Edit className="w-4 h-4" />
             </button>
           )}
 
-          {/* Action 3: CANCEL - Cancelar reserva */}
+          {/* Action: CANCEL - Cancelar reserva */}
           {r.status === 'Confirmada' && (
             <button
               type="button"
               onClick={() => handleCancelClick(r)}
               className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
-              title="Cancelar reserva [3]"
+              title="Cancelar reserva"
             >
               <XCircle className="w-4 h-4" />
             </button>
@@ -269,7 +340,7 @@ export function ReservationsView() {
           </p>
         </div>
 
-        {/* Action 1: Crear reserva */}
+        {/* Action: Crear reserva */}
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -284,58 +355,85 @@ export function ReservationsView() {
             leftIcon={<Plus className="w-4 h-4" />}
             onClick={handleCreateNew}
           >
-            Crear Reserva [1]
+            Crear Reserva
           </Button>
         </div>
       </div>
 
-      {/* Summary KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex items-center gap-4">
-          <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-            <Calendar className="w-5 h-5" />
-          </div>
-          <div>
-            <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wide">Próximas Reservas</p>
-            <p className="text-base font-black text-slate-900 mt-0.5">{upcomingCount}</p>
-          </div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex items-center gap-4">
-          <div className="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-            <Users className="w-5 h-5" />
-          </div>
-          <div>
-            <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wide">Comensales Esperados</p>
-            <p className="text-base font-black text-indigo-700 mt-0.5">{totalGuestsUpcoming} pax</p>
-          </div>
-        </div>
-
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex items-center gap-4">
-          <div className="w-11 h-11 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
-            <History className="w-5 h-5" />
-          </div>
-          <div>
-            <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wide">Historial Cumplido</p>
-            <p className="text-base font-black text-slate-900 mt-0.5">{historyCount}</p>
+      {/* Observación 1: SUMMARY KPI CARDS FILTERED BY DEFAULT FOR TODAY */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5 uppercase tracking-wider">
+            <Clock className="w-4 h-4 text-indigo-600" />
+            Estadísticas Operativas &bull; {statsDate === todayStr ? 'Día Actual (Hoy)' : `Fecha: ${statsDate}`}
+          </span>
+          <div className="flex items-center gap-2 text-xs">
+            <span className="text-slate-400 font-semibold">Filtrar Fecha Estadísticas:</span>
+            <input
+              type="date"
+              value={statsDate}
+              onChange={(e) => setStatsDate(e.target.value)}
+              className="px-2.5 py-1 text-xs bg-white border border-slate-300 rounded-xl font-mono font-bold text-slate-800"
+            />
+            {statsDate !== '' && (
+              <button
+                type="button"
+                onClick={() => setStatsDate('')}
+                className="text-[11px] text-indigo-600 hover:underline font-bold"
+              >
+                Ver Histórico Global
+              </button>
+            )}
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex items-center gap-4">
-          <div className="w-11 h-11 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
-            <XCircle className="w-5 h-5" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex items-center gap-4">
+            <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+              <Calendar className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wide">Próximas Reservas</p>
+              <p className="text-base font-black text-slate-900 mt-0.5">{upcomingTodayCount}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wide">Reservas Canceladas</p>
-            <p className="text-base font-black text-rose-600 mt-0.5">{cancelledCount}</p>
+
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex items-center gap-4">
+            <div className="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+              <Users className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wide">Comensales Esperados</p>
+              <p className="text-base font-black text-indigo-700 mt-0.5">{totalGuestsToday} pax</p>
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex items-center gap-4">
+            <div className="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+              <UserCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wide">Reservas Cumplidas</p>
+              <p className="text-base font-black text-slate-900 mt-0.5">{fulfilledTodayCount}</p>
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm flex items-center gap-4">
+            <div className="w-11 h-11 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+              <XCircle className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-[11px] text-slate-500 font-medium uppercase tracking-wide">Reservas Canceladas</p>
+              <p className="text-base font-black text-rose-600 mt-0.5">{cancelledTodayCount}</p>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Tabs & Filtering Bar (Actions 5, 6, 7, 8) */}
+      {/* Tabs & Filtering Bar */}
       <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-          {/* Tabs: Actions 5, 6, 7 */}
+          {/* Tabs */}
           <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit flex-wrap">
             <button
               onClick={() => setActiveTab('proximas')}
@@ -346,7 +444,7 @@ export function ReservationsView() {
               }`}
             >
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-              Próximas Reservas ({upcomingCount}) [5]
+              Próximas Confirmadas ({totalUpcoming})
             </button>
 
             <button
@@ -358,7 +456,7 @@ export function ReservationsView() {
               }`}
             >
               <History className="w-3.5 h-3.5 text-indigo-600" />
-              Historial de Reservas ({historyCount}) [6]
+              Historial & Cumplidas ({totalHistory})
             </button>
 
             <button
@@ -370,12 +468,12 @@ export function ReservationsView() {
               }`}
             >
               <XCircle className="w-3.5 h-3.5 text-rose-600" />
-              Reservas Canceladas ({cancelledCount}) [7]
+              Reservas Canceladas ({totalCancelled})
             </button>
           </div>
         </div>
 
-        {/* Filter controls: Action 8 */}
+        {/* Filter controls */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-100">
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
@@ -423,7 +521,7 @@ export function ReservationsView() {
           activeTab === 'proximas'
             ? 'Próximas Reservas Confirmadas'
             : activeTab === 'historial'
-            ? 'Historial de Reservas Cumplidas'
+            ? 'Historial de Reservas Cumplidas y Pasadas'
             : 'Registro de Reservas Canceladas'
         }
         subtitle="Listado con columnas obligatorias: [Fecha Hora], [Cliente], [Personas], [Mesa] y [Estado]"
@@ -462,6 +560,15 @@ export function ReservationsView() {
         <ReservationDetailModal
           reservation={viewingReservation}
           onClose={() => setViewingReservation(null)}
+          onMarkFulfilled={handleMarkFulfilledClick}
+        />
+      )}
+
+      {/* Observación 2: Modal PDF Comprobante */}
+      {printingReservation && (
+        <ReservationReceiptModal
+          reservation={printingReservation}
+          onClose={() => setPrintingReservation(null)}
         />
       )}
     </div>

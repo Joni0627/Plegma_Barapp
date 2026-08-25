@@ -7,7 +7,7 @@ import { CashLine } from '../../types';
 interface CloseLineModalProps {
   line: CashLine;
   onClose: () => void;
-  onConfirm: (realAmount: number) => void;
+  onConfirm: (realAmount: number, differenceNotes?: string) => void;
 }
 
 const fmt = (n: number) =>
@@ -17,20 +17,29 @@ export const CloseLineModal: React.FC<CloseLineModalProps> = ({ line, onClose, o
   const [realAmountStr, setRealAmountStr] = useState(
     line.realAmount !== undefined ? String(line.realAmount) : String(line.theoreticalAmount)
   );
+  const [differenceNotes, setDifferenceNotes] = useState(line.differenceNotes || '');
   const [error, setError] = useState('');
 
   const theoretical = line.initialAmount + line.ticketsTotal - line.expensesTotal - line.withdrawalsTotal;
   const realAmount = parseFloat(realAmountStr);
   const isValidNumber = !isNaN(realAmount);
   const difference = isValidNumber ? realAmount - theoretical : 0;
+  const hasDifference = difference !== 0;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValidNumber) {
-      setError('Debe ingresar el Monto Real Cierre previamente (R03).');
+      setError('Debe ingresar el Monto Real Cierre previamente.');
       return;
     }
-    onConfirm(realAmount);
+
+    // MANDATORY OBSERVATION IF DIFFERENCE EXISTS (Observacion 6)
+    if (hasDifference && (!differenceNotes || !differenceNotes.trim())) {
+      setError('Al existir diferencia entre el monto real y el teórico, la observación es OBLIGATORIA.');
+      return;
+    }
+
+    onConfirm(realAmount, differenceNotes.trim());
   };
 
   return (
@@ -59,8 +68,9 @@ export const CloseLineModal: React.FC<CloseLineModalProps> = ({ line, onClose, o
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
-            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-semibold">
-              {error}
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs font-semibold flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 
@@ -143,6 +153,24 @@ export const CloseLineModal: React.FC<CloseLineModalProps> = ({ line, onClose, o
                 {difference >= 0 ? `+${fmt(difference)}` : fmt(difference)}
               </span>
             </div>
+          )}
+
+          {/* MANDATORY OBSERVATION INPUT IF DIFFERENCE EXISTS */}
+          {hasDifference && (
+            <FormField
+              label="Observación por Diferencia"
+              required
+              hint="Al existir sobrante o faltante, ingrese la justificación obligatoria del descuadre"
+            >
+              <TextInput
+                placeholder="Ej. Faltante en vuelto entregado / Billete falso retenido / Ajuste de cambio..."
+                value={differenceNotes}
+                onChange={(e) => {
+                  setDifferenceNotes(e.target.value);
+                  setError('');
+                }}
+              />
+            </FormField>
           )}
 
           <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">

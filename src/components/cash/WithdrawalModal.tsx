@@ -1,14 +1,24 @@
 import React, { useState } from 'react';
-import { X, DollarSign, ArrowRightLeft } from 'lucide-react';
+import { X, DollarSign, ArrowRightLeft, Building2, CreditCard } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { FormField, SelectInput, TextInput } from '../ui/Form';
 import { CashLine, MasterCashBox, CashWithdrawalPayload } from '../../types';
 
+interface TransferPayload {
+  sourceLineId: string;
+  targetType: 'MasterBox' | 'OperationalLine';
+  targetId: string;
+  amount: number;
+  notes?: string;
+}
+
 interface WithdrawalModalProps {
   line: CashLine;
+  allLines: CashLine[];
   masterBoxes: MasterCashBox[];
   onClose: () => void;
-  onConfirm: (payload: CashWithdrawalPayload) => void;
+  onConfirmWithdrawal: (payload: CashWithdrawalPayload) => void;
+  onConfirmTransfer?: (payload: { sourceLineId: string; targetLineId: string; amount: number; notes?: string }) => void;
 }
 
 const fmt = (n: number) =>
@@ -16,43 +26,79 @@ const fmt = (n: number) =>
 
 export const WithdrawalModal: React.FC<WithdrawalModalProps> = ({
   line,
+  allLines,
   masterBoxes,
   onClose,
-  onConfirm,
+  onConfirmWithdrawal,
+  onConfirmTransfer,
 }) => {
+  const [destinationType, setDestinationType] = useState<'MasterBox' | 'OperationalLine'>('MasterBox');
   const [amountStr, setAmountStr] = useState('');
-  const [masterBoxId, setMasterBoxId] = useState(masterBoxes[0]?.id || '');
+  const [targetId, setTargetId] = useState(masterBoxes[0]?.id || '');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
+
+  // Other open lines for inter-line transfer
+  const otherLines = allLines.filter((l) => l.id !== line.id && l.status === 'Abierta');
 
   const masterBoxOptions = masterBoxes.map((mb) => ({
     value: mb.id,
     label: `${mb.name} (Saldo: ${fmt(mb.currentBalance)})`,
   }));
 
+  const otherLineOptions = otherLines.map((l) => ({
+    value: l.id,
+    label: `${l.boxType} (Teórico: ${fmt(l.theoreticalAmount)})`,
+  }));
+
+  const handleDestinationTypeChange = (type: 'MasterBox' | 'OperationalLine') => {
+    setDestinationType(type);
+    setError('');
+    if (type === 'MasterBox') {
+      setTargetId(masterBoxes[0]?.id || '');
+    } else {
+      setTargetId(otherLines[0]?.id || '');
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const amount = parseFloat(amountStr);
     if (!amount || amount <= 0) {
-      setError('Ingrese un monto de retiro válido superior a cero.');
+      setError('Ingrese un monto de retiro/movimiento válido superior a cero.');
       return;
     }
-    if (!masterBoxId) {
-      setError('Seleccione una Caja Maestra de destino.');
+    if (!targetId) {
+      setError('Seleccione un destino válido para el movimiento de dinero.');
       return;
-    }
-    if (amount > line.theoreticalAmount && line.boxType === 'Efectivo') {
-      if (!confirm(`El monto a retirar (${fmt(amount)}) supera el saldo teórico en la línea (${fmt(line.theoreticalAmount)}). ¿Desea continuar de todos modos?`)) {
-        return;
-      }
     }
 
-    onConfirm({
-      lineId: line.id,
-      amount,
-      masterBoxId,
-      notes,
-    });
+    if (destinationType === 'MasterBox') {
+      if (amount > line.theoreticalAmount && line.boxType === 'Efectivo') {
+        if (
+          !confirm(
+            `El monto a retirar (${fmt(amount)}) supera el saldo teórico en la línea (${fmt(line.theoreticalAmount)}). ¿Desea continuar de todos modos?`
+          )
+        ) {
+          return;
+        }
+      }
+      onConfirmWithdrawal({
+        lineId: line.id,
+        amount,
+        masterBoxId: targetId,
+        notes,
+      });
+    } else {
+      if (onConfirmTransfer) {
+        onConfirmTransfer({
+          sourceLineId: line.id,
+          targetLineId: targetId,
+          amount,
+          notes,
+        });
+      }
+    }
   };
 
   return (
@@ -65,8 +111,8 @@ export const WithdrawalModal: React.FC<WithdrawalModalProps> = ({
               <ArrowRightLeft className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-extrabold text-base">Registrar Retiro de Caja</h3>
-              <p className="text-xs text-slate-400">Transferir fondos desde {line.boxType} a Caja Maestra</p>
+              <h3 className="font-extrabold text-base">Movimiento / Retiro de Dinero</h3>
+              <p className="text-xs text-slate-400">Traspaso desde {line.boxType} a Caja Maestra u otra línea</p>
             </div>
           </div>
           <button
@@ -89,7 +135,7 @@ export const WithdrawalModal: React.FC<WithdrawalModalProps> = ({
           {/* Line summary pill */}
           <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between">
             <div>
-              <p className="text-[10px] text-slate-400 uppercase tracking-wide font-bold">Línea Operativa</p>
+              <p className="text-[10px] text-slate-400 uppercase tracking-wide font-bold">Línea Operativa Origen</p>
               <p className="text-xs font-black text-slate-800">{line.boxType}</p>
             </div>
             <div className="text-right">
@@ -98,7 +144,36 @@ export const WithdrawalModal: React.FC<WithdrawalModalProps> = ({
             </div>
           </div>
 
-          <FormField label="Monto a Retirar ($)" required hint="Importe que se descontará de la línea">
+          {/* Destination Type Toggle */}
+          <FormField label="Tipo de Movimiento / Destino" required>
+            <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
+              <button
+                type="button"
+                onClick={() => handleDestinationTypeChange('MasterBox')}
+                className={`py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                  destinationType === 'MasterBox'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                <Building2 className="w-3.5 h-3.5" /> Caja Maestra
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDestinationTypeChange('OperationalLine')}
+                disabled={otherLines.length === 0}
+                className={`py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                  destinationType === 'OperationalLine'
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800'
+                } ${otherLines.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <CreditCard className="w-3.5 h-3.5" /> Otra Línea Caja
+              </button>
+            </div>
+          </FormField>
+
+          <FormField label="Monto a Movilizar ($)" required hint="Importe que se descontará de esta línea">
             <TextInput
               type="number"
               min="1"
@@ -112,17 +187,33 @@ export const WithdrawalModal: React.FC<WithdrawalModalProps> = ({
             />
           </FormField>
 
-          <FormField label="Caja Maestra Destino" required hint="Solo Cajas Maestras pueden recibir retiros (R05)">
-            <SelectInput
-              options={masterBoxOptions}
-              value={masterBoxId}
-              onChange={(e) => setMasterBoxId(e.target.value)}
-            />
-          </FormField>
+          {destinationType === 'MasterBox' ? (
+            <FormField label="Caja Maestra Destino" required hint="Caja maestra para depositar el retiro">
+              <SelectInput
+                options={masterBoxOptions}
+                value={targetId}
+                onChange={(e) => setTargetId(e.target.value)}
+              />
+            </FormField>
+          ) : (
+            <FormField label="Línea Operativa Destino" required hint="Línea de turno abierta que recibirá los fondos">
+              {otherLines.length === 0 ? (
+                <p className="text-xs text-rose-600 font-semibold p-2 bg-rose-50 rounded-xl">
+                  No hay otras líneas abiertas disponibles en este turno.
+                </p>
+              ) : (
+                <SelectInput
+                  options={otherLineOptions}
+                  value={targetId}
+                  onChange={(e) => setTargetId(e.target.value)}
+                />
+              )}
+            </FormField>
+          )}
 
-          <FormField label="Observación / Justificación" hint="Motivo del retiro o referencia de transporte">
+          <FormField label="Observaciones / Justificación" hint="Motivo del movimiento o transporte de dinero">
             <TextInput
-              placeholder="Ej. Retiro parcial de seguridad por arqueo en caja chica..."
+              placeholder="Ej. Retiro parcial de seguridad / Traspaso de cambio a caja principal..."
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
             />
@@ -133,7 +224,7 @@ export const WithdrawalModal: React.FC<WithdrawalModalProps> = ({
               Cancelar
             </Button>
             <Button type="submit" variant="primary" leftIcon={<DollarSign className="w-4 h-4" />}>
-              Confirmar Retiro
+              Confirmar Movimiento
             </Button>
           </div>
         </form>

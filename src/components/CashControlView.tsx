@@ -31,6 +31,7 @@ import { WithdrawalModal } from './cash/WithdrawalModal';
 import { CloseLineModal } from './cash/CloseLineModal';
 import { LineMovementsModal } from './cash/LineMovementsModal';
 import { PrintSummaryModal } from './cash/PrintSummaryModal';
+import { ShiftHistoryModal } from './cash/ShiftHistoryModal';
 import { ModuleHelpModal } from './ui/ModuleHelpModal';
 
 const fmt = (n: number) =>
@@ -81,6 +82,7 @@ export function CashControlView() {
     addCashLine,
     recordCashMovement,
     withdrawCashToMaster,
+    transferCashBetweenLines,
     closeCashLine,
     closeCashShift,
     reconcileCashShift,
@@ -101,6 +103,7 @@ export function CashControlView() {
   const [viewingMovementsLine, setViewingMovementsLine] = useState<CashLine | null>(null);
   const [isPrintSummaryOpen, setIsPrintSummaryOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [historyShiftToView, setHistoryShiftToView] = useState<CashShift | null>(null);
 
   // Active shift resolution
   const activeShift = useMemo(() => {
@@ -121,8 +124,12 @@ export function CashControlView() {
   const totalDifference = activeLines.reduce((acc, l) => acc + (l.difference || 0), 0);
 
   // Handlers
-  const handleOpenShiftConfirm = (shiftType: TurnoType, notes?: string) => {
-    const res = openCashShift(shiftType, notes);
+  const handleOpenShiftConfirm = (
+    shiftType: TurnoType,
+    initialLines: { boxType: string; initialAmount: number }[],
+    notes?: string
+  ) => {
+    const res = openCashShift(shiftType, initialLines, notes);
     if (res.success && res.shift) {
       setSelectedShiftId(res.shift.id);
       showToast(res.message, 'success');
@@ -153,9 +160,19 @@ export function CashControlView() {
     }
   };
 
-  const handleCloseLineConfirm = (realAmount: number) => {
+  const handleTransferConfirm = (payload: { sourceLineId: string; targetLineId: string; amount: number; notes?: string }) => {
+    const res = transferCashBetweenLines(payload);
+    if (res.success) {
+      showToast(res.message, 'success');
+      setWithdrawalLine(null);
+    } else {
+      showToast(res.message, 'error');
+    }
+  };
+
+  const handleCloseLineConfirm = (realAmount: number, differenceNotes?: string) => {
     if (!closingLine) return;
-    const res = closeCashLine(closingLine.id, realAmount);
+    const res = closeCashLine(closingLine.id, realAmount, differenceNotes);
     if (res.success) {
       showToast(res.message, 'success');
       setClosingLine(null);
@@ -286,45 +303,96 @@ export function CashControlView() {
     },
     {
       key: 'actions',
-      header: 'Acciones (10)',
+      header: 'Acciones',
       align: 'center' as const,
       render: (l: CashLine) => (
         <div className="flex items-center justify-center gap-1">
-          {/* Action 3: EYE - Ver movimientos */}
+          {/* Action: EYE - Ver movimientos */}
           <button
             type="button"
             onClick={() => setViewingMovementsLine(l)}
             className="p-1 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
-            title="Ver movimientos de la línea [3]"
+            title="Ver movimientos de la línea"
           >
             <Eye className="w-4 h-4" />
           </button>
 
-          {/* Action 4: $ - Registrar retiro (Only open lines R02) */}
+          {/* Action: $ - Registrar retiro o transferencia */}
           {l.status === 'Abierta' && (
             <button
               type="button"
               onClick={() => setWithdrawalLine(l)}
               className="p-1 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 rounded-lg transition"
-              title="Registrar retiro a Caja Maestra [4]"
+              title="Registrar retiro / movimiento entre cajas"
             >
-              <DollarSign className="w-4 h-4" />
+              <ArrowRightLeft className="w-4 h-4" />
             </button>
           )}
 
-          {/* Action 5 & 6: EDIT / CLOSE - Cargar monto real y cerrar línea */}
+          {/* Action: EDIT / CLOSE - Cargar monto real y cerrar línea */}
           {l.status === 'Abierta' && (
             <button
               type="button"
               onClick={() => setClosingLine(l)}
               className="p-1 text-amber-600 hover:text-amber-800 hover:bg-amber-50 rounded-lg transition flex items-center gap-0.5"
-              title="Cargar Monto Real y Cerrar Línea [5/6]"
+              title="Cargar Monto Real y Cerrar Línea"
             >
               <Edit className="w-3.5 h-3.5" />
               <Lock className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
+      ),
+    },
+  ];
+
+  // Table columns for Shift History Maestro
+  const historyColumns = [
+    {
+      key: 'name',
+      header: 'Caja de Turno',
+      sortable: true,
+      render: (s: CashShift) => (
+        <div>
+          <p className="font-extrabold text-slate-900 text-xs">{s.name}</p>
+          <p className="text-[10px] text-slate-400">Creada: {s.createdAt}</p>
+        </div>
+      ),
+    },
+    {
+      key: 'openedByUserName',
+      header: 'Usuario Apertura',
+      sortable: true,
+      render: (s: CashShift) => <span className="font-medium text-slate-700 text-xs">{s.openedByUserName}</span>,
+    },
+    {
+      key: 'linesCount',
+      header: 'Líneas',
+      align: 'center' as const,
+      render: (s: CashShift) => {
+        const count = cashLines.filter((l) => l.shiftId === s.id).length;
+        return <span className="px-2 py-0.5 rounded-full bg-slate-100 font-bold text-slate-700 text-[11px]">{count}</span>;
+      },
+    },
+    {
+      key: 'status',
+      header: 'Estado',
+      align: 'center' as const,
+      render: (s: CashShift) => <ShiftStatusBadge status={s.status} />,
+    },
+    {
+      key: 'actions',
+      header: 'Auditoría',
+      align: 'center' as const,
+      render: (s: CashShift) => (
+        <Button
+          size="sm"
+          variant="outline"
+          leftIcon={<Eye className="w-3.5 h-3.5" />}
+          onClick={() => setHistoryShiftToView(s)}
+        >
+          Ver Detalle Audit
+        </Button>
       ),
     },
   ];
@@ -481,6 +549,21 @@ export function CashControlView() {
         </div>
       </div>
 
+      {/* Observación 3: LINES TABLE IMMEDIATELY BELOW SHIFT APERTURA BURBUJAS */}
+      {activeShift && (
+        <StandardDataTable
+          data={activeLines}
+          columns={lineColumns}
+          keyExtractor={(l) => l.id}
+          title={`Líneas de Caja de Turno — ${activeShift.name}`}
+          subtitle="Detalle visual por cada medio de pago precargado y control de arqueo"
+          searchFilterKey={(l) => `${l.boxType} ${l.status}`}
+          searchPlaceholder="Buscar por medio de pago o estado..."
+          emptyMessage="No hay líneas agregadas a este turno. Utilice el botón [Agregar Línea] para iniciar."
+          emptyIcon={<CreditCard className="w-8 h-8 text-slate-300" />}
+        />
+      )}
+
       {/* Master Cash Boxes Cards Banner */}
       <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
         <div className="flex items-center justify-between">
@@ -489,7 +572,7 @@ export function CashControlView() {
             <h3 className="font-bold text-slate-900 text-sm">Cajas Maestras ("Siempre Abiertas")</h3>
           </div>
           <span className="text-[11px] text-slate-400 font-medium">
-            Destino permanente de retiros operacionales (R05 / R06)
+            Destino permanente de retiros operacionales
           </span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -514,20 +597,18 @@ export function CashControlView() {
         </div>
       </div>
 
-      {/* Lines Table for Selected Shift */}
-      {activeShift && (
-        <StandardDataTable
-          data={activeLines}
-          columns={lineColumns}
-          keyExtractor={(l) => l.id}
-          title={`Líneas de Caja de Turno — ${activeShift.name}`}
-          subtitle="Medios de pago activos y control por línea de arqueo"
-          searchFilterKey={(l) => `${l.boxType} ${l.status}`}
-          searchPlaceholder="Buscar por medio de pago o estado..."
-          emptyMessage="No hay líneas agregadas a este turno. Utilice el botón [Agregar Línea] para iniciar."
-          emptyIcon={<CreditCard className="w-8 h-8 text-slate-300" />}
-        />
-      )}
+      {/* Observación 7: MAESTRO CON HISTORIAL DE CAJAS DE TURNO */}
+      <StandardDataTable
+        data={cashShifts}
+        columns={historyColumns}
+        keyExtractor={(s) => s.id}
+        title="Maestro & Historial de Cajas de Turno"
+        subtitle="Registro histórico completo de turnos abiertos, cerrados, conciliados y anulados"
+        searchFilterKey={(s) => `${s.name} ${s.status} ${s.openedByUserName}`}
+        searchPlaceholder="Buscar por fecha, turno o usuario..."
+        emptyMessage="No hay registros históricos de cajas de turno."
+        emptyIcon={<Clock className="w-8 h-8 text-slate-300" />}
+      />
 
       {/* Render Active Modals */}
       {isNewShiftOpen && (
@@ -547,9 +628,11 @@ export function CashControlView() {
       {withdrawalLine && (
         <WithdrawalModal
           line={withdrawalLine}
+          allLines={activeLines}
           masterBoxes={masterCashBoxes}
           onClose={() => setWithdrawalLine(null)}
-          onConfirm={handleWithdrawalConfirm}
+          onConfirmWithdrawal={handleWithdrawalConfirm}
+          onConfirmTransfer={handleTransferConfirm}
         />
       )}
 
@@ -576,6 +659,15 @@ export function CashControlView() {
           lines={activeLines}
           masterBoxes={masterCashBoxes}
           onClose={() => setIsPrintSummaryOpen(false)}
+        />
+      )}
+
+      {historyShiftToView && (
+        <ShiftHistoryModal
+          shift={historyShiftToView}
+          lines={cashLines}
+          movements={cashMovements}
+          onClose={() => setHistoryShiftToView(null)}
         />
       )}
 
