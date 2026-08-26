@@ -633,7 +633,23 @@ export interface Receipt {
 export type TurnoType = 'Mañana' | 'Tarde';
 export type CashShiftStatus = 'Abierta' | 'Cerrada' | 'Conciliada' | 'Anulada';
 export type CashLineStatus = 'Abierta' | 'Cerrada' | 'Conciliada';
-export type CashMovementType = 'Ticket' | 'Gasto' | 'Consumo' | 'Retiro' | 'Ajuste' | 'Apertura';
+export type CashMovementType = 'Ingreso' | 'Salida' | 'Ticket' | 'Gasto' | 'Consumo' | 'Retiro' | 'Traspaso' | 'Ajuste' | 'Apertura';
+
+export type CashIncomeCategory =
+  | 'Cobro de Ticket / Venta POS'
+  | 'Aporte de Cambio / Fondo Extra'
+  | 'Cobro de Cuenta Corriente'
+  | 'Traspaso Entrante de otra Caja'
+  | 'Ingreso Varios / Ajuste Positivo';
+
+export type CashExpenseCategory =
+  | 'Gasto Operativo / Compras Menores'
+  | 'Pago a Proveedor'
+  | 'Consumo Interno'
+  | 'Retiro a Caja Fuerte / Maestra'
+  | 'Traspaso Saliente a otra Caja'
+  | 'Adelanto de Sueldo / Vale'
+  | 'Salida Varios / Ajuste Negativo';
 
 export interface CashShift {
   id: string;
@@ -656,8 +672,8 @@ export interface CashLine {
   shiftId: string;
   boxType: string;               // Efectivo, Mercado Pago 1, Mercado Pago 2, Mercado Pago 3, Cuenta Corriente, Cortesía
   initialAmount: number;         // Monto Inicio Caja
-  ticketsTotal: number;          // Total Tickets Facturados (+) [AUTO]
-  expensesTotal: number;         // Total Gastos / Consumos (-) [AUTO]
+  ticketsTotal: number;          // Total Tickets Facturados / Ingresos (+) [AUTO]
+  expensesTotal: number;         // Total Gastos / Consumos / Salidas (-) [AUTO]
   withdrawalsTotal: number;      // Total Retiros (-) [AUTO]
   theoreticalAmount: number;     // Inicio + Tickets - Gastos - Retiros [AUTO]
   realAmount?: number;           // Monto Real Cierre (declarado por el cajero)
@@ -671,13 +687,17 @@ export interface CashMovement {
   lineId: string;
   shiftId: string;
   dateTime: string;              // [SYS] YYYY-MM-DD HH:mm:ss
-  type: CashMovementType;        // 'Ticket' | 'Gasto' | 'Consumo' | 'Retiro' | 'Ajuste' | 'Apertura'
+  type: CashMovementType;        // 'Ingreso' | 'Salida' | 'Ticket' | 'Gasto' | 'Consumo' | 'Retiro' | 'Traspaso' | 'Ajuste' | 'Apertura'
+  category?: string;             // Subtipo / Categoría de Ingreso o Salida
+  categoryType?: 'Ingreso' | 'Salida';
   origin: string;                // ej: N° Ticket, N° Gasto, Retiro A Caja Maestra
   voucherNumber?: string;
   amount: number;                // Importe numérico (Positivo o negativo según tipo)
   userId: string;
   userName: string;
   notes?: string;
+  targetLineId?: string;
+  targetMasterBoxId?: string;
 }
 
 export interface MasterCashBox {
@@ -734,6 +754,13 @@ export interface Reservation {
   createdAt: string;             // [SYS] Fecha/Hora Carga
   notes?: string;                // Observaciones
   cancelReason?: string;         // Motivo de cancelación
+  updatedByUserId?: string;      // Trazabilidad de modificación
+  updatedByUserName?: string;
+  updatedAt?: string;
+  fulfilledByUserId?: string;    // Trazabilidad de OK / Cumplimiento
+  fulfilledByUserName?: string;
+  fulfilledAt?: string;
+  fulfilledOkNotes?: string;
   logs?: ReservationLog[];       // Log de modificaciones inmutable
 }
 

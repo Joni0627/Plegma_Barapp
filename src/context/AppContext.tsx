@@ -200,7 +200,7 @@ interface AppContextType {
   addReservation: (data: Omit<Reservation, 'id' | 'createdAt' | 'createdByUserId' | 'createdByUserName' | 'status'>) => { success: boolean; message: string; reservation?: Reservation };
   updateReservation: (reservation: Reservation) => { success: boolean; message: string };
   cancelReservation: (reservationId: string, cancelReason: string) => { success: boolean; message: string };
-  markReservationFulfilled: (reservationId: string) => { success: boolean; message: string };
+  markReservationFulfilled: (reservationId: string, okNotes?: string) => { success: boolean; message: string };
   checkOverbooking: (tableId: string, dateTime: string, excludeReservationId?: string) => boolean;
 
   // Sales Configuration (Mesas, Tipos de Venta, Sitios)
@@ -1104,15 +1104,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         let expensesTotal = l.expensesTotal;
         let withdrawalsTotal = l.withdrawalsTotal;
 
-        if (movement.type === 'Ticket') {
+        if (movement.type === 'Ingreso' || movement.type === 'Ticket' || (movement.type === 'Ajuste' && movement.amount > 0)) {
           ticketsTotal += Math.abs(movement.amount);
-        } else if (movement.type === 'Gasto' || movement.type === 'Consumo') {
+        } else if (movement.type === 'Salida' || movement.type === 'Gasto' || movement.type === 'Consumo' || (movement.type === 'Ajuste' && movement.amount < 0)) {
           expensesTotal += Math.abs(movement.amount);
-        } else if (movement.type === 'Retiro') {
-          withdrawalsTotal += Math.abs(movement.amount);
-        } else if (movement.type === 'Ajuste') {
-          if (movement.amount >= 0) ticketsTotal += movement.amount;
-          else expensesTotal += Math.abs(movement.amount);
+        } else if (movement.type === 'Retiro' || movement.type === 'Traspaso') {
+          if (movement.amount < 0) {
+            withdrawalsTotal += Math.abs(movement.amount);
+          } else {
+            ticketsTotal += Math.abs(movement.amount);
+          }
         }
 
         const theoreticalAmount = l.initialAmount + ticketsTotal - expensesTotal - withdrawalsTotal;
@@ -1540,8 +1541,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       details: changes.length > 0 ? changes.join(' | ') : 'Edición general de la reserva.',
     };
 
-    const finalRes = {
+    const finalRes: Reservation = {
       ...updatedRes,
+      updatedByUserId: activeUserId,
+      updatedByUserName: activeUser?.name || 'Usuario Autenticado',
+      updatedAt: nowStr,
       logs: [newLogItem, ...(target.logs || [])],
     };
 
@@ -1555,38 +1559,52 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const nowStr = getNowStr();
     const activeUser = users.find((u) => u.id === activeUserId);
+    const userName = activeUser?.name || 'Usuario Autenticado';
 
     const logItem: ReservationLog = {
       id: 'log-' + Date.now(),
       timestamp: nowStr,
       userId: activeUserId,
-      userName: activeUser?.name || 'Usuario Autenticado',
+      userName,
       action: 'Cancelación de Reserva',
       details: `Reserva cancelada. Motivo: ${cancelReason}`,
     };
 
     setReservations((prev) =>
-      prev.map((r) => (r.id === reservationId ? { ...r, status: 'Cancelada' as const, cancelReason, logs: [logItem, ...(r.logs || [])] } : r))
+      prev.map((r) =>
+        r.id === reservationId
+          ? {
+              ...r,
+              status: 'Cancelada' as const,
+              cancelReason,
+              updatedByUserId: activeUserId,
+              updatedByUserName: userName,
+              updatedAt: nowStr,
+              logs: [logItem, ...(r.logs || [])],
+            }
+          : r
+      )
     );
 
     return { success: true, message: `Reserva de "${target.clientName}" fue cancelada.` };
   };
 
-  const markReservationFulfilled = (reservationId: string) => {
+  const markReservationFulfilled = (reservationId: string, okNotes?: string) => {
     const target = reservations.find((r) => r.id === reservationId);
     if (!target) return { success: false, message: 'Reserva no encontrada.' };
     if (target.status === 'Cancelada') return { success: false, message: 'No se puede marcar cumplida una reserva cancelada.' };
 
     const nowStr = getNowStr();
     const activeUser = users.find((u) => u.id === activeUserId);
+    const userName = activeUser?.name || 'Usuario Autenticado';
 
     const logItem: ReservationLog = {
       id: 'log-' + Date.now(),
       timestamp: nowStr,
       userId: activeUserId,
-      userName: activeUser?.name || 'Usuario Autenticado',
-      action: 'Cambio de Estado',
-      details: `Estado modificado de '${target.status}' a 'Cumplida'. Cliente presente en mesa.`,
+      userName,
+      action: 'OK de Cumplimiento (Check-in)',
+      details: `Reserva confirmada OK y marcada como CUMPLIDA. Usuario: ${userName}.${okNotes ? ` Nota OK: ${okNotes}` : ''}`,
     };
 
     setReservations((prev) =>
@@ -1595,13 +1613,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           ? {
               ...r,
               status: 'Cumplida' as const,
+              fulfilledByUserId: activeUserId,
+              fulfilledByUserName: userName,
+              fulfilledAt: nowStr,
+              fulfilledOkNotes: okNotes?.trim() || undefined,
+              updatedByUserId: activeUserId,
+              updatedByUserName: userName,
+              updatedAt: nowStr,
               logs: [logItem, ...(r.logs || [])],
             }
           : r
       )
     );
 
-    return { success: true, message: `Reserva de "${target.clientName}" marcada como CUMPLIDA con éxito.` };
+    return { success: true, message: `OK de Cumplimiento registrado exitosamente por ${userName} para "${target.clientName}".` };
   };
 
   // ----------------------------------------------------

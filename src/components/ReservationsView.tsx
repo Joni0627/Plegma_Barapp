@@ -17,6 +17,9 @@ import {
   UserCheck,
   HelpCircle,
   Printer,
+  ShieldCheck,
+  Check,
+  X,
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { StandardDataTable } from './ui/DataTable';
@@ -66,12 +69,12 @@ export function ReservationsView() {
   const d = new Date();
   const todayStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
-  // Observación 1: Default Stats Date filter (defaults to TODAY)
+  // Observación 1: Date filters (Sincronizados)
   const [statsDate, setStatsDate] = useState<string>(todayStr);
+  const [filterDate, setFilterDate] = useState<string>('');
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterDate, setFilterDate] = useState('');
   const [filterTableId, setFilterTableId] = useState('');
 
   // Modals
@@ -80,6 +83,31 @@ export function ReservationsView() {
   const [editingReservation, setEditingReservation] = useState<Reservation | null>(null);
   const [viewingReservation, setViewingReservation] = useState<Reservation | null>(null);
   const [printingReservation, setPrintingReservation] = useState<Reservation | null>(null);
+
+  // Observación 4: Modal OK de Cumplimiento / Check-in
+  const [fulfillmentModalRes, setFulfillmentModalRes] = useState<Reservation | null>(null);
+  const [fulfillmentNotes, setFulfillmentNotes] = useState('');
+
+  // Observación 1: Handle synchronized date filtering
+  const handleDateFilterChange = (dateVal: string) => {
+    setFilterDate(dateVal);
+    // When date filter is changed, sync top stats date as well
+    if (dateVal) {
+      setStatsDate(dateVal);
+    } else {
+      setStatsDate(todayStr);
+    }
+  };
+
+  const handleStatsDateChange = (dateVal: string) => {
+    setStatsDate(dateVal);
+    setFilterDate(dateVal);
+  };
+
+  const handleResetDateToToday = () => {
+    setStatsDate(todayStr);
+    setFilterDate('');
+  };
 
   // Filter reservations according to active tab and search filters
   const filteredReservations = useMemo(() => {
@@ -109,7 +137,7 @@ export function ReservationsView() {
     });
   }, [reservations, activeTab, filterDate, filterTableId, searchQuery]);
 
-  // Observación 1: Summaries calculated BY DEFAULT FOR TODAY (or statsDate if customized)
+  // Observación 1: Summaries calculated dynamically for chosen statsDate
   const statsReservations = useMemo(() => {
     if (!statsDate) return reservations;
     return reservations.filter((r) => r.dateTime.startsWith(statsDate));
@@ -167,25 +195,34 @@ export function ReservationsView() {
     }
   };
 
-  // Observación 4: Marcar Cumplida
-  const handleMarkFulfilledClick = (res: Reservation) => {
-    const resFulfilled = markReservationFulfilled(res.id);
+  // Observación 4: Marcar Cumplida con Modal de OK de Trazabilidad
+  const handleOpenFulfillmentModal = (res: Reservation) => {
+    setFulfillmentModalRes(res);
+    setFulfillmentNotes('');
+  };
+
+  const handleConfirmFulfillmentOK = () => {
+    if (!fulfillmentModalRes) return;
+    const resFulfilled = markReservationFulfilled(fulfillmentModalRes.id, fulfillmentNotes);
     if (resFulfilled.success) {
       showToast(resFulfilled.message, 'success');
-      if (viewingReservation?.id === res.id) {
+      if (viewingReservation?.id === fulfillmentModalRes.id) {
         setViewingReservation(null);
       }
+      setFulfillmentModalRes(null);
     } else {
       showToast(resFulfilled.message, 'error');
     }
   };
 
+  // Observación 2: Emitir comprobante/imagen WhatsApp al guardar reserva
   const handleSaveModal = (payload: any) => {
     if (editingReservation) {
       const res = updateReservation(payload as Reservation);
       if (res.success) {
         showToast(res.message, 'success');
         setIsModalOpen(false);
+        setPrintingReservation(payload as Reservation);
       }
       return res;
     } else {
@@ -193,12 +230,15 @@ export function ReservationsView() {
       if (res.success) {
         showToast(res.message, 'success');
         setIsModalOpen(false);
+        if (res.reservation) {
+          setPrintingReservation(res.reservation);
+        }
       }
       return res;
     }
   };
 
-  // Required columns: [Fecha Hora], [Cliente], [Personas], [Mesa], [Estado], [Acciones]
+  // Table Columns
   const columns = [
     {
       key: 'dateTime',
@@ -245,6 +285,29 @@ export function ReservationsView() {
         </span>
       ),
     },
+    // Observación 3: Trazabilidad de Usuario que Registro / Modificó / dio OK
+    {
+      key: 'traceability',
+      header: 'Trazabilidad (Usuario)',
+      sortable: true,
+      render: (r: Reservation) => (
+        <div className="text-[11px] leading-tight space-y-0.5">
+          <p className="text-slate-600 font-medium">
+            Reg: <span className="font-bold text-slate-800">{r.createdByUserName}</span>
+          </p>
+          {r.updatedByUserName && (
+            <p className="text-amber-800 font-semibold text-[10px]">
+              Mod: <span className="font-bold">{r.updatedByUserName}</span>
+            </p>
+          )}
+          {r.fulfilledByUserName && (
+            <p className="text-emerald-800 font-semibold text-[10px]">
+              OK: <span className="font-bold">{r.fulfilledByUserName}</span>
+            </p>
+          )}
+        </div>
+      ),
+    },
     {
       key: 'status',
       header: 'Estado',
@@ -267,25 +330,25 @@ export function ReservationsView() {
             <Eye className="w-4 h-4" />
           </button>
 
-          {/* Observación 2: PRINTER - PDF / Comprobante */}
+          {/* Observación 2: PRINTER / WhatsApp Image Card */}
           {r.status === 'Confirmada' && (
             <button
               type="button"
               onClick={() => setPrintingReservation(r)}
-              className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
-              title="Generar e imprimir Comprobante PDF de Reserva"
+              className="p-1 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
+              title="Emitir Imagen / Mensaje para WhatsApp"
             >
               <Printer className="w-4 h-4" />
             </button>
           )}
 
-          {/* Observación 4: USERCHECK - Marcar Cumplida */}
+          {/* Observación 4: USERCHECK - OK de Cumplimiento */}
           {r.status === 'Confirmada' && (
             <button
               type="button"
-              onClick={() => handleMarkFulfilledClick(r)}
+              onClick={() => handleOpenFulfillmentModal(r)}
               className="p-1 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 rounded-lg transition"
-              title="Marcar reserva como Cumplida (Cliente asistió)"
+              title="Registrar OK de Cumplimiento (Cliente asistió)"
             >
               <UserCheck className="w-4 h-4" />
             </button>
@@ -336,7 +399,7 @@ export function ReservationsView() {
             Reservas de Mesas
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Organización de disponibilidad, comensales esperados y seguimiento por estado
+            Organización de disponibilidad, comensales esperados, trazabilidad y comprobantes para WhatsApp
           </p>
         </div>
 
@@ -360,9 +423,9 @@ export function ReservationsView() {
         </div>
       </div>
 
-      {/* Observación 1: SUMMARY KPI CARDS FILTERED BY DEFAULT FOR TODAY */}
+      {/* Observación 1: SUMMARY KPI CARDS FILTERED BY EITHER STATS DATE OR MAIN DATE FILTER */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <span className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5 uppercase tracking-wider">
             <Clock className="w-4 h-4 text-indigo-600" />
             Estadísticas Operativas &bull; {statsDate === todayStr ? 'Día Actual (Hoy)' : `Fecha: ${statsDate}`}
@@ -372,16 +435,16 @@ export function ReservationsView() {
             <input
               type="date"
               value={statsDate}
-              onChange={(e) => setStatsDate(e.target.value)}
+              onChange={(e) => handleStatsDateChange(e.target.value)}
               className="px-2.5 py-1 text-xs bg-white border border-slate-300 rounded-xl font-mono font-bold text-slate-800"
             />
-            {statsDate !== '' && (
+            {statsDate !== todayStr && (
               <button
                 type="button"
-                onClick={() => setStatsDate('')}
+                onClick={handleResetDateToToday}
                 className="text-[11px] text-indigo-600 hover:underline font-bold"
               >
-                Ver Histórico Global
+                Volver a Hoy
               </button>
             )}
           </div>
@@ -473,7 +536,7 @@ export function ReservationsView() {
           </div>
         </div>
 
-        {/* Filter controls */}
+        {/* Observación 1: Filter controls with synchronized date */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-slate-100">
           <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
@@ -490,8 +553,9 @@ export function ReservationsView() {
             <input
               type="date"
               value={filterDate}
-              onChange={(e) => setFilterDate(e.target.value)}
-              className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 text-slate-700"
+              onChange={(e) => handleDateFilterChange(e.target.value)}
+              className="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 text-slate-700 font-bold"
+              placeholder="Filtrar por día..."
             />
           </div>
 
@@ -524,7 +588,7 @@ export function ReservationsView() {
             ? 'Historial de Reservas Cumplidas y Pasadas'
             : 'Registro de Reservas Canceladas'
         }
-        subtitle="Listado con columnas obligatorias: [Fecha Hora], [Cliente], [Personas], [Mesa] y [Estado]"
+        subtitle="Listado de reservas con trazabilidad auditada de creación, edición y OK de cumplimiento"
         emptyMessage={
           activeTab === 'proximas'
             ? 'No hay reservas próximas confirmadas.'
@@ -560,16 +624,85 @@ export function ReservationsView() {
         <ReservationDetailModal
           reservation={viewingReservation}
           onClose={() => setViewingReservation(null)}
-          onMarkFulfilled={handleMarkFulfilledClick}
+          onMarkFulfilled={handleOpenFulfillmentModal}
         />
       )}
 
-      {/* Observación 2: Modal PDF Comprobante */}
+      {/* Observación 2: Modal PDF Comprobante / WhatsApp Image Card */}
       {printingReservation && (
         <ReservationReceiptModal
           reservation={printingReservation}
           onClose={() => setPrintingReservation(null)}
         />
+      )}
+
+      {/* Observación 4: Modal OK de Cumplimiento / Check-in */}
+      {fulfillmentModalRes && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full overflow-hidden shadow-2xl space-y-0">
+            <div className="px-6 py-4 bg-indigo-900 text-white flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-base">OK de Cumplimiento</h3>
+                  <p className="text-xs text-indigo-200">Verificación de asistencia del cliente</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setFulfillmentModalRes(null)}
+                type="button"
+                className="p-1.5 rounded-xl hover:bg-white/10 text-indigo-300 hover:text-white transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-1">
+                <p className="text-xs font-black text-slate-900">{fulfillmentModalRes.clientName}</p>
+                <p className="text-xs text-slate-600 font-semibold">
+                  Mesa: <span className="text-indigo-600">{fulfillmentModalRes.tableName}</span> &bull; Pax: {fulfillmentModalRes.guestsCount}
+                </p>
+                <p className="text-[11px] text-slate-400 font-mono">Fecha/Hora: {fulfillmentModalRes.dateTime}</p>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 block">
+                  Observación de Asistencia (Opcional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ej. Llegó a tiempo, consumo iniciado..."
+                  value={fulfillmentNotes}
+                  onChange={(e) => setFulfillmentNotes(e.target.value)}
+                  className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 text-xs flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Se registrará la trazabilidad con su usuario autenticado y timestamp inmutable.</span>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <Button type="button" variant="outline" onClick={() => setFulfillmentModalRes(null)}>
+                  Cancelar
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  leftIcon={<Check className="w-4 h-4" />}
+                  onClick={handleConfirmFulfillmentOK}
+                  className="bg-emerald-600 hover:bg-emerald-500 font-bold"
+                >
+                  Registrar OK
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

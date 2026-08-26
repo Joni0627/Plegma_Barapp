@@ -138,10 +138,30 @@ export const ReservationDetailModal: React.FC<ReservationDetailModalProps> = ({
           {/* Audit Info */}
           <div className="p-3 bg-slate-100/70 border border-slate-200 rounded-xl text-[11px] text-slate-600 space-y-1">
             <p className="flex items-center gap-1 font-semibold text-slate-700">
-              <UserCheck className="w-3.5 h-3.5 text-indigo-500" /> Creado por: {reservation.createdByUserName}
+              <UserCheck className="w-3.5 h-3.5 text-indigo-500" /> Creado por: {reservation.createdByUserName} ({reservation.createdAt})
             </p>
-            <p className="text-[10px] text-slate-400">Timestamp Carga (SYS): {reservation.createdAt}</p>
+            {reservation.updatedByUserName && (
+              <p className="text-[10px] text-slate-500 font-medium">
+                Última modificación por: <span className="font-bold text-slate-700">{reservation.updatedByUserName}</span> ({reservation.updatedAt})
+              </p>
+            )}
           </div>
+
+          {/* Observación 4: Trazabilidad de Cumplimiento OK */}
+          {reservation.status === 'Cumplida' && (
+            <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-xl text-xs space-y-1 text-indigo-950">
+              <p className="font-extrabold uppercase text-[10px] flex items-center gap-1.5 text-indigo-900">
+                <ShieldCheck className="w-4 h-4 text-emerald-600" /> OK de Cumplimiento / Asistencia Registrado
+              </p>
+              <p className="text-[11px]">
+                Otorgado por: <span className="font-bold text-slate-900">{reservation.fulfilledByUserName || reservation.createdByUserName}</span>
+                {reservation.fulfilledAt && <span className="text-slate-500 font-mono"> &bull; {reservation.fulfilledAt}</span>}
+              </p>
+              {reservation.fulfilledOkNotes && (
+                <p className="text-[10px] text-indigo-800 italic">Nota OK: "{reservation.fulfilledOkNotes}"</p>
+              )}
+            </div>
+          )}
 
           {/* Notes */}
           {reservation.notes && (
