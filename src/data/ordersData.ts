@@ -1,17 +1,152 @@
-import { SaleOrder } from '../types';
+import { SaleOrder, ProductOptionGroup } from '../types';
 
 export interface SaleProductCatalogItem {
   id: string;
   code: string;
   name: string;
-  category: 'Comidas Principal' | 'Bebidas' | 'Postres' | 'Entradas & Minutas';
+  category: 'Más vendidos' | 'Cafetería' | 'Bebidas' | 'Combos' | 'Hamburguesas' | 'Pizzas' | 'Postres' | 'Entradas & Minutas' | 'Comidas Principal';
   unitPrice: number;
   costPrice: number;             // [CP03] Cobro diferenciado a costo
   requiresSideOption: boolean;   // [R09] Acompañamiento obligatorio
   availableSides?: string[];
+  isConfigurable?: boolean;
+  optionGroupIds?: string[];
+  imageUrl?: string;
 }
 
+export const INITIAL_OPTION_GROUPS: ProductOptionGroup[] = [
+  {
+    id: 'grp-001',
+    name: 'Tipo de café',
+    isRequired: true,
+    selectionType: 'single',
+    active: true,
+    options: [
+      { id: 'opt-c1', name: 'Cortado', priceModifier: 0 },
+      { id: 'opt-c2', name: 'Americano', priceModifier: 0 },
+      { id: 'opt-c3', name: 'Lágrima', priceModifier: 0 },
+      { id: 'opt-c4', name: 'Cappuccino', priceModifier: 500 },
+    ],
+  },
+  {
+    id: 'grp-002',
+    name: 'Acompañamiento',
+    isRequired: true,
+    selectionType: 'single',
+    active: true,
+    options: [
+      { id: 'opt-a1', name: 'Criollo', priceModifier: 0 },
+      { id: 'opt-a2', name: 'Medialuna de Manteca', priceModifier: 0 },
+      { id: 'opt-a3', name: 'Tostada Pan de Campo', priceModifier: 300 },
+    ],
+  },
+  {
+    id: 'grp-003',
+    name: 'Dip / Untable',
+    isRequired: false,
+    selectionType: 'single',
+    active: true,
+    options: [
+      { id: 'opt-d1', name: 'Queso Crema', priceModifier: 0 },
+      { id: 'opt-d2', name: 'Dulce de Leche', priceModifier: 0 },
+      { id: 'opt-d3', name: 'Mermelada de Frutos Rojos', priceModifier: 0 },
+      { id: 'opt-d4', name: 'Manteca', priceModifier: 0 },
+    ],
+  },
+  {
+    id: 'grp-004',
+    name: 'Adicionales',
+    isRequired: false,
+    selectionType: 'multiple',
+    active: true,
+    options: [
+      { id: 'opt-ad1', name: 'Extra Queso', priceModifier: 900 },
+      { id: 'opt-ad2', name: 'Extra Bacon', priceModifier: 1100 },
+      { id: 'opt-ad3', name: 'Huevo Frito / Poché', priceModifier: 700 },
+    ],
+  },
+];
+
 export const SALE_PRODUCT_CATALOG: SaleProductCatalogItem[] = [
+  {
+    id: 'prod-combo-01',
+    code: 'PRD-CMB1',
+    name: 'Combo Merienda Completo',
+    category: 'Combos',
+    unitPrice: 6900,
+    costPrice: 3200,
+    requiresSideOption: false,
+    isConfigurable: true,
+    optionGroupIds: ['grp-001', 'grp-002', 'grp-003', 'grp-004'],
+  },
+  {
+    id: 'prod-cafe-01',
+    code: 'PRD-CAF1',
+    name: 'Café Cortado Especial',
+    category: 'Cafetería',
+    unitPrice: 2300,
+    costPrice: 900,
+    requiresSideOption: false,
+    isConfigurable: true,
+    optionGroupIds: ['grp-001'],
+  },
+  {
+    id: 'prod-lic-01',
+    code: 'PRD-LIC1',
+    name: 'Licuado de Frutilla con Agua/Leche',
+    category: 'Cafetería',
+    unitPrice: 3500,
+    costPrice: 1400,
+    requiresSideOption: false,
+  },
+  {
+    id: 'prod-burg-01',
+    code: 'PRD-BRG1',
+    name: 'Hamburguesa Clásica Doble Carne',
+    category: 'Hamburguesas',
+    unitPrice: 7800,
+    costPrice: 3900,
+    requiresSideOption: true,
+    availableSides: ['Papas Fritas Tradicionales', 'Aros de Cebolla', 'Ensalada Coleslaw'],
+    isConfigurable: true,
+    optionGroupIds: ['grp-004'],
+  },
+  {
+    id: 'prod-papas-01',
+    code: 'PRD-PAP1',
+    name: 'Papas Fritas Rústicas Grandes',
+    category: 'Entradas & Minutas',
+    unitPrice: 3000,
+    costPrice: 1100,
+    requiresSideOption: false,
+  },
+  {
+    id: 'prod-agua-01',
+    code: 'PRD-BEB1',
+    name: 'Agua Mineral 500ml',
+    category: 'Bebidas',
+    unitPrice: 1500,
+    costPrice: 600,
+    requiresSideOption: false,
+  },
+  {
+    id: 'prod-coca-01',
+    code: 'PRD-BEB2',
+    name: 'Gaseosa Coca-Cola 500ml',
+    category: 'Bebidas',
+    unitPrice: 2000,
+    costPrice: 850,
+    requiresSideOption: false,
+  },
+  {
+    id: 'prod-chsec-01',
+    code: 'PRD-PST1',
+    name: 'Cheesecake con Salsa de Frutos Rojos',
+    category: 'Postres',
+    unitPrice: 4200,
+    costPrice: 1700,
+    requiresSideOption: false,
+  },
   {
     id: 'prod-001',
     code: 'PRD-101',
@@ -22,72 +157,8 @@ export const SALE_PRODUCT_CATALOG: SaleProductCatalogItem[] = [
     requiresSideOption: true,
     availableSides: ['Papas Fritas Tradicionales', 'Ensalada Mixta', 'Puré de Papas', 'Vegetales Asados'],
   },
-  {
-    id: 'prod-002',
-    code: 'PRD-102',
-    name: 'Milanesa de Lomo Completa',
-    category: 'Comidas Principal',
-    unitPrice: 14200,
-    costPrice: 7200,
-    requiresSideOption: true,
-    availableSides: ['Papas Fritas Tradicionales', 'Puré de Papas', 'Ensalada Rusa'],
-  },
-  {
-    id: 'prod-003',
-    code: 'PRD-103',
-    name: 'Burger PLEGMA Doble Carne con Queso',
-    category: 'Entradas & Minutas',
-    unitPrice: 11500,
-    costPrice: 5800,
-    requiresSideOption: true,
-    availableSides: ['Papas Fritas Rústicas', 'Aros de Cebolla'],
-  },
-  {
-    id: 'prod-004',
-    code: 'PRD-201',
-    name: 'Cerveza Tirada Artesanal IPA 500cc',
-    category: 'Bebidas',
-    unitPrice: 4200,
-    costPrice: 1900,
-    requiresSideOption: false,
-  },
-  {
-    id: 'prod-005',
-    code: 'PRD-202',
-    name: 'Vino Malbec Reserva 750ml',
-    category: 'Bebidas',
-    unitPrice: 16500,
-    costPrice: 8900,
-    requiresSideOption: false,
-  },
-  {
-    id: 'prod-006',
-    code: 'PRD-203',
-    name: 'Gaseosa Línea Coca-Cola 500ml',
-    category: 'Bebidas',
-    unitPrice: 2800,
-    costPrice: 1200,
-    requiresSideOption: false,
-  },
-  {
-    id: 'prod-007',
-    code: 'PRD-301',
-    name: 'Flan Casero con Dulce de Leche y Crema',
-    category: 'Postres',
-    unitPrice: 4500,
-    costPrice: 1800,
-    requiresSideOption: false,
-  },
-  {
-    id: 'prod-008',
-    code: 'PRD-302',
-    name: 'Volcán de Chocolate con Helado',
-    category: 'Postres',
-    unitPrice: 5900,
-    costPrice: 2400,
-    requiresSideOption: false,
-  },
 ];
+
 
 export const INITIAL_SALE_ORDERS: SaleOrder[] = [
   {

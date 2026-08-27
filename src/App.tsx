@@ -26,6 +26,7 @@ import { CashControlView } from './components/CashControlView';
 import { ReservationsView } from './components/ReservationsView';
 import { SalesConfigView } from './components/SalesConfigView';
 import { OrdersView } from './components/OrdersView';
+import { ComandasPosView } from './components/ComandasPosView';
 import { useIsMobile } from './hooks/useIsMobile';
 import { Provider, Order, StockCount } from './types';
 
@@ -200,7 +201,7 @@ function MainLayout() {
 
         {currentTab === 'sales_config' && <SalesConfigView />}
 
-        {currentTab === 'ventas_pedidos' && <OrdersView />}
+        {currentTab === 'ventas_pedidos' && <ComandasPosView />}
 
         {currentTab === 'dashboard' && <PurchasingDashboard />}
 

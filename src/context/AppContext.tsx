@@ -42,6 +42,8 @@ import {
   SaleOrderItem,
   OrderBillingInfo,
   SaleOrder,
+  ProductOptionGroup,
+  ProductOption,
   ConfigOption,
   CurrentAccountMovement,
   Receipt,
@@ -83,6 +85,7 @@ import {
 import {
   INITIAL_SALE_ORDERS,
   SALE_PRODUCT_CATALOG,
+  INITIAL_OPTION_GROUPS,
 } from '../data/ordersData';
 import {
   INITIAL_CC_CLIENTS,
@@ -229,6 +232,13 @@ interface AppContextType {
   updateSaleOrderStatus: (orderId: string, status: OrderStatus) => { success: boolean; message: string };
   processOrderBilling: (orderId: string, billing: Omit<OrderBillingInfo, 'billedAt' | 'ticketNumber'>) => { success: boolean; message: string; ticketNumber?: string };
   cancelSaleOrder: (orderId: string, reason?: string) => { success: boolean; message: string };
+
+  // Grupos de Opciones y Modificadores (Comandas v2.0)
+  productOptionGroups: ProductOptionGroup[];
+  addProductOptionGroup: (group: ProductOptionGroup) => { success: boolean; message: string };
+  addOptionToGroup: (groupId: string, option: ProductOption) => { success: boolean; message: string };
+  deleteOptionFromGroup: (groupId: string, optionId: string) => { success: boolean; message: string };
+  toggleOptionGroupActive: (groupId: string) => { success: boolean; message: string };
 
   // Cuentas Corrientes State
   ccMovements: CurrentAccountMovement[];
@@ -1879,6 +1889,49 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   // ----------------------------------------------------
+  // GRUPOS DE OPCIONES Y MODIFICADORES (COMANDAS V2.0)
+  // ----------------------------------------------------
+  const [productOptionGroups, setProductOptionGroups] = useState<ProductOptionGroup[]>(() => {
+    try {
+      const saved = localStorage.getItem('plegma_option_groups');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return INITIAL_OPTION_GROUPS;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('plegma_option_groups', JSON.stringify(productOptionGroups));
+    } catch (e) {}
+  }, [productOptionGroups]);
+
+  const addProductOptionGroup = (group: ProductOptionGroup) => {
+    setProductOptionGroups((prev) => [...prev, group]);
+    return { success: true, message: `Grupo "${group.name}" creado exitosamente.` };
+  };
+
+  const addOptionToGroup = (groupId: string, option: ProductOption) => {
+    setProductOptionGroups((prev) =>
+      prev.map((g) => (g.id === groupId ? { ...g, options: [...g.options, option] } : g))
+    );
+    return { success: true, message: `Opción "${option.name}" agregada.` };
+  };
+
+  const deleteOptionFromGroup = (groupId: string, optionId: string) => {
+    setProductOptionGroups((prev) =>
+      prev.map((g) => (g.id === groupId ? { ...g, options: g.options.filter((o) => o.id !== optionId) } : g))
+    );
+    return { success: true, message: `Opción eliminada.` };
+  };
+
+  const toggleOptionGroupActive = (groupId: string) => {
+    setProductOptionGroups((prev) =>
+      prev.map((g) => (g.id === groupId ? { ...g, active: !g.active } : g))
+    );
+    return { success: true, message: `Estado de grupo actualizado.` };
+  };
+
+  // ----------------------------------------------------
   // PEDIDOS Y VENTAS (COMMERCIAL ENGINE)
   // ----------------------------------------------------
   const [saleOrders, setSaleOrders] = useState<SaleOrder[]>(() => {
@@ -2945,6 +2998,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         updateSaleOrderStatus,
         processOrderBilling,
         cancelSaleOrder,
+        productOptionGroups,
+        addProductOptionGroup,
+        addOptionToGroup,
+        deleteOptionFromGroup,
+        toggleOptionGroupActive,
         ccMovements,
         setCcMovements,
         ccReceipts,

@@ -23,6 +23,7 @@ import {
   CreditCard,
   Palette,
   Receipt,
+  Utensils,
   Calendar,
 } from 'lucide-react';
 
@@ -62,7 +63,7 @@ const NAV_SECTIONS: NavSection[] = [
       { id: 'ventas_caja', label: 'Ventas — Control de Caja', description: 'Apertura, cierres de turno, retiros & conciliación', icon: CreditCard },
       { id: 'ventas_reservas', label: 'Ventas — Reservas de Mesas', description: 'Gestión de comensales, mesas & reservas', icon: Calendar },
       { id: 'sales_config', label: 'Ventas — Configuración Comercial', description: 'Mesas físicas, capacidad, tipos de venta & sectores', icon: SlidersHorizontal },
-      { id: 'ventas_pedidos', label: 'Ventas — Pedidos & Facturación', description: 'Carga dinámica, comandas a cocina & cobro de tickets', icon: ShoppingBag },
+      { id: 'ventas_pedidos', label: 'Ventas — Comandas v2.0', description: 'Toma POS táctil, comandas a cocina con semáforo & cobro dividido', icon: Utensils },
     ],
   },
   {

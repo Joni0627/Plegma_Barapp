@@ -814,25 +814,58 @@ export type OrderStatus =
   | 'Facturado'
   | 'Cancelado';
 
+export interface ProductOption {
+  id: string;
+  name: string;
+  priceModifier: number; // 0 = Incluido, > 0 = Costo extra (ej: +900)
+}
+
+export interface ProductOptionGroup {
+  id: string;
+  name: string;                   // ej: "Tipo de café", "Acompañamiento", "Dip", "Adicionales"
+  isRequired: boolean;            // true = Obligatorio (1), false = Opcional
+  selectionType: 'single' | 'multiple'; // 'single' = 1 opción, 'multiple' = variadas
+  maxSelection?: number;
+  options: ProductOption[];
+  active: boolean;
+}
+
+export interface SelectedOptionDetail {
+  groupId: string;
+  groupName: string;
+  optionId: string;
+  optionName: string;
+  priceModifier: number;
+}
+
+export interface SplitPaymentLine {
+  id: string;
+  paymentMethodId: string;
+  paymentMethodName: string;
+  amount: number;
+}
+
 export interface SaleOrderItem {
   id: string;
   productId: string;
   productName: string;
-  category: string;              // ej: Comidas, Bebidas, Postres
+  category: string;              // ej: Comidas, Bebidas, Postres, Cafetería, Combos
   unitPrice: number;
   costPrice?: number;            // [CP03] Precio de costo para cobro diferenciado
   quantity: number;              // > 0
   sideOption?: string;           // Acompañamiento seleccionado
   requiresSideOption?: boolean;  // R09 obligatoriedad
-  subtotal: number;              // quantity * price
-  lineComment?: string;          // ej: "Sin sal", "Bien cocido"
+  selectedOptions?: SelectedOptionDetail[]; // Comandas v2.0: Opciones/Modificadores
+  subtotal: number;              // quantity * (unitPrice + sum(options.priceModifier))
+  lineComment?: string;          // ej: "Sin azúcar", "Bien cocido"
 }
 
 export interface OrderBillingInfo {
   clientId: string;
   clientName: string;
-  paymentCondition: 'Contado' | 'Cuenta Corriente' | 'Consumo Empleado';
-  paymentMethod: string;         // Efectivo, Tarjeta Posnet, Mercado Pago, etc.
+  paymentCondition: 'Contado' | 'Cuenta Corriente' | 'Invitación' | 'Gift Card' | 'Consumo Empleado';
+  paymentMethod: string;         // Efectivo, Mercado Pago Franco, Mercado Pago Fer, etc.
+  splitPayments?: SplitPaymentLine[]; // Soporte cobro múltiple (ej. $15.000 Efectivo + $10.000 MP)
   cashRegisterId?: string;       // Caja Abierta seleccionada
   discountPercentage?: number;
   discountAmount?: number;
@@ -872,6 +905,7 @@ export interface SaleOrder {
   items: SaleOrderItem[];
   billingDetails?: OrderBillingInfo;
 }
+
 
 
 
