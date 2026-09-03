@@ -198,6 +198,9 @@ export const ProductConfiguratorModal: React.FC<ProductConfiguratorModalProps> =
                       ) : (
                         <span className="text-slate-400 font-medium">(opcional)</span>
                       )}
+                      <span className="ml-2 text-[10px] font-extrabold text-blue-600 normal-case bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                        {group.selectionType === 'multiple' ? 'Selección múltiple' : 'Selección única'}
+                      </span>
                     </span>
                   </div>
 

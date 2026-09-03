@@ -20,6 +20,7 @@ import {
   Tag,
   Truck,
   Check,
+  MessageSquare,
 } from 'lucide-react';
 import { Button } from './ui/Button';
 import { TextInput } from './ui/Form';
@@ -31,6 +32,7 @@ import { ProductConfiguratorModal } from './orders/ProductConfiguratorModal';
 import { SplitBillingModal } from './orders/SplitBillingModal';
 import { ComandaModal } from './orders/ComandaModal';
 import { NewComandaModal } from './orders/NewComandaModal';
+import { OrderItemCommentModal } from './orders/OrderItemCommentModal';
 
 import { INITIAL_CC_CLIENTS } from '../data/currentAccountData';
 
@@ -48,21 +50,22 @@ const getElapsedMinutes = (createdAt: string): number => {
 // Semáforo Badge Component (Estilo UI PLEGMA)
 const SemaforoBadge: React.FC<{ elapsedMin: number; status: OrderStatus }> = ({ elapsedMin, status }) => {
   if (status === 'Cerrado' || status === 'Facturado') {
-    return <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-100 text-slate-600 border border-slate-200">Cerrada</span>;
+    return <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-100 text-slate-600 border border-slate-200 shrink-0">Cerrada</span>;
   }
   if (status === 'Listo') {
-    return <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-100 text-blue-800 border border-blue-300">🔵 Lista</span>;
+    return <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-100 text-blue-800 border border-blue-300 shrink-0">🔵 Lista</span>;
   }
   if (status === 'Entregado') {
-    return <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-orange-100 text-orange-800 border border-orange-300">🟠 Entregada</span>;
+    return <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-orange-100 text-orange-800 border border-orange-300 shrink-0">🟠 Entregada</span>;
   }
+  const displayMin = elapsedMin > 999 ? `+999` : `${elapsedMin}`;
   if (elapsedMin <= 15) {
-    return <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">🟢 {elapsedMin} min</span>;
+    return <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">🟢 {displayMin} min</span>;
   }
   if (elapsedMin <= 20) {
-    return <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300 font-bold">🟡 {elapsedMin} min</span>;
+    return <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 text-amber-800 border border-amber-300 font-bold shrink-0">🟡 {displayMin} min</span>;
   }
-  return <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white shadow-xs animate-pulse">🔴 +{elapsedMin} min</span>;
+  return <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-rose-500 text-white shadow-xs animate-pulse shrink-0">🔴 {displayMin} min</span>;
 };
 
 export function ComandasPosView() {
@@ -91,6 +94,18 @@ export function ComandasPosView() {
   const [selectedCatalogItem, setSelectedCatalogItem] = useState<SaleProductCatalogItem | null>(null);
   const [billingOrder, setBillingOrder] = useState<SaleOrder | null>(null);
   const [comandaOrderPreview, setComandaOrderPreview] = useState<SaleOrder | null>(null);
+  const [editingCommentItem, setEditingCommentItem] = useState<SaleOrderItem | null>(null);
+
+  // Save comment on specific line item
+  const handleSaveItemComment = (itemId: string, comment?: string) => {
+    if (!activeOrder) return;
+    const updatedItems = activeOrder.items.map((i) => (i.id === itemId ? { ...i, lineComment: comment } : i));
+    const updatedOrder = { ...activeOrder, items: updatedItems };
+    updateSaleOrder(updatedOrder);
+    setActiveOrder(updatedOrder);
+    setEditingCommentItem(null);
+    showToast('Comentario de ítem actualizado', 'success');
+  };
 
   // Filters for Bandeja
   const [bandejaFilter, setBandejaFilter] = useState<'Todas' | 'Salón' | 'Take Away' | 'Delivery' | 'Demoradas'>('Todas');
@@ -137,22 +152,9 @@ export function ComandasPosView() {
     });
   }, [categoryFilter, searchQuery]);
 
-  // Handle Card Click (1-CLIC = Consultation, 2-CLIC = Edition)
+  // Handle Card Click (Click en tarjeta = Consulta preview)
   const handleOrderCardClick = (order: SaleOrder) => {
-    if (clickTimer) {
-      clearTimeout(clickTimer);
-      setClickTimer(null);
-      // Double Click Event -> Open 3-Column Edition Mode
-      setActiveOrder(order);
-      setViewMode('edicion');
-    } else {
-      const timer = setTimeout(() => {
-        setClickTimer(null);
-        // Single Click Event -> Open Read-Only Preview
-        setComandaOrderPreview(order);
-      }, 250);
-      setClickTimer(timer);
-    }
+    setComandaOrderPreview(order);
   };
 
   // Start New Comanda (Guided 2-step modal trigger)
@@ -358,25 +360,25 @@ export function ComandasPosView() {
 
       {/* Main View Switcher */}
       {viewMode === 'bandeja' ? (
-        <div className="flex-1 p-6 max-w-7xl mx-auto w-full space-y-6">
+        <div className="flex-1 p-6 max-w-[1600px] mx-auto w-full space-y-6">
           {/* Bandeja Controls & Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4.5 rounded-2xl shadow-sm border border-slate-200">
             <div className="flex items-center space-x-3">
-              <h2 className="text-base font-black text-slate-900">1. Bandeja de Comandas Activas</h2>
+              <h2 className="text-base font-black text-slate-900">Bandeja de Comandas Activas</h2>
               <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-amber-50 text-amber-800 border border-amber-200">
                 {filteredBandejaOrders.length} Comandas
               </span>
             </div>
 
             {/* Channel Filters */}
-            <div className="flex items-center space-x-1 overflow-x-auto">
+            <div className="flex items-center space-x-1.5 overflow-x-auto">
               {(['Todas', 'Salón', 'Take Away', 'Delivery', 'Demoradas'] as const).map((filter) => {
                 const active = bandejaFilter === filter;
                 return (
                   <button
                     key={filter}
                     onClick={() => setBandejaFilter(filter)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all ${
                       active
                         ? 'bg-slate-900 text-white shadow-xs'
                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -390,47 +392,61 @@ export function ComandasPosView() {
 
             {/* Instruction legend */}
             <div className="hidden lg:flex items-center space-x-4 text-xs font-bold text-slate-500 bg-slate-50 px-3.5 py-1.5 rounded-xl border border-slate-200">
-              <span className="flex items-center"><Eye className="w-3.5 h-3.5 mr-1 text-slate-700" /> 1 Clic: Consulta</span>
-              <span className="text-slate-300">|</span>
-              <span className="flex items-center"><Edit className="w-3.5 h-3.5 mr-1 text-amber-600" /> Doble Clic: Edición</span>
+              <span className="flex items-center"><Eye className="w-3.5 h-3.5 mr-1 text-slate-700" /> Clic en tarjeta: Consulta vista previa</span>
             </div>
           </div>
 
-          {/* Cards Grid with Semáforo */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Cards Grid con distribución amplia */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-5">
             {filteredBandejaOrders.map((order) => {
               const elapsed = getElapsedMinutes(order.createdAt);
               return (
                 <div
                   key={order.id}
                   onClick={() => handleOrderCardClick(order)}
-                  className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between space-y-4 hover:border-amber-400 relative overflow-hidden"
+                  className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs hover:shadow-md transition-all cursor-pointer group flex flex-col justify-between space-y-4 hover:border-amber-400 relative overflow-hidden"
                 >
-                  {/* Card Header */}
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <div className="flex items-center space-x-2">
-                      <span className="font-black text-base text-slate-900">#{String(order.orderNumber).padStart(4, '0')}</span>
-                      <span className="text-xs font-bold text-slate-500">• {order.saleTypeName}</span>
+                  {/* Card Header Limpio */}
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3 gap-2">
+                    <div className="flex items-center space-x-2 min-w-0">
+                      <span className="font-black text-lg text-slate-900 shrink-0">#{String(order.orderNumber).padStart(4, '0')}</span>
+                      <span className="px-2 py-0.5 rounded-lg text-xs font-extrabold bg-slate-100 text-slate-700 border border-slate-200 truncate">
+                        {order.saleTypeName}
+                      </span>
                     </div>
+
                     <SemaforoBadge elapsedMin={elapsed} status={order.status} />
                   </div>
 
                   {/* Body Info */}
-                  <div className="space-y-1">
-                    <div className="flex items-center space-x-1.5 text-sm font-extrabold text-slate-800">
-                      <User className="w-4 h-4 text-slate-400" />
-                      <span>{order.tableName || order.clientName}</span>
+                  <div className="space-y-1.5 py-1">
+                    <div className="flex items-center space-x-2 text-sm font-black text-slate-900">
+                      <User className="w-4 h-4 text-slate-400 shrink-0" />
+                      <span className="truncate">{order.tableName || order.clientName}</span>
                     </div>
-                    <p className="text-xs text-slate-500 font-medium">
-                      {order.items.length} ítems cargados
+                    <p className="text-xs text-slate-500 font-bold">
+                      📦 {order.items.length} {order.items.length === 1 ? 'ítem cargado' : 'ítems cargados'}
                     </p>
                   </div>
 
-                  {/* Quick Card Action Buttons */}
-                  <div className="grid grid-cols-3 gap-1.5 pt-2 border-t border-slate-100" onClick={(e) => e.stopPropagation()}>
+                  {/* Botones de Acción de la Tarjeta en 4 Columnas */}
+                  <div className="grid grid-cols-4 gap-1.5 pt-3 border-t border-slate-100" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => {
+                        setActiveOrder(order);
+                        setViewMode('edicion');
+                      }}
+                      className="py-2 px-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-xl text-xs flex items-center justify-center space-x-1 shadow-2xs transition-all"
+                      title="Abrir toma de pedido en 3 columnas"
+                    >
+                      <Edit className="w-3.5 h-3.5" />
+                      <span>Editar</span>
+                    </button>
+
                     <button
                       onClick={() => handlePrintComanda(order)}
-                      className="py-1.5 px-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-[11px] font-extrabold flex items-center justify-center space-x-1"
+                      className="py-2 px-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-extrabold flex items-center justify-center space-x-1 transition-all"
+                      title="Imprimir comanda de cocina"
                     >
                       <Printer className="w-3.5 h-3.5 text-slate-600" />
                       <span>Cocina</span>
@@ -441,7 +457,8 @@ export function ComandasPosView() {
                         updateSaleOrderStatus(order.id, 'Listo');
                         showToast(`Comanda #${order.orderNumber} marcada como Lista 🔵`, 'success');
                       }}
-                      className="py-1.5 px-2 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-lg text-[11px] font-extrabold flex items-center justify-center space-x-1"
+                      className="py-2 px-1 bg-blue-50 hover:bg-blue-100 text-blue-800 rounded-xl text-xs font-extrabold flex items-center justify-center space-x-1 transition-all"
+                      title="Marcar comanda como lista"
                     >
                       <Check className="w-3.5 h-3.5 text-blue-600" />
                       <span>Lista</span>
@@ -449,7 +466,8 @@ export function ComandasPosView() {
 
                     <button
                       onClick={() => setBillingOrder(order)}
-                      className="py-1.5 px-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-lg text-[11px] font-black flex items-center justify-center space-x-1"
+                      className="py-2 px-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-xl text-xs font-black flex items-center justify-center space-x-1 transition-all"
+                      title="Cobrar comanda"
                     >
                       <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
                       <span>Cobrar</span>
@@ -457,9 +475,9 @@ export function ComandasPosView() {
                   </div>
 
                   {/* Card Footer Price */}
-                  <div className="flex items-center justify-between pt-1">
-                    <span className="text-xs font-extrabold text-slate-400">Total</span>
-                    <span className="text-base font-black text-slate-900">{fmt(order.totalAmount)}</span>
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-100/70">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Total Comanda</span>
+                    <span className="text-lg font-black text-slate-900">{fmt(order.totalAmount)}</span>
                   </div>
                 </div>
               );
@@ -491,6 +509,28 @@ export function ComandasPosView() {
               </span>
             </div>
 
+            {/* Campo Comentario General de Comanda (Ubicado ARRIBA de donde va poniendo el detalle de artículos) */}
+            <div className="p-3 bg-amber-50/70 border-b border-amber-200 space-y-1">
+              <label className="text-[10px] font-black uppercase tracking-wider text-amber-900 flex items-center justify-between">
+                <span className="flex items-center">
+                  <MessageSquare className="w-3.5 h-3.5 mr-1 text-amber-600" />
+                  Comentario General de Comanda
+                </span>
+                <span className="text-[10px] font-medium text-amber-700">(Cocina / Mozo)</span>
+              </label>
+              <TextInput
+                value={activeOrder?.generalNotes || ''}
+                onChange={(e) => {
+                  if (!activeOrder) return;
+                  const updatedOrder = { ...activeOrder, generalNotes: e.target.value };
+                  setActiveOrder(updatedOrder);
+                  updateSaleOrder(updatedOrder);
+                }}
+                placeholder="Ej: Mesas pegadas, sin cubiertos, marchado urgente..."
+                className="bg-white border-amber-200 text-xs text-slate-800 focus:ring-amber-500"
+              />
+            </div>
+
             {/* Line Items List */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {activeOrder?.items.length === 0 ? (
@@ -501,10 +541,31 @@ export function ComandasPosView() {
                 </div>
               ) : (
                 activeOrder?.items.map((item) => (
-                  <div key={item.id} className="p-3 rounded-xl border border-slate-200 bg-slate-50/70 space-y-2 shadow-2xs">
+                  <div
+                    key={item.id}
+                    className="p-3 rounded-xl border border-slate-200 bg-slate-50/70 space-y-2 shadow-2xs hover:border-amber-400 transition-all cursor-pointer group"
+                    onClick={() => setEditingCommentItem(item)}
+                    title="Haz clic para agregar o modificar comentario en este artículo"
+                  >
                     <div className="flex items-start justify-between">
-                      <div>
-                        <p className="font-black text-xs text-slate-900">{item.productName}</p>
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-1.5">
+                          <p className="font-black text-xs text-slate-900 group-hover:text-amber-700 transition-colors">
+                            {item.productName}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingCommentItem(item);
+                            }}
+                            className="p-0.5 text-slate-400 hover:text-amber-600 transition-colors"
+                            title="Editar comentario de ítem"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
                         {item.selectedOptions && item.selectedOptions.length > 0 && (
                           <div className="text-[11px] text-slate-500 font-medium space-y-0.5 mt-0.5">
                             {item.selectedOptions.map((opt, idx) => (
@@ -512,19 +573,29 @@ export function ComandasPosView() {
                             ))}
                           </div>
                         )}
-                        {item.lineComment && (
-                          <p className="text-[11px] text-amber-700 font-bold italic mt-0.5">"{item.lineComment}"</p>
+                        {item.lineComment ? (
+                          <p className="text-[11px] text-amber-700 font-extrabold italic mt-1 bg-amber-100/80 px-2 py-0.5 rounded-md inline-block border border-amber-200">
+                            💬 "{item.lineComment}"
+                          </p>
+                        ) : (
+                          <p className="text-[10px] text-slate-400 font-medium mt-1 italic group-hover:text-amber-600">
+                            + Agregar comentario a este artículo...
+                          </p>
                         )}
                       </div>
                       <button
-                        onClick={() => handleRemoveItem(item.id)}
-                        className="text-slate-400 hover:text-rose-600 p-1 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveItem(item.id);
+                        }}
+                        className="text-slate-400 hover:text-rose-600 p-1 transition-colors ml-2"
+                        title="Quitar artículo"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
 
-                    <div className="flex items-center justify-between pt-1 border-t border-slate-200/60">
+                    <div className="flex items-center justify-between pt-1 border-t border-slate-200/60" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center space-x-2 bg-white rounded-lg border border-slate-200 p-0.5">
                         <button
                           onClick={() => handleUpdateItemQuantity(item.id, -1)}
@@ -677,6 +748,15 @@ export function ComandasPosView() {
         <ComandaModal
           order={comandaOrderPreview}
           onClose={() => setComandaOrderPreview(null)}
+        />
+      )}
+
+      {/* Modal 6: Edición de Comentario por Ítem Cargado */}
+      {editingCommentItem && (
+        <OrderItemCommentModal
+          item={editingCommentItem}
+          onClose={() => setEditingCommentItem(null)}
+          onSaveComment={handleSaveItemComment}
         />
       )}
     </div>

@@ -97,6 +97,13 @@ export const ComandaModal: React.FC<ComandaModalProps> = ({ order, onClose, onCo
                           + Acomp: {item.sideOption}
                         </p>
                       )}
+                      {item.selectedOptions && item.selectedOptions.length > 0 && (
+                        <div className="ml-8 mt-0.5 text-xs text-indigo-700 font-bold print:text-black print:ml-8 print:text-sm">
+                          {item.selectedOptions.map((opt, idx) => (
+                            <p key={idx}>+ {opt.groupName}: {opt.optionName}</p>
+                          ))}
+                        </div>
+                      )}
                       {item.lineComment && (
                         <p className="text-xs text-amber-700 font-bold ml-8 mt-0.5 italic print:text-black print:ml-8 print:text-sm">
                           * {item.lineComment}
@@ -125,6 +132,13 @@ export const ComandaModal: React.FC<ComandaModalProps> = ({ order, onClose, onCo
                         </span>
                         <span className="print:mt-0.5">{item.productName}</span>
                       </p>
+                      {item.selectedOptions && item.selectedOptions.length > 0 && (
+                        <div className="ml-8 mt-0.5 text-xs text-emerald-700 font-bold print:text-black print:ml-8 print:text-sm">
+                          {item.selectedOptions.map((opt, idx) => (
+                            <p key={idx}>+ {opt.groupName}: {opt.optionName}</p>
+                          ))}
+                        </div>
+                      )}
                       {item.lineComment && (
                         <p className="text-xs text-amber-700 font-bold ml-8 mt-0.5 italic print:text-black print:ml-8 print:text-sm">
                           * {item.lineComment}

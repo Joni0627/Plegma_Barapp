@@ -239,6 +239,7 @@ interface AppContextType {
   addOptionToGroup: (groupId: string, option: ProductOption) => { success: boolean; message: string };
   deleteOptionFromGroup: (groupId: string, optionId: string) => { success: boolean; message: string };
   toggleOptionGroupActive: (groupId: string) => { success: boolean; message: string };
+  toggleGroupSelectionType: (groupId: string) => { success: boolean; message: string };
 
   // Cuentas Corrientes State
   ccMovements: CurrentAccountMovement[];
@@ -1894,7 +1895,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [productOptionGroups, setProductOptionGroups] = useState<ProductOptionGroup[]>(() => {
     try {
       const saved = localStorage.getItem('plegma_option_groups');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed: ProductOptionGroup[] = JSON.parse(saved);
+        // Force grp-002 (Acompañamiento) to have selectionType: 'multiple'
+        return parsed.map((g) =>
+          g.id === 'grp-002' ? { ...g, selectionType: 'multiple' } : g
+        );
+      }
     } catch (e) {}
     return INITIAL_OPTION_GROUPS;
   });
@@ -1929,6 +1936,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       prev.map((g) => (g.id === groupId ? { ...g, active: !g.active } : g))
     );
     return { success: true, message: `Estado de grupo actualizado.` };
+  };
+
+  const toggleGroupSelectionType = (groupId: string) => {
+    setProductOptionGroups((prev) =>
+      prev.map((g) => {
+        if (g.id === groupId) {
+          const nextType: 'single' | 'multiple' = g.selectionType === 'multiple' ? 'single' : 'multiple';
+          return { ...g, selectionType: nextType };
+        }
+        return g;
+      })
+    );
+    return {
+      success: true,
+      message: 'Tipo de selección de grupo actualizado.',
+    };
   };
 
   // ----------------------------------------------------
@@ -3003,6 +3026,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         addOptionToGroup,
         deleteOptionFromGroup,
         toggleOptionGroupActive,
+        toggleGroupSelectionType,
         ccMovements,
         setCcMovements,
         ccReceipts,

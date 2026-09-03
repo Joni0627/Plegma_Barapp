@@ -15,6 +15,7 @@ export const ComandasConfigModal: React.FC<ComandasConfigModalProps> = ({ onClos
     addProductOptionGroup,
     addOptionToGroup,
     deleteOptionFromGroup,
+    toggleGroupSelectionType,
     showToast,
   } = useApp();
 
@@ -23,6 +24,7 @@ export const ComandasConfigModal: React.FC<ComandasConfigModalProps> = ({ onClos
   // Form states for new option group
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupRequired, setNewGroupRequired] = useState(true);
+  const [newGroupSelectionType, setNewGroupSelectionType] = useState<'single' | 'multiple'>('single');
 
   // Form states for adding option
   const [selectedGroupId, setSelectedGroupId] = useState<string>(productOptionGroups[0]?.id || '');
@@ -35,7 +37,7 @@ export const ComandasConfigModal: React.FC<ComandasConfigModalProps> = ({ onClos
       id: 'grp-' + Date.now(),
       name: newGroupName.trim(),
       isRequired: newGroupRequired,
-      selectionType: 'single',
+      selectionType: newGroupSelectionType,
       active: true,
       options: [],
     };
@@ -133,7 +135,7 @@ export const ComandasConfigModal: React.FC<ComandasConfigModalProps> = ({ onClos
               {/* Group Creator */}
               <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
                 <h3 className="text-xs font-black uppercase tracking-wider text-slate-700">Crear Nuevo Grupo de Opciones</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
                   <div className="md:col-span-2">
                     <FormField label="Nombre del Grupo">
                       <TextInput
@@ -143,6 +145,16 @@ export const ComandasConfigModal: React.FC<ComandasConfigModalProps> = ({ onClos
                       />
                     </FormField>
                   </div>
+                  <FormField label="Tipo Selección">
+                    <SelectInput
+                      value={newGroupSelectionType}
+                      onChange={(e) => setNewGroupSelectionType(e.target.value as any)}
+                      options={[
+                        { value: 'single', label: 'Selección Única (1)' },
+                        { value: 'multiple', label: 'Selección Múltiple' },
+                      ]}
+                    />
+                  </FormField>
                   <div className="flex items-center space-x-3 pb-1">
                     <label className="flex items-center space-x-2 text-xs font-bold text-slate-700 cursor-pointer">
                       <input
@@ -212,8 +224,23 @@ export const ComandasConfigModal: React.FC<ComandasConfigModalProps> = ({ onClos
                               : 'bg-slate-100 text-slate-700 border border-slate-200'
                           }`}
                         >
-                          {group.isRequired ? 'Obligatoria (1)' : 'Opcional'}
+                          {group.isRequired ? 'Obligatoria' : 'Opcional'}
                         </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const res = toggleGroupSelectionType(group.id);
+                            showToast(res.message, 'success');
+                          }}
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-black cursor-pointer hover:opacity-80 transition-opacity ${
+                            group.selectionType === 'multiple'
+                              ? 'bg-blue-100 text-blue-900 border border-blue-200'
+                              : 'bg-slate-100 text-slate-600 border border-slate-200'
+                          }`}
+                          title="Haz clic para cambiar entre Selección Única y Múltiple"
+                        >
+                          {group.selectionType === 'multiple' ? 'Múltiple ⚙️' : 'Única (1) ⚙️'}
+                        </button>
                       </div>
                       <span className="text-xs text-slate-500 font-bold">{group.options.length} Opciones</span>
                     </div>

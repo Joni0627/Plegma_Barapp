@@ -32,7 +32,7 @@ export const INITIAL_OPTION_GROUPS: ProductOptionGroup[] = [
     id: 'grp-002',
     name: 'Acompañamiento',
     isRequired: true,
-    selectionType: 'single',
+    selectionType: 'multiple',
     active: true,
     options: [
       { id: 'opt-a1', name: 'Criollo', priceModifier: 0 },
